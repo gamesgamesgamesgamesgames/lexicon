@@ -48,10 +48,10 @@ jobs:
         run: bun run build
 
       - name: Upload Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
-          name: types
-          path: ./types/
+          name: api-artifact
+          path: packages/api/lib
 
   build-server:
     runs-on: ubuntu-latest
@@ -80,10 +80,10 @@ jobs:
         run: bun run build
 
       - name: Upload Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
-          name: types
-          path: ./types/
+          name: server-artifact
+          path: packages/server/lib
 
   release-libraries:
     runs-on: ubuntu-latest
@@ -104,6 +104,16 @@ jobs:
 
       - name: Setup Node
         uses: actions/setup-node@v4
+
+      - name: Download API Artifact
+        uses: actions/download-artifact@v5
+        with:
+          name: api-artifact
+
+      - name: Download Server Artifact
+        uses: actions/download-artifact@v5
+        with:
+          name: server-artifact
 
       - name: Install semantic-release dependencies
         env:
