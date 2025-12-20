@@ -28,6 +28,7 @@
     "build": "lex gen-server --yes ./src ../lexicon/*.json && tsup"
   },
   "dependencies": {
+    "@atproto/lexicon": "^0.6.0",
     "@atproto/xrpc-server": "^0.9.1"
   },
   "devDependencies": {
