@@ -26,6 +26,7 @@
       "dependencies": {
         "@atproto/lexicon": "^0.6.0",
         "@atproto/xrpc-server": "^0.9.1",
+        "multiformats": "^13.4.2",
       },
       "devDependencies": {
         "@atproto/lex-cli": "^0.9.1",

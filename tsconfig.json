@@ -16,9 +16,6 @@
     "moduleDetection": "force",
     "noEmit": false,
     "outDir": "dist",
-    "paths": {
-      "multiformats/*": ["node_modules/multiformats/types/src/*"]
-    },
 
     /* Linting */
     "strict": true,
