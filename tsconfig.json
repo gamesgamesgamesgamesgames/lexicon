@@ -1,14 +1,11 @@
 {
-	"compilerOptions": {
+  "compilerOptions": {
     "declaration": true,
     "esModuleInterop": true,
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
     "target": "ES2020",
     "useDefineForClassFields": true,
-    "lib": [
-			"ESNext",
-			"DOM",
-		],
+    "lib": ["ESNext", "DOM"],
     "module": "ESNext",
     "skipLibCheck": true,
 
@@ -20,23 +17,15 @@
     "noEmit": false,
     "outDir": "dist",
     "paths": {
-      "multiformats/*": [
-        "node_modules/multiformats/types/src/*",
-      ],
+      "multiformats/*": ["node_modules/multiformats/types/src/*"]
     },
 
     /* Linting */
     "strict": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
-    "noUncheckedSideEffectImports": true,
-	},
-  "include": [
-    "packages/api/src",
-    "packages/server/src",
-  ],
-  "exclude": [
-    "packages/api/lib",
-    "packages/server/lib",
-  ],
+    "noUncheckedSideEffectImports": true
+  },
+  "include": ["packages/api/src", "packages/server/src"],
+  "exclude": ["packages/api/lib", "packages/server/lib"]
 }
