@@ -4,11 +4,5 @@
   "workspaces": [
     "packages/api",
     "packages/server"
-  ],
-  "scripts": {
-    "build:all": "yarn workspaces foreach --all run build",
-    "build:api": "yarn workspace @gamesgamesgamesgamesgames/api run build",
-    "build:server": "yarn workspace @gamesgamesgamesgamesgames/server run build"
-  },
-  "packageManager": "yarn@4.9.2"
+  ]
 }
