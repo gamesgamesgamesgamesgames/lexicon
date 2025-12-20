@@ -25,10 +25,13 @@
     "lib"
   ],
   "scripts": {
-    "build": "lex gen-api --yes ./src ../lexicon/*.json && tsup"
+    "build": "lex gen-api --yes ./src ../lexicon/*.json && node scripts/add-imports.js && tsup"
   },
   "dependencies": {
-    "@atproto/xrpc": "^0.7.1"
+    "@atproto/api": "^0.18.8",
+    "@atproto/lexicon": "^0.6.0",
+    "@atproto/xrpc": "^0.7.1",
+    "multiformats": "^13.4.2"
   },
   "devDependencies": {
     "@atproto/lex-cli": "^0.9.1",
