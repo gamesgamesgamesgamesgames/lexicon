@@ -1,0 +1,37 @@
+name: Publish Lexicons
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - "**.md"
+      - .editorconfig
+      - .gitignore
+      - LICENSE
+  pull_request:
+    paths-ignore:
+      - "**.md"
+      - .editorconfig
+      - .gitignore
+      - LICENSE
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    name: Publish Lexicons
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        id: checkout
+        uses: actions/checkout@v6
+
+      - name: Publish Lexicons
+        uses: birbhouse-games/publish-lexicons@v1.0.0
+        with:
+          app-password: ${{ secrets.APP_PASSWORD }}
+          handle: gamesgamesgamesgames.games
+          lexicon-files: packages/lexicon/src
+          service: https://bsky.social

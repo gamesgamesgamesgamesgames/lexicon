@@ -1,0 +1,11 @@
+{ 
+  "compilerOptions": {
+    "types": [
+      "@atcute/atproto",
+      "@atcute/bluesky",
+      "bun-types"
+    ]
+  },
+  "extends": "../../tsconfig.json",
+  "include": ["scripts"]
+}

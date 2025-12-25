@@ -1,0 +1,27 @@
+{
+	"$type": "com.atproto.lexicon.schema",
+  "lexicon": 1,
+	"id": "games.gamesgamesgamesgames.game",
+	"defs": {
+		"main": {
+			"type": "record",
+			"description": "A video game.",
+			"key": "literal:self",
+			"required": [
+				"name",
+				"summary"
+			],
+			"record": {
+				"type": "object",
+				"properties": {
+					"name": {
+						"type": "string"
+					},
+					"summary": {
+						"type": "string"
+					}
+				}
+			}
+		}
+	}
+}
