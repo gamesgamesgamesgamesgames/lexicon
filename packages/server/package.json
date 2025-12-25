@@ -25,7 +25,7 @@
     "lib"
   ],
   "scripts": {
-    "build": "lex gen-server --yes ./src ../lexicon/*.json && tsup"
+    "build": "lex gen-server --yes ./src ../lexicon/src/*.json && tsup"
   },
   "dependencies": {
     "@atproto/lexicon": "^0.6.0",

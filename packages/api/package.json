@@ -25,7 +25,7 @@
     "lib"
   ],
   "scripts": {
-    "build": "lex gen-api --yes ./src ../lexicon/*.json && node scripts/add-imports.js && tsup"
+    "build": "lex gen-api --yes ./src ../lexicon/src/*.json && node scripts/add-imports.js && tsup"
   },
   "dependencies": {
     "@atproto/api": "^0.18.8",
