@@ -1,0 +1,38 @@
+{
+	"$type": "com.atproto.lexicon.schema",
+  "lexicon": 1,
+	"id": "games.gamesgamesgamesgames.putGame",
+	"defs": {
+		"main": {
+			"type": "procedure",
+			"description": "Stores a game record in the user's repo.",
+			"input": {
+				"encoding": "application/json",
+				"schema": {
+					"type": "object",
+					"required": [
+						"name",
+						"summary"
+					],
+					"properties": {
+						"name": { "type": "string" },
+						"summary": { "type": "string" }
+					}
+				}
+			},
+			"output": {
+				"encoding": "application/json",
+				"schema": {
+					"type": "object",
+					"required": ["status"],
+					"properties": {
+						"status": {
+							"type": "ref",
+							"ref": "games.gamesgamesgamesgames.defs#gameDetailView"
+						}
+					}
+				}
+			}
+		}
+	}
+}
