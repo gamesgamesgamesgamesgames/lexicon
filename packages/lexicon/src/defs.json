@@ -13,6 +13,11 @@
 			"properties": {
 				"name": { "type": "string" },
 				"summary": { "type": "string" },
+				"type": {
+					"default": "Main Game",
+					"type": "ref",
+					"ref": "games.gamesgamesgamesgames.defs#type"
+				},
 				"uri": {
 					"type": "string",
 					"format": "at-uri"
