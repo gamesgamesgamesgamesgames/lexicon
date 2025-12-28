@@ -43,7 +43,7 @@
 
 		"type": {
 			"type": "string",
-			"knownValues": [
+			"enum": [
 				"games.gamesgamesgamesgames.type#addon",
 				"games.gamesgamesgamesgames.type#bundle",
 				"games.gamesgamesgamesgames.type#dlc",
