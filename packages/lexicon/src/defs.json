@@ -1,0 +1,24 @@
+{
+	"$type": "com.atproto.lexicon.schema",
+	"lexicon": 1,
+	"id": "games.gamesgamesgamesgames.defs",
+	"defs": {
+		"gameDetailView": {
+			"type": "object",
+			"required": [
+				"uri",
+				"name",
+				"summary",
+				"createdAt"
+			],
+			"properties": {
+				"name": { "type": "string" },
+				"summary": { "type": "string" },
+				"uri": {
+					"type": "string",
+					"format": "at-uri"
+				}
+			}
+		}
+	}
+}
