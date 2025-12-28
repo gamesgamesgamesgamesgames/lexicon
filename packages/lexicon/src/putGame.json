@@ -24,9 +24,9 @@
 				"encoding": "application/json",
 				"schema": {
 					"type": "object",
-					"required": ["status"],
+					"required": ["game"],
 					"properties": {
-						"status": {
+						"game": {
 							"type": "ref",
 							"ref": "games.gamesgamesgamesgames.defs#gameDetailView"
 						}
