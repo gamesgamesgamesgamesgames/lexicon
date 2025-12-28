@@ -35,6 +35,27 @@
 					"format": "at-uri"
 				}
 			}
+		},
+
+		"type": {
+			"type": "string",
+			"knownValues": [
+				"games.gamesgamesgamesgames.type#addon",
+				"games.gamesgamesgamesgames.type#bundle",
+				"games.gamesgamesgamesgames.type#dlc",
+				"games.gamesgamesgamesgames.type#episode",
+				"games.gamesgamesgamesgames.type#expandedGame",
+				"games.gamesgamesgamesgames.type#expansion",
+				"games.gamesgamesgamesgames.type#fork",
+				"games.gamesgamesgamesgames.type#mainGame",
+				"games.gamesgamesgamesgames.type#mod",
+				"games.gamesgamesgamesgames.type#port",
+				"games.gamesgamesgamesgames.type#remake",
+				"games.gamesgamesgamesgames.type#remaster",
+				"games.gamesgamesgamesgames.type#season",
+				"games.gamesgamesgamesgames.type#standaloneExpansion",
+				"games.gamesgamesgamesgames.type#update"
+			]
 		}
 	}
 }
