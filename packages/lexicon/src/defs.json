@@ -19,6 +19,23 @@
 					"format": "at-uri"
 				}
 			}
+		},
+
+		"gameSummaryView": {
+			"type": "object",
+			"required": [
+				"uri",
+				"name",
+				"summary"
+			],
+			"properties": {
+				"name": { "type": "string" },
+				"summary": { "type": "string" },
+				"uri": { 
+					"type": "string", 
+					"format": "at-uri"
+				}
+			}
 		}
 	}
 }
