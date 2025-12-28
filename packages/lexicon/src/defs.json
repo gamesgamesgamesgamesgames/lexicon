@@ -8,8 +8,7 @@
 			"required": [
 				"uri",
 				"name",
-				"summary",
-				"createdAt"
+				"summary"
 			],
 			"properties": {
 				"name": { "type": "string" },
