@@ -16,7 +16,12 @@
 					],
 					"properties": {
 						"name": { "type": "string" },
-						"summary": { "type": "string" }
+						"summary": { "type": "string" },
+						"type": { 
+							"default": "games.gamesgamesgamesgames.type#game",
+							"ref": "games.gamesgamesgamesgames.defs#type",
+							"type": "ref"
+						}
 					}
 				}
 			},

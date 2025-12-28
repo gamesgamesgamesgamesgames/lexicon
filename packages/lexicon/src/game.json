@@ -21,7 +21,6 @@
 						"type": "string"
 					},
 					"type": {
-						"default": "Main Game",
 						"type": "ref",
 						"ref": "games.gamesgamesgamesgames.defs#type"
 					}

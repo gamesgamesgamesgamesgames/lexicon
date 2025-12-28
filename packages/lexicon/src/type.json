@@ -20,7 +20,7 @@
 			"type": "token",
 			"description": "Episode"
 		},
-		"expandedGame": {
+		"expanded-game": {
 			"type": "token",
 			"description": "Expanded Game"
 		},
@@ -32,9 +32,9 @@
 			"type": "token",
 			"description": "Fork"
 		},
-		"mainGame": {
+		"game": {
 			"type": "token",
-			"description": "Main Game"
+			"description": "Game"
 		},
 		"mod": {
 			"type": "token",
@@ -60,7 +60,7 @@
 			"type": "token",
 			"description": "Update"
 		},
-		"standaloneExpansion": {
+		"standalone-expansion": {
 			"type": "token",
 			"description": "Standalone Expansion"
 		}
