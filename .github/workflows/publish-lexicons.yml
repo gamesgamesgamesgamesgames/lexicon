@@ -30,7 +30,7 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Publish Lexicons
-        uses: birbhouse-games/publish-lexicons@v1.4.0
+        uses: birbhouse-games/publish-lexicons@v1
         with:
           app-password: ${{ secrets.APP_PASSWORD }}
           handle: gamesgamesgamesgames.games
