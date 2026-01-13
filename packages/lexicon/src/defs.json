@@ -11,6 +11,13 @@
 				"summary"
 			],
 			"properties": {
+				"mode": {
+					"type": "array",
+					"items": {
+						"type": "ref",
+						"ref": "games.gamesgamesgamesgames.defs#mode"
+					}
+				},
 				"name": { "type": "string" },
 				"summary": { "type": "string" },
 				"type": {
@@ -41,6 +48,18 @@
 			}
 		},
 
+		"mode": {
+			"type": "string",
+			"knownValues": [
+				"games.gamesgamesgamesgames.mode#battleRoyale",
+				"games.gamesgamesgamesgames.mode#cooperative",
+				"games.gamesgamesgamesgames.mode#mmo",
+				"games.gamesgamesgamesgames.mode#multiplayer",
+				"games.gamesgamesgamesgames.mode#singlePlayer",
+				"games.gamesgamesgamesgames.mode#splitScreen"
+			]
+		},
+		
 		"type": {
 			"type": "string",
 			"enum": [
