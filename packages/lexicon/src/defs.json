@@ -51,12 +51,12 @@
 		"mode": {
 			"type": "string",
 			"knownValues": [
-				"games.gamesgamesgamesgames.mode#battleRoyale",
+				"games.gamesgamesgamesgames.mode#battle-royale",
 				"games.gamesgamesgamesgames.mode#cooperative",
 				"games.gamesgamesgamesgames.mode#mmo",
 				"games.gamesgamesgamesgames.mode#multiplayer",
-				"games.gamesgamesgamesgames.mode#singlePlayer",
-				"games.gamesgamesgamesgames.mode#splitScreen"
+				"games.gamesgamesgamesgames.mode#single-player",
+				"games.gamesgamesgamesgames.mode#split-screen"
 			]
 		},
 		
@@ -67,16 +67,16 @@
 				"games.gamesgamesgamesgames.type#bundle",
 				"games.gamesgamesgamesgames.type#dlc",
 				"games.gamesgamesgamesgames.type#episode",
-				"games.gamesgamesgamesgames.type#expandedGame",
+				"games.gamesgamesgamesgames.type#expanded-game",
 				"games.gamesgamesgamesgames.type#expansion",
 				"games.gamesgamesgamesgames.type#fork",
-				"games.gamesgamesgamesgames.type#mainGame",
+				"games.gamesgamesgamesgames.type#main-game",
 				"games.gamesgamesgamesgames.type#mod",
 				"games.gamesgamesgamesgames.type#port",
 				"games.gamesgamesgamesgames.type#remake",
 				"games.gamesgamesgamesgames.type#remaster",
 				"games.gamesgamesgamesgames.type#season",
-				"games.gamesgamesgamesgames.type#standaloneExpansion",
+				"games.gamesgamesgamesgames.type#standalone-expansion",
 				"games.gamesgamesgamesgames.type#update"
 			]
 		}
