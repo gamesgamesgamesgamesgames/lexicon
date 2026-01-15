@@ -1,8 +1,0 @@
-{
-  "name": "pentaract-lexicon",
-  "private": true,
-  "workspaces": [
-    "packages/api",
-    "packages/server"
-  ]
-}

@@ -8,8 +8,6 @@ node_modules
 # output
 dist
 out
-types
-src/lexicons
 *.tgz
 
 # code coverage

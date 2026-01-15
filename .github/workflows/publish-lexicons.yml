@@ -34,5 +34,5 @@ jobs:
         with:
           app-password: ${{ secrets.APP_PASSWORD }}
           handle: gamesgamesgamesgames.games
-          lexicon-files: packages/lexicon/src
+          lexicon-files: src
           service: https://bsky.social
