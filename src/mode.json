@@ -1,6 +1,6 @@
 {
 	"$type": "com.atproto.lexicon.schema",
-  "lexicon": 1,
+	"lexicon": 1,
 	"id": "games.gamesgamesgamesgames.mode",
 	"description": "",
 	"defs": {

@@ -14,7 +14,7 @@
 				"games.gamesgamesgamesgames.mode#split-screen"
 			]
 		},
-		
+
 		"type": {
 			"type": "string",
 			"enum": [

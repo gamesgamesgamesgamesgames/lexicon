@@ -2,7 +2,7 @@
 end_of_line = lf
 insert_final_newline = true
 
-[*.{js,scss}]
+[*.json]
 charset = utf-8
 indent_style = tab
 
