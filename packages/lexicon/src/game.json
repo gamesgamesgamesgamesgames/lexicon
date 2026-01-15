@@ -7,10 +7,6 @@
 			"type": "record",
 			"description": "A video game.",
 			"key": "literal:self",
-			"required": [
-				"name",
-				"summary"
-			],
 			"record": {
 				"type": "object",
 				"properties": {
