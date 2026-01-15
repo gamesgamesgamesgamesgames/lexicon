@@ -3,51 +3,6 @@
 	"lexicon": 1,
 	"id": "games.gamesgamesgamesgames.defs",
 	"defs": {
-		"gameDetailView": {
-			"type": "object",
-			"required": [
-				"uri",
-				"name",
-				"summary"
-			],
-			"properties": {
-				"mode": {
-					"type": "array",
-					"items": {
-						"type": "ref",
-						"ref": "games.gamesgamesgamesgames.defs#mode"
-					}
-				},
-				"name": { "type": "string" },
-				"summary": { "type": "string" },
-				"type": {
-					"type": "ref",
-					"ref": "games.gamesgamesgamesgames.defs#type"
-				},
-				"uri": {
-					"type": "string",
-					"format": "at-uri"
-				}
-			}
-		},
-
-		"gameSummaryView": {
-			"type": "object",
-			"required": [
-				"uri",
-				"name",
-				"summary"
-			],
-			"properties": {
-				"name": { "type": "string" },
-				"summary": { "type": "string" },
-				"uri": { 
-					"type": "string", 
-					"format": "at-uri"
-				}
-			}
-		},
-
 		"mode": {
 			"type": "string",
 			"knownValues": [
