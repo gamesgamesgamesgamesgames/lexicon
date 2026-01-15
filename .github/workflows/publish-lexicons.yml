@@ -4,17 +4,11 @@ on:
   push:
     branches:
       - main
-    paths-ignore:
-      - "**.md"
-      - .editorconfig
-      - .gitignore
-      - LICENSE
+    paths:
+      - "src/**"
   pull_request:
-    paths-ignore:
-      - "**.md"
-      - .editorconfig
-      - .gitignore
-      - LICENSE
+    paths:
+      - "src/**"
 
 permissions:
   contents: read
