@@ -10,6 +10,10 @@
 			"record": {
 				"type": "object",
 				"properties": {
+					"applicationType": {
+						"type": "ref",
+						"ref": "games.gamesgamesgamesgames.defs#applicationType"
+					},
 					"createdAt": { "type": "string", "format": "datetime" },
 					"genres": {
 						"type": "array",
@@ -55,10 +59,6 @@
 							"type": "ref",
 							"ref": "games.gamesgamesgamesgames.defs#theme"
 						}
-					},
-					"type": {
-						"type": "ref",
-						"ref": "games.gamesgamesgamesgames.defs#type"
 					}
 				}
 			}

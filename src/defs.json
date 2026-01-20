@@ -15,9 +15,9 @@
 				},
 				"name": { "type": "string" },
 				"summary": { "type": "string" },
-				"type": {
+				"applicationType": {
 					"type": "ref",
-					"ref": "games.gamesgamesgamesgames.defs#type"
+					"ref": "games.gamesgamesgamesgames.defs#applicationType"
 				},
 				"uri": {
 					"type": "string",
@@ -36,6 +36,27 @@
 					"format": "at-uri"
 				}
 			}
+		},
+
+		"applicationType": {
+			"type": "string",
+			"enum": [
+				"games.gamesgamesgamesgames.applicationType#addon",
+				"games.gamesgamesgamesgames.applicationType#bundle",
+				"games.gamesgamesgamesgames.applicationType#dlc",
+				"games.gamesgamesgamesgames.applicationType#episode",
+				"games.gamesgamesgamesgames.applicationType#expandedGame",
+				"games.gamesgamesgamesgames.applicationType#expansion",
+				"games.gamesgamesgamesgames.applicationType#fork",
+				"games.gamesgamesgamesgames.applicationType#mainGame",
+				"games.gamesgamesgamesgames.applicationType#mod",
+				"games.gamesgamesgamesgames.applicationType#port",
+				"games.gamesgamesgamesgames.applicationType#remake",
+				"games.gamesgamesgamesgames.applicationType#remaster",
+				"games.gamesgamesgamesgames.applicationType#season",
+				"games.gamesgamesgamesgames.applicationType#standaloneExpansion",
+				"games.gamesgamesgamesgames.applicationType#update"
+			]
 		},
 
 		"genre": {
@@ -104,27 +125,6 @@
 				"games.gamesgamesgamesgames.theme#survival",
 				"games.gamesgamesgamesgames.theme#thriller",
 				"games.gamesgamesgamesgames.theme#warfare"
-			]
-		},
-
-		"type": {
-			"type": "string",
-			"enum": [
-				"games.gamesgamesgamesgames.type#addon",
-				"games.gamesgamesgamesgames.type#bundle",
-				"games.gamesgamesgamesgames.type#dlc",
-				"games.gamesgamesgamesgames.type#episode",
-				"games.gamesgamesgamesgames.type#expandedGame",
-				"games.gamesgamesgamesgames.type#expansion",
-				"games.gamesgamesgamesgames.type#fork",
-				"games.gamesgamesgamesgames.type#mainGame",
-				"games.gamesgamesgamesgames.type#mod",
-				"games.gamesgamesgamesgames.type#port",
-				"games.gamesgamesgamesgames.type#remake",
-				"games.gamesgamesgamesgames.type#remaster",
-				"games.gamesgamesgamesgames.type#season",
-				"games.gamesgamesgamesgames.type#standaloneExpansion",
-				"games.gamesgamesgamesgames.type#update"
 			]
 		},
 

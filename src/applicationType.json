@@ -1,7 +1,7 @@
 {
 	"$type": "com.atproto.lexicon.schema",
 	"lexicon": 1,
-	"id": "games.gamesgamesgamesgames.type",
+	"id": "games.gamesgamesgamesgames.applicationType",
 	"description": "Categories for releases and content.",
 	"defs": {
 		"addon": {

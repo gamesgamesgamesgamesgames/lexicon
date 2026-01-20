@@ -21,9 +21,9 @@
 								"ref": "games.gamesgamesgamesgames.defs#mode"
 							}
 						},
-						"type": {
-							"default": "games.gamesgamesgamesgames.type#game",
-							"ref": "games.gamesgamesgamesgames.defs#type",
+						"applicationType": {
+							"default": "games.gamesgamesgamesgames.applicationType#game",
+							"ref": "games.gamesgamesgamesgames.defs#applicationType",
 							"type": "ref"
 						}
 					}
