@@ -4,7 +4,7 @@
 	"id": "games.gamesgamesgamesgames.mode",
 	"description": "",
 	"defs": {
-		"battle-royale": {
+		"battleRoyale": {
 			"type": "token",
 			"description": "Battle Royale"
 		},
@@ -20,11 +20,11 @@
 			"type": "token",
 			"description": "Multiplayer"
 		},
-		"single-player": {
+		"singlePlayer": {
 			"type": "token",
 			"description": "Single Player"
 		},
-		"split-screen": {
+		"splitScreen": {
 			"type": "token",
 			"description": "Split Screen"
 		}

@@ -1,6 +1,6 @@
 {
 	"$type": "com.atproto.lexicon.schema",
-  "lexicon": 1,
+	"lexicon": 1,
 	"id": "games.gamesgamesgamesgames.theme",
 	"defs": {
 		"action": {
@@ -51,7 +51,7 @@
 			"type": "token",
 			"description": "Non-fiction"
 		},
-		"open-world": {
+		"openWorld": {
 			"type": "token",
 			"description": "Open World"
 		},

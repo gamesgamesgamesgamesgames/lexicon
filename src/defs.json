@@ -44,7 +44,7 @@
 				"games.gamesgamesgamesgames.genre#fighting",
 				"games.gamesgamesgamesgames.genre#music",
 				"games.gamesgamesgamesgames.genre#platform",
-				"games.gamesgamesgamesgames.genre#point-and-click",
+				"games.gamesgamesgamesgames.genre#pointAndClick",
 				"games.gamesgamesgamesgames.genre#puzzle",
 				"games.gamesgamesgamesgames.genre#racing",
 				"games.gamesgamesgamesgames.genre#rpg",
@@ -57,25 +57,25 @@
 		"mode": {
 			"type": "string",
 			"knownValues": [
-				"games.gamesgamesgamesgames.mode#battle-royale",
+				"games.gamesgamesgamesgames.mode#battleRoyale",
 				"games.gamesgamesgamesgames.mode#cooperative",
 				"games.gamesgamesgamesgames.mode#mmo",
 				"games.gamesgamesgamesgames.mode#multiplayer",
-				"games.gamesgamesgamesgames.mode#single-player",
-				"games.gamesgamesgamesgames.mode#split-screen"
+				"games.gamesgamesgamesgames.mode#singlePlayer",
+				"games.gamesgamesgamesgames.mode#splitScreen"
 			]
 		},
 
-		"player-perspective": {
+		"playerPerspective": {
 			"type": "string",
 			"knownValues": [
-				"games.gamesgamesgamesgames.player-perspective#auditory",
-				"games.gamesgamesgamesgames.player-perspective#first-person",
-				"games.gamesgamesgamesgames.player-perspective#isometric",
-				"games.gamesgamesgamesgames.player-perspective#side-view",
-				"games.gamesgamesgamesgames.player-perspective#text",
-				"games.gamesgamesgamesgames.player-perspective#third-person",
-				"games.gamesgamesgamesgames.player-perspective#vr"
+				"games.gamesgamesgamesgames.playerPerspective#auditory",
+				"games.gamesgamesgamesgames.playerPerspective#firstPerson",
+				"games.gamesgamesgamesgames.playerPerspective#isometric",
+				"games.gamesgamesgamesgames.playerPerspective#sideView",
+				"games.gamesgamesgamesgames.playerPerspective#text",
+				"games.gamesgamesgamesgames.playerPerspective#thirdPerson",
+				"games.gamesgamesgamesgames.playerPerspective#vr"
 			]
 		},
 
@@ -95,7 +95,7 @@
 				"games.gamesgamesgamesgames.theme#kids",
 				"games.gamesgamesgamesgames.theme#mystery",
 				"games.gamesgamesgamesgames.theme#nonfiction",
-				"games.gamesgamesgamesgames.theme#open-world",
+				"games.gamesgamesgamesgames.theme#openWorld",
 				"games.gamesgamesgamesgames.theme#party",
 				"games.gamesgamesgamesgames.theme#romance",
 				"games.gamesgamesgamesgames.theme#sandbox",
@@ -114,21 +114,21 @@
 				"games.gamesgamesgamesgames.type#bundle",
 				"games.gamesgamesgamesgames.type#dlc",
 				"games.gamesgamesgamesgames.type#episode",
-				"games.gamesgamesgamesgames.type#expanded-game",
+				"games.gamesgamesgamesgames.type#expandedGame",
 				"games.gamesgamesgamesgames.type#expansion",
 				"games.gamesgamesgamesgames.type#fork",
-				"games.gamesgamesgamesgames.type#main-game",
+				"games.gamesgamesgamesgames.type#mainGame",
 				"games.gamesgamesgamesgames.type#mod",
 				"games.gamesgamesgamesgames.type#port",
 				"games.gamesgamesgamesgames.type#remake",
 				"games.gamesgamesgamesgames.type#remaster",
 				"games.gamesgamesgamesgames.type#season",
-				"games.gamesgamesgamesgames.type#standalone-expansion",
+				"games.gamesgamesgamesgames.type#standaloneExpansion",
 				"games.gamesgamesgamesgames.type#update"
 			]
 		},
 
-		"release-date": {
+		"releaseDate": {
 			"type": "object",
 			"properties": {
 				"releasedAt": {

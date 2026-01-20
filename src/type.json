@@ -20,7 +20,7 @@
 			"type": "token",
 			"description": "Episode"
 		},
-		"expanded-game": {
+		"expandedGame": {
 			"type": "token",
 			"description": "Expanded Game"
 		},
@@ -60,7 +60,7 @@
 			"type": "token",
 			"description": "Update"
 		},
-		"standalone-expansion": {
+		"standaloneExpansion": {
 			"type": "token",
 			"description": "Standalone Expansion"
 		}

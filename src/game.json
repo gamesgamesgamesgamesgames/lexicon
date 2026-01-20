@@ -32,18 +32,18 @@
 						"type": "string",
 						"format": "at-uri"
 					},
-					"player-perspectives": {
+					"playerPerspectives": {
 						"type": "array",
 						"items": {
 							"type": "ref",
-							"ref": "games.gamesgamesgamesgames.defs#player-perspective"
+							"ref": "games.gamesgamesgamesgames.defs#playerPerspective"
 						}
 					},
-					"release-dates": {
+					"releaseDates": {
 						"type": "array",
 						"items": {
 							"type": "ref",
-							"ref": "games.gamesgamesgamesgames.defs#release-date"
+							"ref": "games.gamesgamesgamesgames.defs#releaseDate"
 						}
 					},
 					"summary": {

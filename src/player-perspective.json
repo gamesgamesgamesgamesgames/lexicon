@@ -1,13 +1,13 @@
 {
 	"$type": "com.atproto.lexicon.schema",
-  "lexicon": 1,
-	"id": "games.gamesgamesgamesgames.player-perspective",
+	"lexicon": 1,
+	"id": "games.gamesgamesgamesgames.playerPerspective",
 	"defs": {
 		"auditory": {
 			"type": "token",
 			"description": "Auditory"
 		},
-		"first-person": {
+		"firstPerson": {
 			"type": "token",
 			"description": "First Person"
 		},
@@ -15,7 +15,7 @@
 			"type": "token",
 			"description": "Isometric"
 		},
-		"side-view": {
+		"sideView": {
 			"type": "token",
 			"description": "Side View"
 		},
@@ -23,7 +23,7 @@
 			"type": "token",
 			"description": "Text"
 		},
-		"third-person": {
+		"thirdPerson": {
 			"type": "token",
 			"description": "Third Person"
 		},

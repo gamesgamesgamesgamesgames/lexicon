@@ -1,6 +1,6 @@
 {
 	"$type": "com.atproto.lexicon.schema",
-  "lexicon": 1,
+	"lexicon": 1,
 	"id": "games.gamesgamesgamesgames.genre",
 	"description": "",
 	"defs": {
@@ -16,7 +16,7 @@
 			"type": "token",
 			"description": "Platform"
 		},
-		"point-and-click": {
+		"pointAndClick": {
 			"type": "token",
 			"description": "Point-and-click"
 		},
