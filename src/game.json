@@ -10,6 +10,14 @@
 			"record": {
 				"type": "object",
 				"properties": {
+					"createdAt": { "type": "string", "format": "datetime" },
+					"genres": {
+						"type": "array",
+						"items": {
+							"type": "ref",
+							"ref": "games.gamesgamesgamesgames.defs#genre"
+						}
+					},
 					"modes": {
 						"type": "array",
 						"items": {
@@ -20,8 +28,33 @@
 					"name": {
 						"type": "string"
 					},
+					"parent": {
+						"type": "string",
+						"format": "at-uri"
+					},
+					"player-perspectives": {
+						"type": "array",
+						"items": {
+							"type": "ref",
+							"ref": "games.gamesgamesgamesgames.defs#player-perspective"
+						}
+					},
+					"release-dates": {
+						"type": "array",
+						"items": {
+							"type": "ref",
+							"ref": "games.gamesgamesgamesgames.defs#release-date"
+						}
+					},
 					"summary": {
 						"type": "string"
+					},
+					"themes": {
+						"type": "array",
+						"items": {
+							"type": "ref",
+							"ref": "games.gamesgamesgamesgames.defs#theme"
+						}
 					},
 					"type": {
 						"type": "ref",

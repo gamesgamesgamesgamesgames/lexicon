@@ -1,0 +1,95 @@
+{
+	"$type": "com.atproto.lexicon.schema",
+  "lexicon": 1,
+	"id": "games.gamesgamesgamesgames.theme",
+	"defs": {
+		"action": {
+			"type": "token",
+			"description": "Action"
+		},
+		"business": {
+			"type": "token",
+			"description": "Business"
+		},
+		"comedy": {
+			"type": "token",
+			"description": "Comedy"
+		},
+		"drama": {
+			"type": "token",
+			"description": "Drama"
+		},
+		"educational": {
+			"type": "token",
+			"description": "Educational"
+		},
+		"erotic": {
+			"type": "token",
+			"description": "Erotic"
+		},
+		"fantasy": {
+			"type": "token",
+			"description": "Fantasy"
+		},
+		"historical": {
+			"type": "token",
+			"description": "Historical"
+		},
+		"horror": {
+			"type": "token",
+			"description": "Horror"
+		},
+		"kids": {
+			"type": "token",
+			"description": "Kids"
+		},
+		"mystery": {
+			"type": "token",
+			"description": "Mystery"
+		},
+		"nonfiction": {
+			"type": "token",
+			"description": "Non-fiction"
+		},
+		"open-world": {
+			"type": "token",
+			"description": "Open World"
+		},
+		"party": {
+			"type": "token",
+			"description": "Party"
+		},
+		"romance": {
+			"type": "token",
+			"description": "Romance"
+		},
+		"sandbox": {
+			"type": "token",
+			"description": "Sandbox"
+		},
+		"scifi": {
+			"type": "token",
+			"description": "Science Fiction"
+		},
+		"stealth": {
+			"type": "token",
+			"description": "Stealth"
+		},
+		"survival": {
+			"type": "token",
+			"description": "Survival"
+		},
+		"thriller": {
+			"type": "token",
+			"description": "Thriller"
+		},
+		"warfare": {
+			"type": "token",
+			"description": "Warfare"
+		},
+		"xxxx": {
+			"type": "token",
+			"description": "4X (Explore, Expand, Exploit, and Exterminate)"
+		}
+	}
+}

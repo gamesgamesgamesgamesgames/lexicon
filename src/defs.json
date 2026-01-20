@@ -3,6 +3,57 @@
 	"lexicon": 1,
 	"id": "games.gamesgamesgamesgames.defs",
 	"defs": {
+		"gameDetailView": {
+			"type": "object",
+			"properties": {
+				"mode": {
+					"type": "array",
+					"items": {
+						"type": "ref",
+						"ref": "games.gamesgamesgamesgames.defs#mode"
+					}
+				},
+				"name": { "type": "string" },
+				"summary": { "type": "string" },
+				"type": {
+					"type": "ref",
+					"ref": "games.gamesgamesgamesgames.defs#type"
+				},
+				"uri": {
+					"type": "string",
+					"format": "at-uri"
+				}
+			}
+		},
+
+		"gameSummaryView": {
+			"type": "object",
+			"properties": {
+				"name": { "type": "string" },
+				"summary": { "type": "string" },
+				"uri": {
+					"type": "string",
+					"format": "at-uri"
+				}
+			}
+		},
+
+		"genre": {
+			"type": "string",
+			"knownValues": [
+				"games.gamesgamesgamesgames.genre#fighting",
+				"games.gamesgamesgamesgames.genre#music",
+				"games.gamesgamesgamesgames.genre#platform",
+				"games.gamesgamesgamesgames.genre#point-and-click",
+				"games.gamesgamesgamesgames.genre#puzzle",
+				"games.gamesgamesgamesgames.genre#racing",
+				"games.gamesgamesgamesgames.genre#rpg",
+				"games.gamesgamesgamesgames.genre#rts",
+				"games.gamesgamesgamesgames.genre#shooter",
+				"games.gamesgamesgamesgames.genre#simulator"
+			]
+		},
+
 		"mode": {
 			"type": "string",
 			"knownValues": [
@@ -12,6 +63,47 @@
 				"games.gamesgamesgamesgames.mode#multiplayer",
 				"games.gamesgamesgamesgames.mode#single-player",
 				"games.gamesgamesgamesgames.mode#split-screen"
+			]
+		},
+
+		"player-perspective": {
+			"type": "string",
+			"knownValues": [
+				"games.gamesgamesgamesgames.player-perspective#auditory",
+				"games.gamesgamesgamesgames.player-perspective#first-person",
+				"games.gamesgamesgamesgames.player-perspective#isometric",
+				"games.gamesgamesgamesgames.player-perspective#side-view",
+				"games.gamesgamesgamesgames.player-perspective#text",
+				"games.gamesgamesgamesgames.player-perspective#third-person",
+				"games.gamesgamesgamesgames.player-perspective#vr"
+			]
+		},
+
+		"theme": {
+			"type": "string",
+			"knownValues": [
+				"games.gamesgamesgamesgames.theme#4x",
+				"games.gamesgamesgamesgames.theme#action",
+				"games.gamesgamesgamesgames.theme#business",
+				"games.gamesgamesgamesgames.theme#comedy",
+				"games.gamesgamesgamesgames.theme#drama",
+				"games.gamesgamesgamesgames.theme#educational",
+				"games.gamesgamesgamesgames.theme#erotic",
+				"games.gamesgamesgamesgames.theme#fantasy",
+				"games.gamesgamesgamesgames.theme#historical",
+				"games.gamesgamesgamesgames.theme#horror",
+				"games.gamesgamesgamesgames.theme#kids",
+				"games.gamesgamesgamesgames.theme#mystery",
+				"games.gamesgamesgamesgames.theme#nonfiction",
+				"games.gamesgamesgamesgames.theme#open-world",
+				"games.gamesgamesgamesgames.theme#party",
+				"games.gamesgamesgamesgames.theme#romance",
+				"games.gamesgamesgamesgames.theme#sandbox",
+				"games.gamesgamesgamesgames.theme#scifi",
+				"games.gamesgamesgamesgames.theme#stealth",
+				"games.gamesgamesgamesgames.theme#survival",
+				"games.gamesgamesgamesgames.theme#thriller",
+				"games.gamesgamesgamesgames.theme#warfare"
 			]
 		},
 
@@ -34,6 +126,25 @@
 				"games.gamesgamesgamesgames.type#standalone-expansion",
 				"games.gamesgamesgamesgames.type#update"
 			]
+		},
+
+		"release-date": {
+			"type": "object",
+			"properties": {
+				"releasedAt": {
+					"type": "string",
+					"format": "datetime"
+				},
+				"platform": {
+					"type": "string"
+				},
+				"region": {
+					"type": "string"
+				},
+				"status": {
+					"type": "string"
+				}
+			}
 		}
 	}
 }

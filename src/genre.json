@@ -1,0 +1,48 @@
+{
+	"$type": "com.atproto.lexicon.schema",
+  "lexicon": 1,
+	"id": "games.gamesgamesgamesgames.genre",
+	"description": "",
+	"defs": {
+		"fighting": {
+			"type": "token",
+			"description": "Fighting"
+		},
+		"music": {
+			"type": "token",
+			"description": "Music"
+		},
+		"platform": {
+			"type": "token",
+			"description": "Platform"
+		},
+		"point-and-click": {
+			"type": "token",
+			"description": "Point-and-click"
+		},
+		"puzzle": {
+			"type": "token",
+			"description": "Puzzle"
+		},
+		"racing": {
+			"type": "token",
+			"description": "Racing"
+		},
+		"rpg": {
+			"type": "token",
+			"description": "Role-playing (RPG)"
+		},
+		"rts": {
+			"type": "token",
+			"description": "Real Time Strategy (RTS)"
+		},
+		"shooter": {
+			"type": "token",
+			"description": "Shooter"
+		},
+		"simulator": {
+			"type": "token",
+			"description": "Simulator"
+		}
+	}
+}
