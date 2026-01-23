@@ -43,6 +43,11 @@
 							"ref": "games.gamesgamesgamesgames.defs#playerPerspective"
 						}
 					},
+					"publishedAt": {
+						"type": "string",
+						"format":"datetime",
+						"description": "When this record was marked ready for public viewing."
+					},
 					"releaseDates": {
 						"type": "array",
 						"items": {
