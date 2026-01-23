@@ -96,6 +96,7 @@
 				"games.gamesgamesgamesgames.playerPerspective#sideView",
 				"games.gamesgamesgamesgames.playerPerspective#text",
 				"games.gamesgamesgamesgames.playerPerspective#thirdPerson",
+				"games.gamesgamesgamesgames.playerPerspective#topDown",
 				"games.gamesgamesgamesgames.playerPerspective#vr"
 			]
 		},
