@@ -1,0 +1,127 @@
+name: Lexicon RFC
+description: Propose a new lexicon or changes to an existing lexicon
+title: "[RFC]: "
+labels: ["rfc"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for taking the time to propose a new lexicon or changes to the `games.gamesgamesgamesgames.*` namespace!
+
+        Before submitting, please review the [ATProto Lexicon documentation](https://atproto.com/guides/lexicon) and our [contribution guide](../../CONTRIBUTING.md).
+
+  - type: dropdown
+    id: type
+    attributes:
+      label: Proposal Type
+      description: What type of change are you proposing?
+      options:
+        - New record type
+        - New token(s)
+        - New query/procedure
+        - Modification to existing lexicon
+        - Other
+    validations:
+      required: true
+
+  - type: input
+    id: nsid
+    attributes:
+      label: Proposed NSID
+      description: The namespace identifier for your lexicon (e.g., `games.gamesgamesgamesgames.achievement`)
+      placeholder: "games.gamesgamesgamesgames.yourLexicon"
+    validations:
+      required: true
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: A brief description of the lexicon and its purpose.
+      placeholder: Describe what this lexicon or change represents and why it's needed for the video game ecosystem on ATProto.
+    validations:
+      required: true
+
+  - type: textarea
+    id: use-cases
+    attributes:
+      label: Use Cases
+      description: Describe the specific video game-related use cases this lexicon enables.
+      placeholder: |
+        - Players could track their achievements across multiple games
+        - Game developers could publish achievement definitions
+        - Trophy case apps could aggregate achievements from various games
+    validations:
+      required: true
+
+  - type: textarea
+    id: schema
+    attributes:
+      label: Proposed Schema
+      description: Provide a draft of your proposed lexicon schema in JSON format. The [_Lexicon Style Guide_](https://atproto.com/guides/lexicon-style-guide) is very useful here.
+      placeholder: |
+        {
+          "$type": "com.atproto.lexicon.schema",
+          "lexicon": 1,
+          "id": "games.gamesgamesgamesgames.yourLexicon",
+          "defs": {
+            "main": {
+              "type": "record",
+              "description": "...",
+              "record": {
+                "type": "object",
+                "properties": {
+                  ...
+                }
+              }
+            }
+          }
+        }
+      render: json
+    validations:
+      required: true
+
+  - type: textarea
+    id: considerations
+    attributes:
+      label: Design Considerations
+      description: |
+        Explain your design decisions. Consider addressing:
+        - Why did you choose this structure?
+        - How does this integrate with existing lexicons?
+        - What alternatives did you consider?
+        - Are there any backwards compatibility concerns?
+      placeholder: |
+        I chose to use `knownValues` instead of `enum` for the status field because...
+    validations:
+      required: false
+
+  - type: textarea
+    id: examples
+    attributes:
+      label: Example Data
+      description: Provide example instances of records that would use this lexicon.
+      placeholder: |
+        {
+          "$type": "games.gamesgamesgamesgames.yourLexicon",
+          "fieldA": "value",
+          "fieldB": 123
+        }
+      render: json
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      description: Please confirm you have completed the following.
+      options:
+        - label: I have read the [Code of Conduct](../../CODE_OF_CONDUCT.md)
+          required: true
+        - label: I have read the [ATProto Lexicon documentation](https://atproto.com/guides/lexicon)
+          required: true
+        - label: I have searched existing issues to ensure this isn't a duplicate
+          required: true
+        - label: My proposal uses the `games.gamesgamesgamesgames.*` namespace
+          required: true
