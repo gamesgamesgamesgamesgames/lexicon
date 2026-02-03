@@ -1,0 +1,53 @@
+{
+	"$type": "com.atproto.lexicon.schema",
+	"lexicon": 1,
+	"id": "games.gamesgamesgamesgames.game",
+	"defs": {
+		"main": {
+			"type": "record",
+			"description": "",
+			"key": "literal:self",
+			"required": ["name", "summary"],
+			"record": {
+				"type": "object",
+				"properties": {
+					"capsuleArt": {
+						"type": "array",
+						"items": {
+							"type": "blob",
+							"description": "Primarily used in library and collection views.",
+							"accept": ["image/*"],
+							"maxSize": 500000000
+						}
+					},
+					"keyArt": {
+						"type": "array",
+						"items": {
+							"type": "blob",
+							"description": "Small image to be displayed next to posts from account. AKA, 'profile picture'",
+							"accept": ["image/*"],
+							"maxSize": 500000000
+						}
+					},
+					"screenshots": {
+						"type": "array",
+						"items": {
+							"type": "blob",
+							"description": "Screenshots of the game.",
+							"accept": ["image/*"],
+							"maxSize": 500000000
+						}
+					},
+					"relatedOrganizations": {
+						"type": "array",
+						"minLength": 1,
+						"items": {
+							"type": "string",
+							"format": "at-uri"
+						}
+					}
+				}
+			}
+		}
+	}
+}
