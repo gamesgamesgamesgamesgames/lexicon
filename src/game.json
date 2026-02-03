@@ -26,55 +26,8 @@
 						"description": "Images associated with the game.",
 						"type": "array",
 						"items": {
-							"type": "object",
-							"properties": {
-								"blob": {
-									"type": "blob",
-									"accept": ["image/*", "video/*"],
-									"maxSize": 500000
-								},
-								"description": { "type": "string" },
-								"dimensions": {
-									"type": "object",
-									"properties": {
-										"height": { "type": "integer" },
-										"width": { "type": "integer" }
-									}
-								},
-								"locale": { "type": "string" },
-								"mediaType": { 
-									"type": "string",
-									"enum": [
-										"accoladesTrailer",
-										"announcementTrailer",
-										"artwork",
-										"cinematicTrailer",
-										"conceptArt",
-										"cover",
-										"coverAlt",
-										"coverHistorical",
-										"coverSquare",
-										"cutscene",
-										"devDiary",
-										"gameplayImage",
-										"gameplayTrailer",
-										"icon",
-										"infographic",
-										"intro",
-										"keyArt",
-										"keyArtLogo",
-										"launchTrailer",
-										"logoBlack",
-										"logoColor",
-										"logoWhite",
-										"releaseDateTrailer",
-										"screenshot",
-										"teaser",
-										"trailer"
-									]
-								},
-								"title": { "type": "string" }
-							}
+							"type": "ref",
+							"ref": "#mediaItem"
 						}
 					},
 					"modes": {
@@ -121,6 +74,58 @@
 						}
 					}
 				}
+			}
+		}, 
+
+		"mediaItem": {
+			"type": "object",
+			"properties": {
+				"blob": {
+					"type": "blob",
+					"accept": ["image/*", "video/*"],
+					"maxSize": 500000
+				},
+				"description": { "type": "string" },
+				"dimensions": {
+					"type": "object",
+					"properties": {
+						"height": { "type": "integer" },
+						"width": { "type": "integer" }
+					}
+				},
+				"locale": { "type": "string" },
+				"mediaType": {
+					"type": "string",
+					"enum": [
+						"accoladesTrailer",
+						"announcementTrailer",
+						"artwork",
+						"cinematicTrailer",
+						"conceptArt",
+						"cover",
+						"coverAlt",
+						"coverHistorical",
+						"coverSquare",
+						"cutscene",
+						"devDiary",
+						"gameplayImage",
+						"gameplayTrailer",
+						"icon",
+						"infographic",
+						"intro",
+						"keyArt",
+						"keyArtLogo",
+						"launchTrailer",
+						"logoBlack",
+						"logoColor",
+						"logoWhite",
+						"releaseDateTrailer",
+						"screenshot",
+						"teaser",
+						"trailer"
+					]
+				},
+				"title": { "type": "string" }
 			}
 		}
 	}
