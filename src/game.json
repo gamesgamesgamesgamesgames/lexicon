@@ -4,8 +4,8 @@
 	"id": "games.gamesgamesgamesgames.game",
 	"defs": {
 		"main": {
-			"type": "record",
 			"description": "A video game.",
+			"type": "record",
 			"key": "literal:self",
 			"record": {
 				"type": "object",
@@ -20,6 +20,61 @@
 						"items": {
 							"type": "ref",
 							"ref": "games.gamesgamesgamesgames.defs#genre"
+						}
+					},
+					"media": {
+						"description": "Images associated with the game.",
+						"type": "array",
+						"items": {
+							"type": "object",
+							"properties": {
+								"blob": {
+									"type": "blob",
+									"accept": ["image/*", "video/*"],
+									"maxSize": 500000
+								},
+								"description": { "type": "string" },
+								"dimensions": {
+									"type": "object",
+									"properties": {
+										"height": { "type": "integer" },
+										"width": { "type": "integer" }
+									}
+								},
+								"locale": { "type": "string" },
+								"mediaType": { 
+									"type": "string",
+									"enum": [
+										"accoladesTrailer",
+										"announcementTrailer",
+										"artwork",
+										"cinematicTrailer",
+										"conceptArt",
+										"cover",
+										"coverAlt",
+										"coverHistorical",
+										"coverSquare",
+										"cutscene",
+										"devDiary",
+										"gameplayImage",
+										"gameplayTrailer",
+										"icon",
+										"infographic",
+										"intro",
+										"keyArt",
+										"keyArtLogo",
+										"launchTrailer",
+										"logoBlack",
+										"logoColor",
+										"logoWhite",
+										"releaseDateTrailer",
+										"screenshot",
+										"teaser",
+										"trailer"
+									]
+								},
+								"title": { "type": "string" }
+							}
 						}
 					},
 					"modes": {
@@ -44,9 +99,9 @@
 						}
 					},
 					"publishedAt": {
+						"description": "When this record was marked ready for public viewing.",
 						"type": "string",
-						"format":"datetime",
-						"description": "When this record was marked ready for public viewing."
+						"format":"datetime"
 					},
 					"releaseDates": {
 						"type": "array",
