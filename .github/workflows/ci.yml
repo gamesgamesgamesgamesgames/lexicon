@@ -50,4 +50,3 @@ jobs:
         uses: birbhouse-games/lexicon-tools/check-dns@v1
         with:
           lexicon-path: ./src
-          did: ${{ vars.DID }}
