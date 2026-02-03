@@ -1,0 +1,53 @@
+name: Validate Lexicons
+
+on:
+  pull_request:
+    paths:
+      - "src/**"
+      - ".github/workflows/ci.yml"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Lint lexicon files
+        uses: birbhouse-games/lexicon-tools/lint@v1
+        with:
+          lexicon-path: ./src
+          fail-on-warning: 'true'
+
+  breaking:
+    name: Check Breaking Changes
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Check for breaking changes
+        uses: birbhouse-games/lexicon-tools/breaking@v1
+        with:
+          lexicon-path: ./src
+
+  check-dns:
+    name: Check DNS
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Check DNS records
+        uses: birbhouse-games/lexicon-tools/check-dns@v1
+        with:
+          lexicon-path: ./src
+          did: ${{ vars.DID }}
