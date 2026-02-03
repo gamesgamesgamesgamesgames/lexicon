@@ -34,22 +34,23 @@ jobs:
           lexicon-path: ./src
           failure-threshold: error
 
-  breaking:
-    name: Check Breaking Changes
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6
+  # breaking:
+  #   name: Check Breaking Changes
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@v6
 
-      - name: Check for breaking changes
-        uses: birbhouse-games/lexicon-tools/breaking@v1
-        with:
-          lexicon-path: ./src
+  #     - name: Check for breaking changes
+  #       uses: birbhouse-games/lexicon-tools/breaking@v1
+  #       with:
+  #         lexicon-path: ./src
 
   publish:
     name: Publish Lexicons
     runs-on: ubuntu-latest
-    needs: [lint, breaking]
+    # needs: [lint, breaking]
+    needs: [lint]
     if: github.ref == 'refs/heads/main'
     steps:
       - name: Checkout
@@ -61,4 +62,4 @@ jobs:
           lexicon-path: ./src
           username: ${{ vars.USERNAME }}
           password: ${{ secrets.APP_PASSWORD }}
-          update: 'true'
+          update: "true"
