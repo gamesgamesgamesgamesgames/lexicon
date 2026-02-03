@@ -86,13 +86,7 @@
 					"maxSize": 500000
 				},
 				"description": { "type": "string" },
-				"dimensions": {
-					"type": "object",
-					"properties": {
-						"height": { "type": "integer" },
-						"width": { "type": "integer" }
-					}
-				},
+				"height": { "type": "integer" },
 				"locale": { "type": "string" },
 				"mediaType": {
 					"type": "string",
@@ -125,7 +119,8 @@
 						"trailer"
 					]
 				},
-				"title": { "type": "string" }
+				"title": { "type": "string" },
+				"width": { "type": "integer" }
 			}
 		}
 	}
