@@ -176,21 +176,56 @@
 			]
 		},
 
+		"release": {
+			"type": "object",
+			"properties": {
+				"platform": {
+					"type": "string"
+				},
+				"releaseDates": {
+					"type": "array",
+					"items": {
+						"type": "ref",
+						"ref": "games.gamesgamesgamesgames.defs#releaseDate"
+					}
+				}
+			}
+		},
+
 		"releaseDate": {
 			"type": "object",
 			"properties": {
 				"releasedAt": {
-					"type": "string",
-					"format": "datetime"
-				},
-				"platform": {
 					"type": "string"
+				},
+				"releasedAtFormat": {
+					"type": "string",
+					"enum": [
+						"YYYY-MM-DD",
+						"YYYY-MM",
+						"YYYY-Q1",
+						"YYYY-Q2",
+						"YYYY-Q3",
+						"YYYY-Q4",
+						"YYYY",
+						"TBD"
+					]
 				},
 				"region": {
 					"type": "string"
 				},
 				"status": {
-					"type": "string"
+					"type": "string",
+					"knownValues": [
+						"advancedAccess",
+						"alpha",
+						"beta",
+						"cancelled",
+						"digitalCompatibilityRelease",
+						"earlyAccess",
+						"nextGenOptimizationRelease",
+						"offline"
+					]
 				}
 			}
 		}
