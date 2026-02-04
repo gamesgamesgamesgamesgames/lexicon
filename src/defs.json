@@ -224,7 +224,8 @@
 						"digitalCompatibilityRelease",
 						"earlyAccess",
 						"nextGenOptimizationRelease",
-						"offline"
+						"offline",
+            "release"
 					]
 				}
 			}
