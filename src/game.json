@@ -27,7 +27,7 @@
 						"type": "array",
 						"items": {
 							"type": "ref",
-							"ref": "#mediaItem"
+							"ref": "games.gamesgamesgamesgames.defs#mediaItem"
 						}
 					},
 					"modes": {
@@ -56,11 +56,11 @@
 						"type": "string",
 						"format":"datetime"
 					},
-					"releaseDates": {
+					"releases": {
 						"type": "array",
 						"items": {
 							"type": "ref",
-							"ref": "games.gamesgamesgamesgames.defs#releaseDate"
+							"ref": "games.gamesgamesgamesgames.defs#release"
 						}
 					},
 					"summary": {
@@ -74,53 +74,6 @@
 						}
 					}
 				}
-			}
-		}, 
-
-		"mediaItem": {
-			"type": "object",
-			"properties": {
-				"blob": {
-					"type": "blob",
-					"accept": ["image/*", "video/*"],
-					"maxSize": 500000
-				},
-				"description": { "type": "string" },
-				"height": { "type": "integer" },
-				"locale": { "type": "string" },
-				"mediaType": {
-					"type": "string",
-					"enum": [
-						"accoladesTrailer",
-						"announcementTrailer",
-						"artwork",
-						"cinematicTrailer",
-						"conceptArt",
-						"cover",
-						"coverAlt",
-						"coverHistorical",
-						"coverSquare",
-						"cutscene",
-						"devDiary",
-						"gameplayImage",
-						"gameplayTrailer",
-						"icon",
-						"infographic",
-						"intro",
-						"keyArt",
-						"keyArtLogo",
-						"launchTrailer",
-						"logoBlack",
-						"logoColor",
-						"logoWhite",
-						"releaseDateTrailer",
-						"screenshot",
-						"teaser",
-						"trailer"
-					]
-				},
-				"title": { "type": "string" },
-				"width": { "type": "integer" }
 			}
 		}
 	}

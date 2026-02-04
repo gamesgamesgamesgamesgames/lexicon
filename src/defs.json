@@ -75,6 +75,53 @@
 			]
 		},
 
+		"mediaItem": {
+			"type": "object",
+			"properties": {
+				"blob": {
+					"type": "blob",
+					"accept": ["image/*", "video/*"],
+					"maxSize": 500000
+				},
+				"description": { "type": "string" },
+				"height": { "type": "integer" },
+				"locale": { "type": "string" },
+				"mediaType": {
+					"type": "string",
+					"enum": [
+						"accoladesTrailer",
+						"announcementTrailer",
+						"artwork",
+						"cinematicTrailer",
+						"conceptArt",
+						"cover",
+						"coverAlt",
+						"coverHistorical",
+						"coverSquare",
+						"cutscene",
+						"devDiary",
+						"gameplayImage",
+						"gameplayTrailer",
+						"icon",
+						"infographic",
+						"intro",
+						"keyArt",
+						"keyArtLogo",
+						"launchTrailer",
+						"logoBlack",
+						"logoColor",
+						"logoWhite",
+						"releaseDateTrailer",
+						"screenshot",
+						"teaser",
+						"trailer"
+					]
+				},
+				"title": { "type": "string" },
+				"width": { "type": "integer" }
+			}
+		},
+
 		"mode": {
 			"type": "string",
 			"knownValues": [
