@@ -6,7 +6,7 @@
 		"main": {
 			"description": "A video game.",
 			"type": "record",
-			"key": "literal:self",
+			"key": "tid",
 			"record": {
 				"type": "object",
 				"properties": {
@@ -54,7 +54,7 @@
 					"publishedAt": {
 						"description": "When this record was marked ready for public viewing.",
 						"type": "string",
-						"format":"datetime"
+						"format": "datetime"
 					},
 					"releases": {
 						"type": "array",
