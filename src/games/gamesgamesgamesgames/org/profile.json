@@ -1,0 +1,36 @@
+{
+	"lexicon": 1,
+	"id": "games.gamesgamesgamesgames.org.profile",
+	"defs": {
+		"main": {
+			"type": "record",
+			"description": "A declaration of a Pentaract org profile.",
+			"key": "literal:self",
+			"record": {
+				"type": "object",
+				"properties": {
+					"displayName": {
+						"type": "string",
+						"maxLength": 640
+					},
+					"description": {
+						"type": "string",
+						"description": "Free-form profile description text.",
+						"maxLength": 3000
+					},
+					"websites": {
+						"type": "array",
+						"items": { "type": "string", "format": "uri" }
+					},
+					"avatar": {
+						"type": "blob",
+						"description": "Image to be displayed on profile page. AKA, 'profile picture'",
+						"accept": ["image/png", "image/jpeg"],
+						"maxSize": 10000000
+					},
+					"createdAt": { "type": "string", "format": "datetime" }
+				}
+			}
+		}
+	}
+}
