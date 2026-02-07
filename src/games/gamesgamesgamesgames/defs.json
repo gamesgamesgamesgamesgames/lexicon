@@ -3,41 +3,6 @@
 	"lexicon": 1,
 	"id": "games.gamesgamesgamesgames.defs",
 	"defs": {
-		"gameDetailView": {
-			"type": "object",
-			"properties": {
-				"mode": {
-					"type": "array",
-					"items": {
-						"type": "ref",
-						"ref": "games.gamesgamesgamesgames.defs#mode"
-					}
-				},
-				"name": { "type": "string" },
-				"summary": { "type": "string" },
-				"applicationType": {
-					"type": "ref",
-					"ref": "games.gamesgamesgamesgames.defs#applicationType"
-				},
-				"uri": {
-					"type": "string",
-					"format": "at-uri"
-				}
-			}
-		},
-
-		"gameSummaryView": {
-			"type": "object",
-			"properties": {
-				"name": { "type": "string" },
-				"summary": { "type": "string" },
-				"uri": {
-					"type": "string",
-					"format": "at-uri"
-				}
-			}
-		},
-
 		"applicationType": {
 			"type": "string",
 			"enum": [
@@ -81,7 +46,7 @@
 				"blob": {
 					"type": "blob",
 					"accept": ["image/*", "video/*"],
-					"maxSize": 500000
+					"maxSize": 200000000
 				},
 				"description": { "type": "string" },
 				"height": { "type": "integer" },
@@ -237,7 +202,7 @@
 						"earlyAccess",
 						"nextGenOptimizationRelease",
 						"offline",
-            "release"
+						"release"
 					]
 				}
 			}

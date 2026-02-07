@@ -6,7 +6,7 @@
 		"main": {
 			"description": "A video game.",
 			"type": "record",
-			"key": "tid",
+			"key": "any",
 			"record": {
 				"type": "object",
 				"properties": {
