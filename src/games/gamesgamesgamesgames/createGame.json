@@ -1,0 +1,53 @@
+{
+	"$type": "com.atproto.lexicon.schema",
+	"lexicon": 1,
+	"id": "games.gamesgamesgamesgames.createGame",
+	"defs": {
+		"main": {
+			"type": "procedure",
+			"description": "Create a new game record in the authenticated user's repository.",
+			"input": {
+				"encoding": "application/json",
+				"schema": {
+					"type": "object",
+					"required": ["name"],
+					"properties": {
+						"name": { "type": "string" },
+						"summary": { "type": "string" },
+						"applicationType": { "type": "ref", "ref": "games.gamesgamesgamesgames.defs#applicationType" },
+						"genres": { "type": "array", "items": { "type": "ref", "ref": "games.gamesgamesgamesgames.defs#genre" } },
+						"modes": { "type": "array", "items": { "type": "ref", "ref": "games.gamesgamesgamesgames.defs#mode" } },
+						"themes": { "type": "array", "items": { "type": "ref", "ref": "games.gamesgamesgamesgames.defs#theme" } },
+						"playerPerspectives": { "type": "array", "items": { "type": "ref", "ref": "games.gamesgamesgamesgames.defs#playerPerspective" } },
+						"releases": { "type": "array", "items": { "type": "ref", "ref": "games.gamesgamesgamesgames.defs#release" } },
+						"media": { "type": "array", "items": { "type": "ref", "ref": "games.gamesgamesgamesgames.defs#mediaItem" } },
+						"parent": { "type": "string", "format": "at-uri" },
+						"shouldPublish": { "type": "boolean" },
+						"storyline": { "type": "string" },
+						"keywords": { "type": "array", "items": { "type": "string" } },
+						"websites": { "type": "array", "items": { "type": "ref", "ref": "games.gamesgamesgamesgames.defs#website" } },
+						"videos": { "type": "array", "items": { "type": "ref", "ref": "games.gamesgamesgamesgames.defs#externalVideo" } },
+						"alternativeNames": { "type": "array", "items": { "type": "ref", "ref": "games.gamesgamesgamesgames.defs#alternativeName" } },
+						"timeToBeat": { "type": "ref", "ref": "games.gamesgamesgamesgames.defs#timeToBeat" },
+						"ageRatings": { "type": "array", "items": { "type": "ref", "ref": "games.gamesgamesgamesgames.defs#ageRating" } },
+						"languageSupports": { "type": "array", "items": { "type": "ref", "ref": "games.gamesgamesgamesgames.defs#languageSupport" } },
+						"multiplayerModes": { "type": "array", "items": { "type": "ref", "ref": "games.gamesgamesgamesgames.defs#multiplayerMode" } },
+						"collections": { "type": "array", "items": { "type": "string", "format": "at-uri" } },
+						"engines": { "type": "array", "items": { "type": "string", "format": "at-uri" } }
+					}
+				}
+			},
+			"output": {
+				"encoding": "application/json",
+				"schema": {
+					"type": "object",
+					"required": ["uri", "cid"],
+					"properties": {
+						"uri": { "type": "string", "format": "at-uri" },
+						"cid": { "type": "string" }
+					}
+				}
+			}
+		}
+	}
+}

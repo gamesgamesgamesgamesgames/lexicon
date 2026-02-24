@@ -1,0 +1,39 @@
+{
+	"lexicon": 1,
+	"id": "games.gamesgamesgamesgames.org.credit",
+	"defs": {
+		"main": {
+			"type": "record",
+			"description": "A relationship between a game and an organization.",
+			"key": "tid",
+			"record": {
+				"type": "object",
+				"required": ["org", "game", "roles"],
+				"properties": {
+					"org": {
+						"type": "ref",
+						"ref": "com.atproto.repo.strongRef"
+					},
+					"displayName": {
+						"description": "The name to be used if there is no profile associated with this credit, or the profile is inaccessible.",
+						"type": "string",
+						"maxLength": 640
+					},
+					"game": {
+						"description": "The game to which this organization is being credited.",
+						"type": "ref",
+						"ref": "com.atproto.repo.strongRef"
+					},
+					"roles": {
+						"type": "array",
+						"items": {
+							"type": "ref",
+							"ref": "games.gamesgamesgamesgames.defs#companyRole"
+						}
+					},
+					"createdAt": { "type": "string", "format": "datetime" }
+				}
+			}
+		}
+	}
+}

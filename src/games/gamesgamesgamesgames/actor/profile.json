@@ -25,7 +25,10 @@
 					},
 					"websites": {
 						"type": "array",
-						"items": { "type": "string", "format": "uri" }
+						"items": {
+							"type": "ref",
+							"ref": "games.gamesgamesgamesgames.defs#website"
+						}
 					},
 					"avatar": {
 						"type": "blob",

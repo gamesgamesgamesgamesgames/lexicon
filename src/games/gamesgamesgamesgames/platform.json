@@ -1,0 +1,52 @@
+{
+	"$type": "com.atproto.lexicon.schema",
+	"lexicon": 1,
+	"id": "games.gamesgamesgamesgames.platform",
+	"defs": {
+		"main": {
+			"description": "A platform for playing video games.",
+			"type": "record",
+			"key": "tid",
+			"record": {
+				"type": "object",
+				"properties": {
+					"abbreviation": { "type": "string" },
+					"alternativeName": { "type": "string" },
+					"category": {
+						"type": "ref",
+						"ref": "games.gamesgamesgamesgames.defs#platformCategory"
+					},
+					"description": { "type": "string" },
+					"generation": { "type": "integer" },
+					"name": { "type": "string" },
+					"createdAt": { "type": "string", "format": "datetime" },
+					"media": {
+						"type": "array",
+						"items": {
+							"type": "ref",
+							"ref": "games.gamesgamesgamesgames.defs#mediaItem"
+						}
+					},
+					"versions": {
+						"type": "array",
+						"items": {
+							"type": "ref",
+							"ref": "games.gamesgamesgamesgames.defs#platformVersion"
+						}
+					},
+					"websites": {
+						"type": "array",
+						"items": {
+							"type": "ref",
+							"ref": "games.gamesgamesgamesgames.defs#website"
+						}
+					},
+					"family": {
+						"type": "string",
+						"format": "at-uri"
+					}
+				}
+			}
+		}
+	}
+}

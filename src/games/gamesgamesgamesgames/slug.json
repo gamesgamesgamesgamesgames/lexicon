@@ -1,0 +1,27 @@
+{
+	"lexicon": 1,
+	"id": "games.gamesgamesgamesgames.slug",
+	"defs": {
+		"main": {
+			"type": "record",
+			"description": "A human-readable/writable slug pointing to a separate record by the slug's creator.",
+			"key": "any",
+			"record": {
+				"type": "object",
+				"properties": {
+					"type": {
+						"type": "string",
+						"description": "The type of the record this slug points to.",
+						"format": "nsid"
+					},
+					"key": {
+						"type": "string",
+						"description": "The key of the record this slug points to.",
+						"format": "record-key"
+					}
+				},
+				"required": ["type", "key"]
+			}
+		}
+	}
+}

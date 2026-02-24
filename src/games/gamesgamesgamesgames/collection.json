@@ -1,0 +1,42 @@
+{
+	"lexicon": 1,
+	"id": "games.gamesgamesgamesgames.collection",
+	"defs": {
+		"main": {
+			"type": "record",
+			"description": "A grouping of games — franchise, series, or curated list.",
+			"key": "tid",
+			"record": {
+				"type": "object",
+				"required": ["name"],
+				"properties": {
+					"name": { "type": "string" },
+					"parent": {
+						"type": "string",
+						"format": "at-uri"
+					},
+					"type": {
+						"type": "string",
+						"knownValues": ["franchise", "series", "curated"]
+					},
+					"description": { "type": "string" },
+					"media": {
+						"type": "array",
+						"items": {
+							"type": "ref",
+							"ref": "games.gamesgamesgamesgames.defs#mediaItem"
+						}
+					},
+					"websites": {
+						"type": "array",
+						"items": {
+							"type": "ref",
+							"ref": "games.gamesgamesgamesgames.defs#website"
+						}
+					},
+					"createdAt": { "type": "string", "format": "datetime" }
+				}
+			}
+		}
+	}
+}

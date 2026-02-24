@@ -18,9 +18,42 @@
 						"description": "Free-form profile description text.",
 						"maxLength": 3000
 					},
+					"country": { "type": "string" },
+					"status": {
+						"type": "string",
+						"knownValues": ["active", "inactive", "merged", "acquired", "defunct"]
+					},
+					"parent": {
+						"type": "string",
+						"format": "at-uri"
+					},
+					"foundedAt": { "type": "string" },
+					"foundedAtFormat": {
+						"type": "string",
+						"enum": [
+							"YYYY-MM-DD",
+							"YYYY-MM",
+							"YYYY-Q1",
+							"YYYY-Q2",
+							"YYYY-Q3",
+							"YYYY-Q4",
+							"YYYY",
+							"TBD"
+						]
+					},
 					"websites": {
 						"type": "array",
-						"items": { "type": "string", "format": "uri" }
+						"items": {
+							"type": "ref",
+							"ref": "games.gamesgamesgamesgames.defs#website"
+						}
+					},
+					"media": {
+						"type": "array",
+						"items": {
+							"type": "ref",
+							"ref": "games.gamesgamesgamesgames.defs#mediaItem"
+						}
 					},
 					"avatar": {
 						"type": "blob",
