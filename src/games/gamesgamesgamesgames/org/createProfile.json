@@ -38,6 +38,11 @@
 							"type": "string",
 							"format": "datetime"
 						},
+						"slug": {
+							"type": "string",
+							"description": "URL-friendly identifier for the profile.",
+							"maxLength": 640
+						},
 						"websites": {
 							"type": "array",
 							"items": {
