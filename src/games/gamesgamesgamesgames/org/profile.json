@@ -21,25 +21,21 @@
 					"country": { "type": "string" },
 					"status": {
 						"type": "string",
-						"knownValues": ["active", "inactive", "merged", "acquired", "defunct"]
+						"knownValues": [
+							"active",
+							"inactive",
+							"merged",
+							"acquired",
+							"defunct"
+						]
 					},
 					"parent": {
 						"type": "string",
 						"format": "at-uri"
 					},
-					"foundedAt": { "type": "string" },
-					"foundedAtFormat": {
+					"foundedAt": {
 						"type": "string",
-						"enum": [
-							"YYYY-MM-DD",
-							"YYYY-MM",
-							"YYYY-Q1",
-							"YYYY-Q2",
-							"YYYY-Q3",
-							"YYYY-Q4",
-							"YYYY",
-							"TBD"
-						]
+						"format": "datetime"
 					},
 					"websites": {
 						"type": "array",
