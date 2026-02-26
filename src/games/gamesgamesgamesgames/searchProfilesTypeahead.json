@@ -1,0 +1,44 @@
+{
+	"$type": "com.atproto.lexicon.schema",
+	"lexicon": 1,
+	"id": "games.gamesgamesgamesgames.searchProfilesTypeahead",
+	"defs": {
+		"main": {
+			"type": "query",
+			"description": "Search for actor and org profiles by display name. Intended for typeahead/autocomplete.",
+			"parameters": {
+				"type": "params",
+				"required": ["q"],
+				"properties": {
+					"q": {
+						"type": "string",
+						"minLength": 1,
+						"maxLength": 100
+					},
+					"limit": {
+						"type": "integer",
+						"minimum": 1,
+						"maximum": 25,
+						"default": 10
+					}
+				}
+			},
+			"output": {
+				"encoding": "application/json",
+				"schema": {
+					"type": "object",
+					"required": ["profiles"],
+					"properties": {
+						"profiles": {
+							"type": "array",
+							"items": {
+								"type": "ref",
+								"ref": "games.gamesgamesgamesgames.defs#profileSummaryView"
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}

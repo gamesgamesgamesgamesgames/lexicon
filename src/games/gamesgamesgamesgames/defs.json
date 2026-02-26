@@ -403,6 +403,19 @@
 			}
 		},
 
+		"profileSummaryView": {
+			"type": "object",
+			"required": ["uri", "did", "profileType"],
+			"properties": {
+				"uri": { "type": "string", "format": "at-uri" },
+				"did": { "type": "string", "format": "did" },
+				"profileType": { "type": "string", "knownValues": ["actor", "org"] },
+				"displayName": { "type": "string", "maxLength": 640 },
+				"slug": { "type": "string" },
+				"avatar": { "type": "blob", "accept": ["image/png", "image/jpeg"], "maxSize": 10000000 }
+			}
+		},
+
 		"actorProfileDetailView": {
 			"type": "object",
 			"required": ["uri", "did"],
