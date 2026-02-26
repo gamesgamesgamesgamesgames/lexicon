@@ -403,6 +403,136 @@
 			}
 		},
 
+		"actorProfileDetailView": {
+			"type": "object",
+			"required": ["uri", "did"],
+			"properties": {
+				"uri": { "type": "string", "format": "at-uri" },
+				"did": { "type": "string", "format": "did" },
+				"displayName": {
+					"type": "string",
+					"maxLength": 640
+				},
+				"description": {
+					"type": "string",
+					"maxLength": 3000
+				},
+				"pronouns": {
+					"type": "string",
+					"maxLength": 200
+				},
+				"slug": { "type": "string" },
+				"websites": {
+					"type": "array",
+					"items": {
+						"type": "ref",
+						"ref": "games.gamesgamesgamesgames.defs#website"
+					}
+				},
+				"avatar": {
+					"type": "blob",
+					"accept": ["image/png", "image/jpeg"],
+					"maxSize": 10000000
+				},
+				"createdAt": { "type": "string", "format": "datetime" }
+			}
+		},
+
+		"actorProfileSummaryView": {
+			"type": "object",
+			"required": ["uri", "did"],
+			"properties": {
+				"uri": { "type": "string", "format": "at-uri" },
+				"did": { "type": "string", "format": "did" },
+				"displayName": {
+					"type": "string",
+					"maxLength": 640
+				},
+				"slug": { "type": "string" },
+				"avatar": {
+					"type": "blob",
+					"accept": ["image/png", "image/jpeg"],
+					"maxSize": 10000000
+				}
+			}
+		},
+
+		"orgProfileDetailView": {
+			"type": "object",
+			"required": ["uri", "did"],
+			"properties": {
+				"uri": { "type": "string", "format": "at-uri" },
+				"did": { "type": "string", "format": "did" },
+				"displayName": {
+					"type": "string",
+					"maxLength": 640
+				},
+				"description": {
+					"type": "string",
+					"maxLength": 3000
+				},
+				"country": { "type": "string" },
+				"status": {
+					"type": "string",
+					"knownValues": [
+						"active",
+						"inactive",
+						"merged",
+						"acquired",
+						"defunct"
+					]
+				},
+				"parent": {
+					"type": "string",
+					"format": "at-uri"
+				},
+				"foundedAt": {
+					"type": "string",
+					"format": "datetime"
+				},
+				"slug": { "type": "string" },
+				"websites": {
+					"type": "array",
+					"items": {
+						"type": "ref",
+						"ref": "games.gamesgamesgamesgames.defs#website"
+					}
+				},
+				"media": {
+					"type": "array",
+					"items": {
+						"type": "ref",
+						"ref": "games.gamesgamesgamesgames.defs#mediaItem"
+					}
+				},
+				"avatar": {
+					"type": "blob",
+					"accept": ["image/png", "image/jpeg"],
+					"maxSize": 10000000
+				},
+				"createdAt": { "type": "string", "format": "datetime" }
+			}
+		},
+
+		"orgProfileSummaryView": {
+			"type": "object",
+			"required": ["uri", "did"],
+			"properties": {
+				"uri": { "type": "string", "format": "at-uri" },
+				"did": { "type": "string", "format": "did" },
+				"displayName": {
+					"type": "string",
+					"maxLength": 640
+				},
+				"slug": { "type": "string" },
+				"avatar": {
+					"type": "blob",
+					"accept": ["image/png", "image/jpeg"],
+					"maxSize": 10000000
+				}
+			}
+		},
+
 		"release": {
 			"type": "object",
 			"properties": {

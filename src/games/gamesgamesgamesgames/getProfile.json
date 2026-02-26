@@ -14,8 +14,8 @@
 						"profile": {
 							"type": "union",
 							"refs": [
-								"games.gamesgamesgamesgames.actor.profile",
-								"games.gamesgamesgamesgames.org.profile"
+								"games.gamesgamesgamesgames.defs#actorProfileDetailView",
+								"games.gamesgamesgamesgames.defs#orgProfileDetailView"
 							]
 						},
 						"profileType": {

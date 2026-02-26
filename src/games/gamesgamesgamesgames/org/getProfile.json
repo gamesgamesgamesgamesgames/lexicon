@@ -13,7 +13,7 @@
 					"properties": {
 						"profile": {
 							"type": "ref",
-							"ref": "games.gamesgamesgamesgames.org.profile"
+							"ref": "games.gamesgamesgamesgames.defs#orgProfileDetailView"
 						}
 					}
 				}
