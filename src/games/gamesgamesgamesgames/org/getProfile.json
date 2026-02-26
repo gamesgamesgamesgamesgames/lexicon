@@ -1,0 +1,23 @@
+{
+	"$type": "com.atproto.lexicon.schema",
+	"lexicon": 1,
+	"id": "games.gamesgamesgamesgames.org.getProfile",
+	"defs": {
+		"main": {
+			"type": "query",
+			"description": "Get the authenticated user's organization profile.",
+			"output": {
+				"encoding": "application/json",
+				"schema": {
+					"type": "object",
+					"properties": {
+						"profile": {
+							"type": "ref",
+							"ref": "games.gamesgamesgamesgames.org.profile"
+						}
+					}
+				}
+			}
+		}
+	}
+}

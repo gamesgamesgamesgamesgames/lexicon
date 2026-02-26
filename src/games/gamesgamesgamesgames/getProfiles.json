@@ -1,0 +1,27 @@
+{
+	"$type": "com.atproto.lexicon.schema",
+	"lexicon": 1,
+	"id": "games.gamesgamesgamesgames.getProfiles",
+	"defs": {
+		"main": {
+			"type": "query",
+			"description": "Get both actor and org profiles for the authenticated user.",
+			"output": {
+				"encoding": "application/json",
+				"schema": {
+					"type": "object",
+					"properties": {
+						"actor": {
+							"type": "ref",
+							"ref": "games.gamesgamesgamesgames.actor.profile"
+						},
+						"org": {
+							"type": "ref",
+							"ref": "games.gamesgamesgamesgames.org.profile"
+						}
+					}
+				}
+			}
+		}
+	}
+}

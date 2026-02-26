@@ -1,0 +1,23 @@
+{
+	"$type": "com.atproto.lexicon.schema",
+	"lexicon": 1,
+	"id": "games.gamesgamesgamesgames.actor.getProfile",
+	"defs": {
+		"main": {
+			"type": "query",
+			"description": "Get the authenticated user's actor profile.",
+			"output": {
+				"encoding": "application/json",
+				"schema": {
+					"type": "object",
+					"properties": {
+						"profile": {
+							"type": "ref",
+							"ref": "games.gamesgamesgamesgames.actor.profile"
+						}
+					}
+				}
+			}
+		}
+	}
+}

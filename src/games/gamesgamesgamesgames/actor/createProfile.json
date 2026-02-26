@@ -1,0 +1,55 @@
+{
+	"$type": "com.atproto.lexicon.schema",
+	"lexicon": 1,
+	"id": "games.gamesgamesgamesgames.actor.createProfile",
+	"defs": {
+		"main": {
+			"type": "procedure",
+			"description": "Create the authenticated user's actor profile.",
+			"input": {
+				"encoding": "application/json",
+				"schema": {
+					"type": "object",
+					"properties": {
+						"displayName": {
+							"type": "string",
+							"maxLength": 640
+						},
+						"description": {
+							"type": "string",
+							"maxLength": 3000
+						},
+						"pronouns": {
+							"type": "string",
+							"maxLength": 200
+						},
+						"websites": {
+							"type": "array",
+							"items": {
+								"type": "ref",
+								"ref": "games.gamesgamesgamesgames.defs#website"
+							}
+						},
+						"avatar": {
+							"type": "blob",
+							"accept": ["image/png", "image/jpeg"],
+							"maxSize": 10000000
+						},
+						"createdAt": { "type": "string", "format": "datetime" }
+					}
+				}
+			},
+			"output": {
+				"encoding": "application/json",
+				"schema": {
+					"type": "object",
+					"required": ["uri", "cid"],
+					"properties": {
+						"uri": { "type": "string", "format": "at-uri" },
+						"cid": { "type": "string" }
+					}
+				}
+			}
+		}
+	}
+}
