@@ -1,0 +1,30 @@
+{
+	"$type": "com.atproto.lexicon.schema",
+	"lexicon": 1,
+	"id": "games.gamesgamesgamesgames.getProfile",
+	"defs": {
+		"main": {
+			"type": "query",
+			"description": "Get the authenticated user's Pentaract profile.",
+			"output": {
+				"encoding": "application/json",
+				"schema": {
+					"type": "object",
+					"properties": {
+						"profile": {
+							"type": "union",
+							"refs": [
+								"games.gamesgamesgamesgames.actor.profile",
+								"games.gamesgamesgamesgames.org.profile"
+							]
+						},
+						"profileType": {
+							"type": "string",
+							"knownValues": ["actor", "org"]
+						}
+					}
+				}
+			}
+		}
+	}
+}
