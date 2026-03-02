@@ -9,6 +9,7 @@
 			"key": "tid",
 			"record": {
 				"type": "object",
+				"required": ["name", "createdAt"],
 				"properties": {
 					"abbreviation": { "type": "string" },
 					"alternativeName": { "type": "string" },
