@@ -9,6 +9,7 @@
 			"key": "any",
 			"record": {
 				"type": "object",
+				"required": ["name", "createdAt", "applicationType"],
 				"properties": {
 					"applicationType": {
 						"type": "ref",
