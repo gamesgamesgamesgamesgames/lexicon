@@ -554,6 +554,42 @@
 			}
 		},
 
+		"platformSummaryView": {
+			"type": "object",
+			"required": ["uri", "name"],
+			"properties": {
+				"uri": { "type": "string", "format": "at-uri" },
+				"name": { "type": "string" },
+				"abbreviation": { "type": "string" },
+				"category": {
+					"type": "ref",
+					"ref": "games.gamesgamesgamesgames.defs#platformCategory"
+				}
+			}
+		},
+
+		"collectionSummaryView": {
+			"type": "object",
+			"required": ["uri", "name"],
+			"properties": {
+				"uri": { "type": "string", "format": "at-uri" },
+				"name": { "type": "string" },
+				"type": {
+					"type": "string",
+					"knownValues": ["franchise", "series", "curated"]
+				}
+			}
+		},
+
+		"engineSummaryView": {
+			"type": "object",
+			"required": ["uri", "name"],
+			"properties": {
+				"uri": { "type": "string", "format": "at-uri" },
+				"name": { "type": "string" }
+			}
+		},
+
 		"release": {
 			"type": "object",
 			"properties": {
