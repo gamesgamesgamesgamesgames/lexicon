@@ -21,6 +21,17 @@
 						"minimum": 1,
 						"maximum": 100,
 						"default": 20
+					},
+					"sort": {
+						"type": "string",
+						"description": "Field to sort by (e.g. name, createdAt, indexed_at).",
+						"default": "indexed_at"
+					},
+					"sortDirection": {
+						"type": "string",
+						"description": "Sort direction.",
+						"enum": ["asc", "desc"],
+						"default": "desc"
 					}
 				}
 			},
