@@ -33,14 +33,8 @@ while IFS= read -r json_file; do
   nsid=$(jq -r '.id // empty' "$json_file")
   lexicon_type=$(jq -r '.defs.main.type // empty' "$json_file")
 
-  if [[ -z "$nsid" || -z "$lexicon_type" ]]; then
-    echo "SKIP: $json_file (missing id or defs.main.type)"
-    continue
-  fi
-
-  # Skip defs-only files (no main type)
-  if [[ "$lexicon_type" == "null" || "$lexicon_type" == "" ]]; then
-    echo "SKIP: $nsid (defs-only)"
+  if [[ -z "$nsid" ]]; then
+    echo "SKIP: $json_file (missing id)"
     continue
   fi
 
@@ -48,10 +42,10 @@ while IFS= read -r json_file; do
   rel_path="${json_file#$LEXICONS_DIR/}"
   lua_file="$LUA_DIR/${rel_path%.json}.lua"
 
-  # Read the Lua script if it exists
+  # Read the Lua script if it exists (only for lexicons with a main type)
   script=""
   index_hook=""
-  if [[ -f "$lua_file" ]]; then
+  if [[ -n "$lexicon_type" && -f "$lua_file" ]]; then
     case "$lexicon_type" in
       query|procedure)
         script=$(cat "$lua_file")
@@ -95,10 +89,10 @@ while IFS= read -r json_file; do
     "$HAPPYVIEW_URL/admin/lexicons")
 
   if [[ "$http_code" -ge 200 && "$http_code" -lt 300 ]]; then
-    echo "OK: $nsid ($lexicon_type) → HTTP $http_code"
+    echo "OK: $nsid (${lexicon_type:-defs}) → HTTP $http_code"
     deployed=$((deployed + 1))
   else
-    echo "FAIL: $nsid ($lexicon_type) → HTTP $http_code" >&2
+    echo "FAIL: $nsid (${lexicon_type:-defs}) → HTTP $http_code" >&2
     errors=$((errors + 1))
   fi
 
