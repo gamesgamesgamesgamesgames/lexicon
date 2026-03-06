@@ -33,7 +33,12 @@
 						"languageSupports": { "type": "array", "items": { "type": "ref", "ref": "games.gamesgamesgamesgames.defs#languageSupport" } },
 						"multiplayerModes": { "type": "array", "items": { "type": "ref", "ref": "games.gamesgamesgamesgames.defs#multiplayerMode" } },
 						"collections": { "type": "array", "items": { "type": "string", "format": "at-uri" } },
-						"engines": { "type": "array", "items": { "type": "string", "format": "at-uri" } }
+						"engines": { "type": "array", "items": { "type": "string", "format": "at-uri" } },
+						"slug": {
+							"type": "string",
+							"description": "URL-friendly identifier for the game.",
+							"maxLength": 640
+						}
 					}
 				}
 			},

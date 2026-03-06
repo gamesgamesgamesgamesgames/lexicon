@@ -9,18 +9,19 @@
 			"record": {
 				"type": "object",
 				"properties": {
-					"type": {
+					"slug": {
 						"type": "string",
-						"description": "The type of the record this slug points to.",
-						"format": "nsid"
+						"description": "The human-readable slug value used in URLs.",
+						"minLength": 1,
+						"maxLength": 64
 					},
-					"key": {
+					"ref": {
 						"type": "string",
-						"description": "The key of the record this slug points to.",
-						"format": "record-key"
+						"description": "AT URI of the record this slug points to.",
+						"format": "at-uri"
 					}
 				},
-				"required": ["type", "key"]
+				"required": ["slug", "ref"]
 			}
 		}
 	}

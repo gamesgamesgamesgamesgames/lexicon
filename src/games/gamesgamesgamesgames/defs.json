@@ -382,7 +382,8 @@
 				"engines": {
 					"type": "array",
 					"items": { "type": "string", "format": "at-uri" }
-				}
+				},
+				"slug": { "type": "string" }
 			}
 		},
 
@@ -399,7 +400,8 @@
 						"type": "ref",
 						"ref": "games.gamesgamesgamesgames.defs#mediaItem"
 					}
-				}
+				},
+				"slug": { "type": "string" }
 			}
 		},
 
@@ -564,7 +566,8 @@
 				"category": {
 					"type": "ref",
 					"ref": "games.gamesgamesgamesgames.defs#platformCategory"
-				}
+				},
+				"slug": { "type": "string" }
 			}
 		},
 
@@ -577,7 +580,8 @@
 				"type": {
 					"type": "string",
 					"knownValues": ["franchise", "series", "curated"]
-				}
+				},
+				"slug": { "type": "string" }
 			}
 		},
 
@@ -586,7 +590,8 @@
 			"required": ["uri", "name"],
 			"properties": {
 				"uri": { "type": "string", "format": "at-uri" },
-				"name": { "type": "string" }
+				"name": { "type": "string" },
+				"slug": { "type": "string" }
 			}
 		},
 
@@ -594,7 +599,13 @@
 			"type": "object",
 			"properties": {
 				"platform": {
-					"type": "string"
+					"type": "string",
+					"description": "Free-text platform name, used when no platform record exists."
+				},
+				"platformUri": {
+					"type": "string",
+					"format": "at-uri",
+					"description": "AT URI of a platform record."
 				},
 				"releaseDates": {
 					"type": "array",
