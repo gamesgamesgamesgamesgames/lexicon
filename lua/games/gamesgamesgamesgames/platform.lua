@@ -1,23 +1,18 @@
 local HEADERS = {
-  ["X-Algolia-Application-Id"] = env.ALGOLIA_APP_ID,
-  ["X-Algolia-API-Key"] = env.ALGOLIA_WRITE_KEY,
+  ["Authorization"] = "Bearer " .. env.MEILISEARCH_API_KEY,
   ["content-type"] = "application/json"
 }
 
-local function url_encode(s)
-  return (s:gsub("[^%w_%-%.~]", function(c)
-    return string.format("%%%02X", string.byte(c))
-  end))
-end
+local INDEX_URL = env.MEILISEARCH_URL .. "/indexes/records/documents"
 
 function handle()
   if action == "delete" then
-    http.delete(env.ALGOLIA_BASE_URL .. "/" .. url_encode(uri), { headers = HEADERS })
+    http.delete(INDEX_URL .. "/" .. uri, { headers = HEADERS })
     return
   end
 
-  local obj = {
-    objectID = uri,
+  local doc = {
+    id = uri,
     type = "platform",
     did = did,
     uri = uri,
@@ -28,8 +23,8 @@ function handle()
     category = record.category
   }
 
-  http.put(env.ALGOLIA_BASE_URL .. "/" .. url_encode(uri), {
+  http.post(INDEX_URL, {
     headers = HEADERS,
-    body = json.encode(obj)
+    body = json.encode(toarray({ doc }))
   })
 end
