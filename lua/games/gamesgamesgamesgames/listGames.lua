@@ -1,0 +1,41 @@
+function handle()
+  local limit = tonumber(params.limit) or 20
+  local cursor = tonumber(params.cursor) or 0
+
+  local query_opts = {
+    collection = "games.gamesgamesgamesgames.game",
+    limit = limit,
+    offset = cursor
+  }
+
+  if params.did then
+    query_opts.did = params.did
+  end
+
+  if params.sort then
+    query_opts.sort = params.sort
+  end
+  if params.sortDirection then
+    query_opts.sortDirection = params.sortDirection
+  end
+
+  local result = db.query(query_opts)
+
+  local games = {}
+  for _, record in ipairs(result.records or {}) do
+    table.insert(games, {
+      ["$type"] = "games.gamesgamesgamesgames.defs#gameSummaryView",
+      uri = record.uri,
+      name = record.name,
+      summary = record.summary,
+      media = record.media
+    })
+  end
+
+  local response = { games = toarray(games) }
+  if result.cursor then
+    response.cursor = result.cursor
+  end
+
+  return response
+end
