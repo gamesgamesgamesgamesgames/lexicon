@@ -207,6 +207,35 @@
 			]
 		},
 
+		"itchIoId": {
+			"type": "object",
+			"required": ["developer", "game"],
+			"properties": {
+				"developer": { "type": "string" },
+				"game": { "type": "string" }
+			}
+		},
+
+		"externalIds": {
+			"type": "object",
+			"properties": {
+				"igdb": { "type": "string" },
+				"steam": { "type": "string" },
+				"gog": { "type": "string" },
+				"epicGames": { "type": "string" },
+				"itchIo": {
+					"type": "ref",
+					"ref": "games.gamesgamesgamesgames.defs#itchIoId"
+				},
+				"humbleBundle": { "type": "string" },
+				"playStation": { "type": "string" },
+				"xbox": { "type": "string" },
+				"nintendoEshop": { "type": "string" },
+				"appleAppStore": { "type": "string" },
+				"googlePlay": { "type": "string" }
+			}
+		},
+
 		"externalVideo": {
 			"type": "object",
 			"required": ["videoId", "platform"],
@@ -382,6 +411,10 @@
 				"engines": {
 					"type": "array",
 					"items": { "type": "string", "format": "at-uri" }
+				},
+				"externalIds": {
+					"type": "ref",
+					"ref": "games.gamesgamesgamesgames.defs#externalIds"
 				},
 				"slug": { "type": "string" }
 			}

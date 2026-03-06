@@ -135,9 +135,9 @@
 						"type": "array",
 						"items": { "type": "string", "format": "at-uri" }
 					},
-					"igdbId": {
-						"description": "The IGDB ID for this game.",
-						"type": "integer"
+					"externalIds": {
+						"type": "ref",
+						"ref": "games.gamesgamesgamesgames.defs#externalIds"
 					}
 				}
 			}
