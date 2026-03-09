@@ -91,14 +91,30 @@ function handle()
   local types_set = parse_types(params.types)
   local sort_by = params.sort
 
-  -- Build Meilisearch filter from types param
-  local filter = nil
+  local app_types_set = parse_types(params.applicationTypes)
+
+  -- Build Meilisearch filter from types and applicationTypes params
+  local filter_parts = {}
+
   if types_set then
     local parts = {}
     for t, _ in pairs(types_set) do
       table.insert(parts, 'type = "' .. t .. '"')
     end
-    filter = table.concat(parts, " OR ")
+    table.insert(filter_parts, "(" .. table.concat(parts, " OR ") .. ")")
+  end
+
+  if app_types_set then
+    local parts = {}
+    for t, _ in pairs(app_types_set) do
+      table.insert(parts, 'applicationType = "' .. t .. '"')
+    end
+    table.insert(filter_parts, "(" .. table.concat(parts, " OR ") .. ")")
+  end
+
+  local filter = nil
+  if #filter_parts > 0 then
+    filter = table.concat(filter_parts, " AND ")
   end
 
   -- Build sort array

@@ -34,6 +34,31 @@
 							]
 						}
 					},
+					"applicationTypes": {
+						"type": "array",
+						"description": "Filter game results by application type (e.g. game, dlc, bundle). Only applies when types includes game.",
+						"items": {
+							"type": "string",
+							"knownValues": [
+								"addon",
+								"bundle",
+								"dlc",
+								"episode",
+								"expandedGame",
+								"expansion",
+								"fork",
+								"game",
+								"mod",
+								"pack",
+								"port",
+								"remake",
+								"remaster",
+								"season",
+								"standaloneExpansion",
+								"update"
+							]
+						}
+					},
 					"cursor": {
 						"type": "string"
 					}
