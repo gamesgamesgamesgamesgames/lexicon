@@ -63,7 +63,7 @@ jobs:
         with:
           lexicon-path: ./lexicons
           username: ${{ vars.USERNAME }}
-          password: ${{ secrets.APP_PASSWORD }}
+          password: ${{ secrets.PASSWORD }}
           update: "true"
 
   deploy:
