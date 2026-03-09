@@ -12,6 +12,9 @@
 					"uri": {
 						"type": "string",
 						"format": "at-uri"
+					},
+					"slug": {
+						"type": "string"
 					}
 				}
 			},

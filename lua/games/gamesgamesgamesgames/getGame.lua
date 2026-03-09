@@ -1,17 +1,10 @@
 function find_slug(target_uri)
-  local did = string.match(target_uri, "at://([^/]+)/")
-  if not did then return nil end
-  local results = db.query({
-    collection = "games.gamesgamesgamesgames.slug",
-    did = did,
-    limit = 50
-  })
-  if results.records then
-    for _, record in ipairs(results.records) do
-      if record.ref == target_uri then
-        return record.slug
-      end
-    end
+  local rows = db.raw(
+    "SELECT record FROM records WHERE collection = $1 AND record->>'ref' = $2 LIMIT 1",
+    {"games.gamesgamesgamesgames.slug", target_uri}
+  )
+  if rows and #rows > 0 and rows[1].record then
+    return rows[1].record.slug
   end
   return nil
 end
@@ -31,8 +24,27 @@ function resolve_release_platforms(releases)
   return releases
 end
 
+function resolve_slug(slug)
+  local rows = db.raw(
+    "SELECT uri, did, record FROM records WHERE collection = $1 AND rkey = $2 LIMIT 1",
+    {"games.gamesgamesgamesgames.slug", slug}
+  )
+  if rows and #rows > 0 and rows[1].record and rows[1].record.ref then
+    return rows[1].record.ref
+  end
+  return nil
+end
+
 function handle()
   local uri = params.uri
+
+  if params.slug and params.slug ~= "" then
+    uri = resolve_slug(params.slug)
+    if not uri then
+      return { game = nil }
+    end
+  end
+
   local record = db.get(uri)
 
   if not record then
