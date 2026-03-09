@@ -1,0 +1,48 @@
+{
+	"$type": "com.atproto.lexicon.schema",
+	"lexicon": 1,
+	"id": "games.gamesgamesgamesgames.graph.toggleLike",
+	"defs": {
+		"main": {
+			"type": "procedure",
+			"description": "Toggle a like on a game. Creates a like record if none exists, deletes it if one does.",
+			"input": {
+				"encoding": "application/json",
+				"schema": {
+					"type": "object",
+					"required": ["subject"],
+					"properties": {
+						"subject": {
+							"type": "string",
+							"format": "at-uri",
+							"description": "AT URI of the game record to like/unlike."
+						}
+					}
+				}
+			},
+			"output": {
+				"encoding": "application/json",
+				"schema": {
+					"type": "object",
+					"required": ["action"],
+					"properties": {
+						"uri": {
+							"type": "string",
+							"format": "at-uri",
+							"description": "AT URI of the created like record. Present when action is 'liked'."
+						},
+						"cid": {
+							"type": "string",
+							"description": "CID of the created like record. Present when action is 'liked'."
+						},
+						"action": {
+							"type": "string",
+							"knownValues": ["liked", "unliked"],
+							"description": "Whether the game was liked or unliked."
+						}
+					}
+				}
+			}
+		}
+	}
+}
