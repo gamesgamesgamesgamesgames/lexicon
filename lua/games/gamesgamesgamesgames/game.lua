@@ -24,6 +24,51 @@ local function to_doc_id(s)
   return table.concat(out)
 end
 
+-- Parse a releasedAt string into a numeric YYYYMMDD value for sorting.
+-- Handles formats: "YYYY-MM-DD", "YYYY-MM", "YYYY-Q1".."YYYY-Q4", "YYYY".
+-- Returns nil for "TBD" or unparseable values.
+local Q_MONTH = { Q1 = 1, Q2 = 4, Q3 = 7, Q4 = 10 }
+local function parse_release_date(s)
+  if not s or s == "TBD" then return nil end
+
+  -- YYYY-Qn
+  local y, q = s:match("^(%d%d%d%d)%-?(Q%d)$")
+  if y and Q_MONTH[q] then
+    return tonumber(y) * 10000 + Q_MONTH[q] * 100 + 1
+  end
+
+  -- YYYY-MM-DD
+  local y2, m2, d2 = s:match("^(%d%d%d%d)%-(%d%d)%-(%d%d)")
+  if y2 then return tonumber(y2) * 10000 + tonumber(m2) * 100 + tonumber(d2) end
+
+  -- YYYY-MM
+  local y3, m3 = s:match("^(%d%d%d%d)%-(%d%d)$")
+  if y3 then return tonumber(y3) * 10000 + tonumber(m3) * 100 + 1 end
+
+  -- YYYY
+  local y4 = s:match("^(%d%d%d%d)$")
+  if y4 then return tonumber(y4) * 10000 + 101 end
+
+  return nil
+end
+
+-- Find the earliest release date across all platforms/regions.
+local function get_first_release_date(releases)
+  if not releases then return nil end
+  local earliest = nil
+  for _, rel in ipairs(releases) do
+    if rel.releaseDates then
+      for _, rd in ipairs(rel.releaseDates) do
+        local val = parse_release_date(rd.releasedAt)
+        if val and (not earliest or val < earliest) then
+          earliest = val
+        end
+      end
+    end
+  end
+  return earliest
+end
+
 function handle()
   if action == "delete" then
     http.delete(INDEX_URL .. "/" .. to_doc_id(uri), { headers = HEADERS })
@@ -57,6 +102,7 @@ function handle()
     multiplayerModes = record.multiplayerModes,
     applicationType = record.applicationType,
     publishedAt = record.publishedAt,
+    firstReleaseDate = get_first_release_date(record.releases),
     media = record.media
   }
 
