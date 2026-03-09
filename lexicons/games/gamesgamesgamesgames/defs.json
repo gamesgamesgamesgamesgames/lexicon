@@ -292,7 +292,7 @@
 				"url": { "type": "string", "format": "uri" },
 				"type": {
 					"type": "string",
-					"knownValues": ["official", "wiki", "steam", "gog", "epicGames", "itchIo", "twitter", "instagram", "youtube", "twitch", "discord", "reddit", "facebook", "wikipedia", "other"]
+					"knownValues": ["official", "wiki", "steam", "gog", "epicGames", "itchIo", "twitter", "instagram", "youtube", "twitch", "discord", "reddit", "facebook", "wikipedia", "bluesky", "xbox", "playstation", "nintendo", "meta", "other"]
 				}
 			}
 		},
