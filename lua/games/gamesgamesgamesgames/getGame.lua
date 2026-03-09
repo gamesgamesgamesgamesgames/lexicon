@@ -16,6 +16,21 @@ function find_slug(target_uri)
   return nil
 end
 
+function resolve_release_platforms(releases)
+  if not releases then return nil end
+
+  for _, release in ipairs(releases) do
+    if release.platformUri and not release.platform then
+      local platform_record = db.get(release.platformUri)
+      if platform_record then
+        release.platform = platform_record.name
+      end
+    end
+  end
+
+  return releases
+end
+
 function handle()
   local uri = params.uri
   local record = db.get(uri)
@@ -38,7 +53,7 @@ function handle()
     modes = record.modes,
     themes = record.themes,
     playerPerspectives = record.playerPerspectives,
-    releases = record.releases,
+    releases = resolve_release_platforms(record.releases),
     media = record.media,
     keywords = record.keywords,
     websites = record.websites,
