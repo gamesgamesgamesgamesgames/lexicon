@@ -1,15 +1,10 @@
 function find_slug_for(did, collection)
-  local slugs = db.query({
-    collection = "games.gamesgamesgamesgames.slug",
-    did = did,
-    limit = 50
-  })
-  if slugs.records then
-    for _, s in ipairs(slugs.records) do
-      if s.ref and string.find(s.ref, collection, 1, true) then
-        return s.slug
-      end
-    end
+  local rows = db.raw(
+    "SELECT record FROM records WHERE collection = $1 AND did = $2 AND record->>'ref' LIKE $3 LIMIT 1",
+    {"games.gamesgamesgamesgames.slug", did, "%" .. collection .. "%"}
+  )
+  if rows and #rows > 0 and rows[1].record then
+    return rows[1].record.slug
   end
   return nil
 end
