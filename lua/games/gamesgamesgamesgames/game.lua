@@ -72,7 +72,7 @@ end
 function handle()
   if action == "delete" then
     http.delete(INDEX_URL .. "/" .. to_doc_id(uri), { headers = HEADERS })
-    return
+    return true
   end
 
   -- Extract just the name strings from alternativeNames objects
@@ -110,4 +110,6 @@ function handle()
     headers = HEADERS,
     body = json.encode(toarray({ doc }))
   })
+
+  return record
 end
