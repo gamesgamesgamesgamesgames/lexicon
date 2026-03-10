@@ -138,6 +138,34 @@
 					"externalIds": {
 						"type": "ref",
 						"ref": "games.gamesgamesgamesgames.defs#externalIds"
+					},
+					"description": {
+						"type": "string",
+						"description": "Detailed game description in plain text, with formatting expressed via descriptionFacets."
+					},
+					"descriptionFacets": {
+						"type": "array",
+						"description": "Rich text facets for the description field.",
+						"items": {
+							"type": "ref",
+							"ref": "games.gamesgamesgamesgames.richtext.facet"
+						}
+					},
+					"systemRequirements": {
+						"type": "array",
+						"description": "System requirements per platform.",
+						"items": {
+							"type": "ref",
+							"ref": "games.gamesgamesgamesgames.defs#systemRequirements"
+						}
+					},
+					"platformFeatures": {
+						"type": "array",
+						"description": "Platform-specific feature support.",
+						"items": {
+							"type": "ref",
+							"ref": "games.gamesgamesgamesgames.defs#platformFeatures"
+						}
 					}
 				}
 			}

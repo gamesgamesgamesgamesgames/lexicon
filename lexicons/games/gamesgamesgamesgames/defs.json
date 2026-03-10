@@ -680,6 +680,83 @@
 			}
 		},
 
+		"systemSpec": {
+			"type": "object",
+			"description": "Hardware/software specification for a platform.",
+			"properties": {
+				"os": { "type": "string" },
+				"processor": { "type": "string" },
+				"memory": { "type": "string" },
+				"graphics": { "type": "string" },
+				"directx": { "type": "string" },
+				"storage": { "type": "string" },
+				"soundCard": { "type": "string" },
+				"additionalNotes": { "type": "string" }
+			}
+		},
+
+		"systemRequirements": {
+			"type": "object",
+			"description": "System requirements for a game on a specific platform.",
+			"required": ["platform"],
+			"properties": {
+				"platform": {
+					"type": "string",
+					"knownValues": ["windows", "mac", "linux"]
+				},
+				"minimum": { "type": "ref", "ref": "#systemSpec" },
+				"recommended": { "type": "ref", "ref": "#systemSpec" }
+			}
+		},
+
+		"platformFeatures": {
+			"type": "object",
+			"description": "Features supported by a game on a specific storefront/platform.",
+			"required": ["platform", "features"],
+			"properties": {
+				"platform": {
+					"type": "string",
+					"knownValues": ["steam", "gog", "epicGames", "playStation", "xbox", "nintendoEshop"]
+				},
+				"features": {
+					"type": "array",
+					"items": {
+						"type": "string",
+						"knownValues": [
+							"achievements",
+							"cloudSaves",
+							"controllerSupport",
+							"controllerSupportFull",
+							"coop",
+							"coopLan",
+							"coopOnline",
+							"crossPlatformMultiplayer",
+							"familySharing",
+							"inAppPurchases",
+							"leaderboards",
+							"levelEditor",
+							"moddingSupport",
+							"multiPlayer",
+							"multiPlayerLan",
+							"multiPlayerOnline",
+							"pvp",
+							"pvpLan",
+							"pvpOnline",
+							"remotePlayPhone",
+							"remotePlayTablet",
+							"remotePlayTV",
+							"remotePlayTogether",
+							"singlePlayer",
+							"steamTradingCards",
+							"steamWorkshop",
+							"trackingAndManagement",
+							"vrSupport"
+						]
+					}
+				}
+			}
+		},
+
 		"releaseDate": {
 			"type": "object",
 			"properties": {
