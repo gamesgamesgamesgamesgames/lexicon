@@ -1,14 +1,3 @@
-function find_slug_for(did, collection)
-  local rows = db.raw(
-    "SELECT record FROM records WHERE collection = $1 AND did = $2 AND record->>'ref' LIKE $3 LIMIT 1",
-    {"games.gamesgamesgamesgames.slug", did, "%" .. collection .. "%"}
-  )
-  if rows and #rows > 0 and rows[1].record then
-    return rows[1].record.slug
-  end
-  return nil
-end
-
 function handle()
   local q = params.q
   local limit = tonumber(params.limit) or 10
@@ -37,7 +26,6 @@ function handle()
       did = did,
       profileType = "actor",
       displayName = record.displayName,
-      slug = find_slug_for(did, "games.gamesgamesgamesgames.actor.profile"),
       avatar = record.avatar
     })
   end
@@ -49,7 +37,6 @@ function handle()
       did = did,
       profileType = "org",
       displayName = record.displayName,
-      slug = find_slug_for(did, "games.gamesgamesgamesgames.org.profile"),
       avatar = record.avatar
     })
   end

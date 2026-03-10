@@ -446,7 +446,6 @@
 				"did": { "type": "string", "format": "did" },
 				"profileType": { "type": "string", "knownValues": ["actor", "org"] },
 				"displayName": { "type": "string", "maxLength": 640 },
-				"slug": { "type": "string" },
 				"avatar": { "type": "blob", "accept": ["image/png", "image/jpeg"], "maxSize": 10000000 }
 			}
 		},
@@ -473,7 +472,6 @@
 					"type": "string",
 					"maxLength": 200
 				},
-				"slug": { "type": "string" },
 				"websites": {
 					"type": "array",
 					"items": {
@@ -500,7 +498,6 @@
 					"type": "string",
 					"maxLength": 640
 				},
-				"slug": { "type": "string" },
 				"avatar": {
 					"type": "blob",
 					"accept": ["image/png", "image/jpeg"],
@@ -546,7 +543,6 @@
 					"type": "string",
 					"format": "datetime"
 				},
-				"slug": { "type": "string" },
 				"websites": {
 					"type": "array",
 					"items": {
@@ -580,7 +576,6 @@
 					"type": "string",
 					"maxLength": 640
 				},
-				"slug": { "type": "string" },
 				"avatar": {
 					"type": "blob",
 					"accept": ["image/png", "image/jpeg"],

@@ -28,11 +28,6 @@
 							"type": "string",
 							"maxLength": 200
 						},
-						"slug": {
-							"type": "string",
-							"description": "URL-friendly identifier for the profile.",
-							"maxLength": 640
-						},
 						"websites": {
 							"type": "array",
 							"items": {
