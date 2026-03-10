@@ -26,6 +26,10 @@ HAPPYVIEW_URL="${HAPPYVIEW_URL%/}"
 
 errors=0
 deployed=0
+deleted=0
+
+# Collect the set of NSIDs present in the repo
+declare -A repo_nsids
 
 # Process each JSON file under lexicons/
 while IFS= read -r json_file; do
@@ -37,6 +41,8 @@ while IFS= read -r json_file; do
     echo "SKIP: $json_file (missing id)"
     continue
   fi
+
+  repo_nsids["$nsid"]=1
 
   # Compute the Lua file path using the same relative structure
   rel_path="${json_file#$LEXICONS_DIR/}"
@@ -98,8 +104,34 @@ while IFS= read -r json_file; do
 
 done < <(find "$LEXICONS_DIR" -name '*.json' -type f | sort)
 
+# ---------------------------------------------------------------------------
+# Remove lexicons from HappyView that no longer exist in the repo
+# ---------------------------------------------------------------------------
+
+remote_nsids=$(curl -s \
+  -H "Authorization: Bearer $HAPPYVIEW_API_KEY" \
+  "$HAPPYVIEW_URL/admin/lexicons" \
+  | jq -r '.[].id // empty')
+
+for remote_nsid in $remote_nsids; do
+  if [[ -z "${repo_nsids[$remote_nsid]+_}" ]]; then
+    del_code=$(curl -s -o /dev/null -w "%{http_code}" \
+      -X DELETE \
+      -H "Authorization: Bearer $HAPPYVIEW_API_KEY" \
+      "$HAPPYVIEW_URL/admin/lexicons/$remote_nsid")
+
+    if [[ "$del_code" -ge 200 && "$del_code" -lt 300 ]] || [[ "$del_code" == "404" ]]; then
+      echo "DELETED: $remote_nsid → HTTP $del_code"
+      deleted=$((deleted + 1))
+    else
+      echo "DELETE FAIL: $remote_nsid → HTTP $del_code" >&2
+      errors=$((errors + 1))
+    fi
+  fi
+done
+
 echo ""
-echo "Deployed: $deployed, Failed: $errors"
+echo "Deployed: $deployed, Deleted: $deleted, Failed: $errors"
 
 if [[ $errors -gt 0 ]]; then
   exit 1
