@@ -43,9 +43,8 @@
 
 		"slugResult": {
 			"type": "object",
-			"required": ["did", "slug", "ref"],
+			"required": ["slug", "ref"],
 			"properties": {
-				"did": { "type": "string", "format": "did" },
 				"slug": { "type": "string" },
 				"ref": { "type": "string", "format": "at-uri" }
 			}

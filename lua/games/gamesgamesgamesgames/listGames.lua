@@ -1,11 +1,6 @@
 function find_slug(target_uri)
-  local rows = db.raw(
-    "SELECT record FROM records WHERE collection = $1 AND record->>'ref' = $2 LIMIT 1",
-    {"games.gamesgamesgamesgames.slug", target_uri}
-  )
-  if rows and #rows > 0 and rows[1].record then
-    return rows[1].record.slug
-  end
+  local rows = db.raw("SELECT slug FROM slugs WHERE uri = $1 LIMIT 1", {target_uri})
+  if rows and #rows > 0 then return rows[1].slug end
   return nil
 end
 

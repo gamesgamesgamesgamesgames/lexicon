@@ -46,7 +46,6 @@ function map_hit(hit)
       did = hit.did,
       profileType = hit.profileType,
       displayName = hit.displayName,
-      slug = hit.slug,
       avatar = hit.avatar
     }
   end

@@ -34,5 +34,10 @@ function handle()
 
   game:save()
 
+  if input.slug then
+    db.raw("INSERT INTO slugs (slug, uri) VALUES ($1, $2) ON CONFLICT (slug) DO UPDATE SET uri = $2",
+      {input.slug, game._uri})
+  end
+
   return { uri = game._uri, cid = game._cid }
 end

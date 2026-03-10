@@ -85,6 +85,13 @@ function handle()
     end
   end
 
+  -- Look up slug from the slugs table
+  local slug = nil
+  local slug_rows = db.raw("SELECT slug FROM slugs WHERE uri = $1 LIMIT 1", {uri})
+  if slug_rows and #slug_rows > 0 then
+    slug = slug_rows[1].slug
+  end
+
   local doc = {
     id = to_doc_id(uri),
     type = "game",
@@ -103,7 +110,8 @@ function handle()
     applicationType = record.applicationType,
     publishedAt = record.publishedAt,
     firstReleaseDate = get_first_release_date(record.releases),
-    media = record.media
+    media = record.media,
+    slug = slug
   }
 
   http.post(INDEX_URL, {

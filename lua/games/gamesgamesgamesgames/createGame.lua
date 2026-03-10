@@ -50,12 +50,8 @@ function handle()
 
   local slug_value = input.slug or generate_slug(input.name)
   if slug_value then
-    local slug = Record.new("games.gamesgamesgamesgames.slug", {
-      slug = slug_value,
-      ref = game._uri
-    })
-    slug:set_rkey(slug_value)
-    slug:save()
+    db.raw("INSERT INTO slugs (slug, uri) VALUES ($1, $2) ON CONFLICT (slug) DO UPDATE SET uri = $2",
+      {slug_value, game._uri})
   end
 
   return { uri = game._uri, cid = game._cid }
