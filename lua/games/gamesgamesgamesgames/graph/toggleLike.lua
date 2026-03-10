@@ -20,7 +20,8 @@ function handle()
 
   if existing then
     -- Unlike: delete the existing like record
-    db.delete(existing.uri)
+    local r = Record.load(existing.uri)
+    if r then r:delete() end
     return { action = "unliked" }
   else
     -- Like: create a new like record
