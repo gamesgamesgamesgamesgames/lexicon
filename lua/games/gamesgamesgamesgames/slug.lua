@@ -32,7 +32,7 @@ function handle()
   if action == "delete" then
     -- Slug deleted — clear the slug on the referenced document.
     -- We still have `record` from the deleted slug.
-    if not record or not record.ref then return end
+    if not record or not record.ref then return true end
 
     http.post(INDEX_URL, {
       headers = HEADERS,
@@ -40,10 +40,10 @@ function handle()
         { id = to_doc_id(record.ref), slug = json.null }
       }))
     })
-    return
+    return true
   end
 
-  if not record.ref or not record.slug then return end
+  if not record.ref or not record.slug then return record end
 
   -- Partial update: set the slug on the referenced document
   http.post(INDEX_URL, {
@@ -52,4 +52,6 @@ function handle()
       { id = to_doc_id(record.ref), slug = record.slug }
     }))
   })
+
+  return record
 end

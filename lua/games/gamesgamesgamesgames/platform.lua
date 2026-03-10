@@ -27,7 +27,7 @@ end
 function handle()
   if action == "delete" then
     http.delete(INDEX_URL .. "/" .. to_doc_id(uri), { headers = HEADERS })
-    return
+    return true
   end
 
   local doc = {
@@ -46,4 +46,6 @@ function handle()
     headers = HEADERS,
     body = json.encode(toarray({ doc }))
   })
+
+  return record
 end
