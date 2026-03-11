@@ -71,6 +71,10 @@
 					"required": ["results"],
 					"properties": {
 						"cursor": { "type": "string" },
+						"totalResults": {
+							"type": "integer",
+							"description": "Total number of results matching the query above the relevance threshold."
+						},
 						"results": {
 							"type": "array",
 							"items": {

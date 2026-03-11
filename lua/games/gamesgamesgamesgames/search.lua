@@ -135,7 +135,9 @@ function handle()
     q = q,
     limit = limit,
     offset = offset,
-    attributesToRetrieve = toarray({ "*" })
+    attributesToRetrieve = toarray({ "*" }),
+    showRankingScore = true,
+    rankingScoreThreshold = 0.7
   }
   if filter then body.filter = filter end
   if sort then body.sort = sort end
@@ -148,7 +150,8 @@ function handle()
       q = q,
       limit = 5,
       filter = 'type = "collection"',
-      attributesToRetrieve = toarray({ "uri", "name" })
+      attributesToRetrieve = toarray({ "uri", "name" }),
+      rankingScoreThreshold = 0.7
     }
     local coll_resp = http.post(SEARCH_URL, {
       headers = SEARCH_HEADERS,
@@ -230,10 +233,13 @@ function handle()
     end
   end
 
-  local response = { results = toarray(results) }
-
-  -- Meilisearch returns estimatedTotalHits; use offset-based cursor
   local total = data.estimatedTotalHits or 0
+  local response = {
+    results = toarray(results),
+    totalResults = total
+  }
+
+  -- Offset-based cursor for pagination
   local next_offset = offset + limit
   if next_offset < total then
     response.cursor = tostring(next_offset)
