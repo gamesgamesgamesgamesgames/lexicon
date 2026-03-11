@@ -69,6 +69,18 @@ local function get_first_release_date(releases)
   return earliest
 end
 
+local APP_TYPE_RANK = {
+  game = 1, remake = 1, remaster = 1,
+  dlc = 2, expansion = 2,
+  standaloneExpansion = 3, expandedGame = 3,
+  episode = 4, season = 4,
+  update = 5,
+  port = 6,
+  mod = 7,
+  fork = 8,
+  addon = 9, pack = 9, bundle = 9,
+}
+
 function handle()
   if action == "delete" then
     http.delete(INDEX_URL .. "/" .. to_doc_id(uri), { headers = HEADERS })
@@ -108,6 +120,7 @@ function handle()
     alternativeNames = alt_names,
     multiplayerModes = record.multiplayerModes,
     applicationType = record.applicationType,
+    applicationTypeRank = APP_TYPE_RANK[record.applicationType] or 99,
     publishedAt = record.publishedAt,
     firstReleaseDate = get_first_release_date(record.releases),
     media = record.media,
