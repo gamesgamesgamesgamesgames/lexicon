@@ -131,47 +131,69 @@ function handle()
     sort = toarray({ "publishedAt:desc" })
   end
 
+  -- Only the fields map_hit actually uses, plus collections for re-ranking
+  local main_fields = toarray({
+    "type", "uri", "did", "name", "summary", "media", "slug",
+    "applicationType", "firstReleaseDate", "profileType", "displayName",
+    "avatar", "abbreviation", "category", "collectionType", "collections"
+  })
+
   -- Build search body
   local body = {
     q = q,
     limit = limit,
     offset = offset,
-    attributesToRetrieve = toarray({ "*" }),
-    showRankingScore = true,
+    attributesToRetrieve = main_fields,
     rankingScoreThreshold = 0.7
   }
   if filter then body.filter = filter end
   if sort then body.sort = sort end
 
-  -- Multi-search: run the main query and a collection query in parallel
-  local coll_query = {
-    indexUid = "records",
-    q = q,
-    limit = 5,
-    filter = 'type = "collection"',
-    attributesToRetrieve = toarray({ "uri" }),
-    rankingScoreThreshold = 0.7
-  }
+  -- Check if game results are possible (collection boost only matters for games)
+  local needs_collection_boost = not types_set or types_set["game"]
 
-  body.indexUid = "records"
+  local data, hits, matched_collections
 
-  local multi_resp = http.post(MULTI_SEARCH_URL, {
-    headers = SEARCH_HEADERS,
-    body = json.encode({ queries = toarray({ body, coll_query }) })
-  })
+  if needs_collection_boost then
+    -- Multi-search: run the main query and a collection query in parallel
+    local coll_query = {
+      indexUid = "records",
+      q = q,
+      limit = 5,
+      filter = 'type = "collection"',
+      attributesToRetrieve = toarray({ "uri" }),
+      rankingScoreThreshold = 0.7
+    }
 
-  local multi_data = json.decode(multi_resp.body)
-  local results_list = multi_data.results or {}
+    body.indexUid = "records"
 
-  local data = results_list[1] or {}
-  local coll_data = results_list[2] or {}
-  local hits = data.hits or {}
+    local multi_resp = http.post(MULTI_SEARCH_URL, {
+      headers = SEARCH_HEADERS,
+      body = json.encode({ queries = toarray({ body, coll_query }) })
+    })
 
-  -- Build set of matched collection URIs
-  local matched_collections = {}
-  local coll_hits = coll_data.hits or {}
-  for _, coll in ipairs(coll_hits) do
-    matched_collections[coll.uri] = true
+    local multi_data = json.decode(multi_resp.body)
+    local results_list = multi_data.results or {}
+
+    data = results_list[1] or {}
+    hits = data.hits or {}
+
+    -- Build set of matched collection URIs
+    matched_collections = {}
+    local coll_data = results_list[2] or {}
+    local coll_hits = coll_data.hits or {}
+    for _, coll in ipairs(coll_hits) do
+      matched_collections[coll.uri] = true
+    end
+  else
+    -- Single search — no collection boost needed
+    local resp = http.post(SEARCH_URL, {
+      headers = SEARCH_HEADERS,
+      body = json.encode(body)
+    })
+    data = json.decode(resp.body)
+    hits = data.hits or {}
+    matched_collections = {}
   end
 
   -- Collection-aware re-ranking: if we found matching collections,
@@ -219,12 +241,16 @@ function handle()
     end
   end
 
-  -- Map hits to our view types
+  -- Map hits to our view types, deduplicating by URI
   local results = {}
+  local seen_uris = {}
   for _, hit in ipairs(hits) do
-    local mapped = map_hit(hit)
-    if mapped then
-      table.insert(results, mapped)
+    if not seen_uris[hit.uri] then
+      seen_uris[hit.uri] = true
+      local mapped = map_hit(hit)
+      if mapped then
+        table.insert(results, mapped)
+      end
     end
   end
 
