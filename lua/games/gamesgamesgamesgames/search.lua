@@ -1,4 +1,5 @@
 local SEARCH_URL = env.MEILISEARCH_URL .. "/indexes/records/search"
+local MULTI_SEARCH_URL = env.MEILISEARCH_URL .. "/multi-search"
 
 local SEARCH_HEADERS = {
   ["Authorization"] = "Bearer " .. env.MEILISEARCH_API_KEY,
@@ -142,38 +143,36 @@ function handle()
   if filter then body.filter = filter end
   if sort then body.sort = sort end
 
-  -- Pre-search: find collections matching the query.
-  -- Collects matched collection URIs so we can boost their member games
-  -- using the `collections` field already on game documents in Meilisearch.
-  local matched_collections = {}  -- uri → true
-  if q then
-    local coll_body = {
-      q = q,
-      limit = 5,
-      filter = 'type = "collection"',
-      attributesToRetrieve = toarray({ "uri" }),
-      rankingScoreThreshold = 0.7
-    }
-    local coll_resp = http.post(SEARCH_URL, {
-      headers = SEARCH_HEADERS,
-      body = json.encode(coll_body)
-    })
-    local coll_data = json.decode(coll_resp.body)
-    local coll_hits = coll_data.hits or {}
+  -- Multi-search: run the main query and a collection query in parallel
+  local coll_query = {
+    indexUid = "records",
+    q = q,
+    limit = 5,
+    filter = 'type = "collection"',
+    attributesToRetrieve = toarray({ "uri" }),
+    rankingScoreThreshold = 0.7
+  }
 
-    for _, coll in ipairs(coll_hits) do
-      matched_collections[coll.uri] = true
-    end
-  end
+  body.indexUid = "records"
 
-  -- Query Meilisearch
-  local resp = http.post(SEARCH_URL, {
+  local multi_resp = http.post(MULTI_SEARCH_URL, {
     headers = SEARCH_HEADERS,
-    body = json.encode(body)
+    body = json.encode({ queries = toarray({ body, coll_query }) })
   })
 
-  local data = json.decode(resp.body)
+  local multi_data = json.decode(multi_resp.body)
+  local results_list = multi_data.results or {}
+
+  local data = results_list[1] or {}
+  local coll_data = results_list[2] or {}
   local hits = data.hits or {}
+
+  -- Build set of matched collection URIs
+  local matched_collections = {}
+  local coll_hits = coll_data.hits or {}
+  for _, coll in ipairs(coll_hits) do
+    matched_collections[coll.uri] = true
+  end
 
   -- Collection-aware re-ranking: if we found matching collections,
   -- check each game's `collections` array (already on the Meilisearch doc)
