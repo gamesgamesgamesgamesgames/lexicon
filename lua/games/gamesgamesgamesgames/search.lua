@@ -94,6 +94,10 @@ function handle()
   local sort_by = params.sort
 
   local app_types_set = parse_types(params.applicationTypes)
+  local genres_set = parse_types(params.genres)
+  local themes_set = parse_types(params.themes)
+  local modes_set = parse_types(params.modes)
+  local perspectives_set = parse_types(params.playerPerspectives)
 
   -- Build Meilisearch filter from types and applicationTypes params
   local filter_parts = {}
@@ -110,6 +114,38 @@ function handle()
     local parts = {}
     for t, _ in pairs(app_types_set) do
       table.insert(parts, 'applicationType = "' .. t .. '"')
+    end
+    table.insert(filter_parts, "(" .. table.concat(parts, " OR ") .. ")")
+  end
+
+  if genres_set then
+    local parts = {}
+    for t, _ in pairs(genres_set) do
+      table.insert(parts, 'genres = "' .. t .. '"')
+    end
+    table.insert(filter_parts, "(" .. table.concat(parts, " OR ") .. ")")
+  end
+
+  if themes_set then
+    local parts = {}
+    for t, _ in pairs(themes_set) do
+      table.insert(parts, 'themes = "' .. t .. '"')
+    end
+    table.insert(filter_parts, "(" .. table.concat(parts, " OR ") .. ")")
+  end
+
+  if modes_set then
+    local parts = {}
+    for t, _ in pairs(modes_set) do
+      table.insert(parts, 'modes = "' .. t .. '"')
+    end
+    table.insert(filter_parts, "(" .. table.concat(parts, " OR ") .. ")")
+  end
+
+  if perspectives_set then
+    local parts = {}
+    for t, _ in pairs(perspectives_set) do
+      table.insert(parts, 'playerPerspectives = "' .. t .. '"')
     end
     table.insert(filter_parts, "(" .. table.concat(parts, " OR ") .. ")")
   end

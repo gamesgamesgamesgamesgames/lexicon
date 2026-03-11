@@ -59,6 +59,26 @@
 							]
 						}
 					},
+					"sort": {
+						"type": "string",
+						"knownValues": ["name_asc", "name_desc", "published_asc", "published_desc"]
+					},
+					"genres": {
+						"type": "array",
+						"items": { "type": "string" }
+					},
+					"themes": {
+						"type": "array",
+						"items": { "type": "string" }
+					},
+					"modes": {
+						"type": "array",
+						"items": { "type": "string" }
+					},
+					"playerPerspectives": {
+						"type": "array",
+						"items": { "type": "string" }
+					},
 					"cursor": {
 						"type": "string"
 					}
