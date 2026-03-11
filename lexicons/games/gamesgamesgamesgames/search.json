@@ -79,6 +79,16 @@
 						"type": "array",
 						"items": { "type": "string" }
 					},
+					"ageRatings": {
+						"type": "array",
+						"description": "Filter game results by age rating in 'organization:rating' format (e.g. esrb:M, pegi:Eighteen).",
+						"items": { "type": "string" }
+					},
+					"includeUnrated": {
+						"type": "boolean",
+						"description": "When age rating filters are active, also include games with no age ratings.",
+						"default": false
+					},
 					"includeCancelled": {
 						"type": "boolean",
 						"default": false

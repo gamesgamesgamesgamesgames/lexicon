@@ -98,6 +98,8 @@ function handle()
   local themes_set = parse_types(params.themes)
   local modes_set = parse_types(params.modes)
   local perspectives_set = parse_types(params.playerPerspectives)
+  local age_ratings_set = parse_types(params.ageRatings)
+  local include_unrated = params.includeUnrated == true or params.includeUnrated == "true"
   local include_cancelled = params.includeCancelled == true or params.includeCancelled == "true"
 
   -- Build Meilisearch filter from types and applicationTypes params
@@ -151,6 +153,17 @@ function handle()
     local parts = {}
     for t, _ in pairs(perspectives_set) do
       table.insert(parts, 'playerPerspectives = "' .. t .. '"')
+    end
+    table.insert(filter_parts, "(" .. table.concat(parts, " OR ") .. ")")
+  end
+
+  if age_ratings_set then
+    local parts = {}
+    for t, _ in pairs(age_ratings_set) do
+      table.insert(parts, 'ageRatings = "' .. t .. '"')
+    end
+    if include_unrated then
+      table.insert(parts, "ageRatings IS EMPTY")
     end
     table.insert(filter_parts, "(" .. table.concat(parts, " OR ") .. ")")
   end
