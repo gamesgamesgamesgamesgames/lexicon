@@ -30,12 +30,17 @@ function handle()
         end
       end
     else
-      -- Resolve handle to DID
-      local resp = http.get("https://" .. handle_param .. "/.well-known/atproto-did")
-      if not resp or not resp.body or resp.body == "" then
+      -- Resolve handle to DID via com.atproto.identity.resolveHandle (supports both DNS and HTTP resolution)
+      local resolve_url = env.INTERNAL_URL .. "/xrpc/com.atproto.identity.resolveHandle?handle=" .. handle_param
+      local resp = http.get(resolve_url)
+      if not resp or resp.status ~= 200 or not resp.body or resp.body == "" then
         return { profile = nil, profileType = nil, handle = handle_param }
       end
-      did = resp.body:match("^%s*(.-)%s*$")
+      local resolve_result = json.decode(resp.body)
+      if not resolve_result or not resolve_result.did then
+        return { profile = nil, profileType = nil, handle = handle_param }
+      end
+      did = resolve_result.did
     end
   elseif caller_did and caller_did ~= "" then
     -- Authenticated flow: use caller_did
