@@ -1,0 +1,67 @@
+{
+	"$type": "com.atproto.lexicon.schema",
+	"lexicon": 1,
+	"id": "games.gamesgamesgamesgames.feed.getLikesFeed",
+	"defs": {
+		"main": {
+			"type": "query",
+			"description": "Get the authenticated user's liked games, ordered by most recently liked.",
+			"parameters": {
+				"type": "params",
+				"properties": {
+					"limit": {
+						"type": "integer",
+						"minimum": 1,
+						"maximum": 100,
+						"default": 50,
+						"description": "Maximum number of games to return."
+					},
+					"cursor": {
+						"type": "string",
+						"description": "Pagination cursor from a previous response."
+					}
+				}
+			},
+			"output": {
+				"encoding": "application/json",
+				"schema": {
+					"type": "object",
+					"required": ["games"],
+					"properties": {
+						"games": {
+							"type": "array",
+							"items": {
+								"type": "ref",
+								"ref": "#gameItem"
+							}
+						},
+						"cursor": {
+							"type": "string",
+							"description": "Pagination cursor for the next page."
+						}
+					}
+				}
+			}
+		},
+		"gameItem": {
+			"type": "object",
+			"required": ["uri", "game", "likedAt"],
+			"properties": {
+				"uri": {
+					"type": "string",
+					"format": "at-uri",
+					"description": "AT URI of the game record."
+				},
+				"game": {
+					"type": "unknown",
+					"description": "The game record."
+				},
+				"likedAt": {
+					"type": "string",
+					"format": "datetime",
+					"description": "When the user liked this game."
+				}
+			}
+		}
+	}
+}
