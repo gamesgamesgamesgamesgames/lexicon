@@ -111,6 +111,7 @@ function handle()
     publishedAt = record.publishedAt,
     firstReleaseDate = get_first_release_date(record.releases),
     media = record.media,
+    collections = record.collections,
     slug = slug
   }
 
