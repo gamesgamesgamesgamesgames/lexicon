@@ -143,14 +143,15 @@ function handle()
   if sort then body.sort = sort end
 
   -- Pre-search: find collections matching the query.
-  -- If we get strong collection matches, we'll boost their member games.
-  local boosted_games = {}  -- uri → true
+  -- Collects matched collection URIs so we can boost their member games
+  -- using the `collections` field already on game documents in Meilisearch.
+  local matched_collections = {}  -- uri → true
   if q then
     local coll_body = {
       q = q,
       limit = 5,
       filter = 'type = "collection"',
-      attributesToRetrieve = toarray({ "uri", "name" }),
+      attributesToRetrieve = toarray({ "uri" }),
       rankingScoreThreshold = 0.7
     }
     local coll_resp = http.post(SEARCH_URL, {
@@ -160,24 +161,8 @@ function handle()
     local coll_data = json.decode(coll_resp.body)
     local coll_hits = coll_data.hits or {}
 
-    if #coll_hits > 0 then
-      -- For each matched collection, look up its games via backlinks
-      for _, coll in ipairs(coll_hits) do
-        local backlinks = db.backlinks({
-          collection = "games.gamesgamesgamesgames.game",
-          uri = coll.uri,
-          path = "collections",
-          limit = 200
-        })
-        -- Backlinks may not work for this — games don't reference collections.
-        -- Instead, load the collection record to get its games array.
-        local coll_record = db.get(coll.uri)
-        if coll_record and coll_record.games then
-          for _, game_uri in ipairs(coll_record.games) do
-            boosted_games[game_uri] = true
-          end
-        end
-      end
+    for _, coll in ipairs(coll_hits) do
+      matched_collections[coll.uri] = true
     end
   end
 
@@ -191,14 +176,25 @@ function handle()
   local hits = data.hits or {}
 
   -- Collection-aware re-ranking: if we found matching collections,
-  -- partition games into boosted (in a matching collection) vs others,
-  -- sort boosted by recency, then append the rest.
-  if #hits > 1 and next(boosted_games) then
+  -- check each game's `collections` array (already on the Meilisearch doc)
+  -- to see if it belongs to a matched collection. Boost those games by
+  -- sorting them by recency, then append the rest.
+  if #hits > 1 and next(matched_collections) then
     local boosted = {}
     local others = {}
 
     for _, hit in ipairs(hits) do
-      if hit.type == "game" and boosted_games[hit.uri] then
+      local is_boosted = false
+      if hit.type == "game" and hit.collections then
+        for _, c in ipairs(hit.collections) do
+          if matched_collections[c] then
+            is_boosted = true
+            break
+          end
+        end
+      end
+
+      if is_boosted then
         table.insert(boosted, hit)
       else
         table.insert(others, hit)
