@@ -5,7 +5,16 @@
 	"defs": {
 		"main": {
 			"type": "query",
-			"description": "Get the authenticated user's Pentaract profile.",
+			"description": "Get a Pentaract profile by handle or DID.",
+			"parameters": {
+				"type": "params",
+				"properties": {
+					"handle": {
+						"type": "string",
+						"description": "The handle or DID of the user whose profile to fetch."
+					}
+				}
+			},
 			"output": {
 				"encoding": "application/json",
 				"schema": {
@@ -21,6 +30,10 @@
 						"profileType": {
 							"type": "string",
 							"knownValues": ["actor", "org"]
+						},
+						"handle": {
+							"type": "string",
+							"description": "The resolved ATProto handle for display."
 						}
 					}
 				}
