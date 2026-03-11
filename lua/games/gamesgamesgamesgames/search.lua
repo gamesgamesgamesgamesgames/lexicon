@@ -148,7 +148,8 @@ function handle()
   local hits = data.hits or {}
 
   -- Collection-aware re-ranking: if the top game result is an exact name
-  -- match, sort other games that share a collection with it by recency.
+  -- match, find all games sharing a collection and sort them by recency
+  -- (the exact match is included in the sort, not pinned to the top).
   if #hits > 1 and q then
     local query_lower = string.lower(q)
     local top = hits[1]
@@ -165,12 +166,11 @@ function handle()
       end
 
       if has_collections then
-        -- Partition: siblings (share a collection) vs others
-        -- Skip index 1 (the exact match stays on top)
+        -- Partition: siblings (share a collection, including the exact match) vs others
         local siblings = {}
         local others = {}
 
-        for i = 2, #hits do
+        for i = 1, #hits do
           local hit = hits[i]
           local is_sibling = false
 
@@ -191,15 +191,15 @@ function handle()
         end
 
         -- Sort siblings by firstReleaseDate descending (newest first)
-        if #siblings > 0 then
+        if #siblings > 1 then
           table.sort(siblings, function(a, b)
             local a_date = a.firstReleaseDate or 0
             local b_date = b.firstReleaseDate or 0
             return a_date > b_date
           end)
 
-          -- Reassemble: exact match, then siblings, then others
-          hits = { top }
+          -- Reassemble: siblings by recency, then others
+          hits = {}
           for _, s in ipairs(siblings) do
             table.insert(hits, s)
           end
