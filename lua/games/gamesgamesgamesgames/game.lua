@@ -139,8 +139,19 @@ function handle()
     publishedAt = record.publishedAt,
     firstReleaseDate = first_release_date,
     media = record.media,
-    slug = slug
+    slug = slug,
+    ageRatings = {}
   }
+
+  -- Flatten age ratings into "organization:rating" strings for filtering
+  if record.ageRatings then
+    for _, ar in ipairs(record.ageRatings) do
+      if ar.organization and ar.rating then
+        table.insert(doc.ageRatings, ar.organization .. ":" .. ar.rating)
+      end
+    end
+  end
+  doc.ageRatings = toarray(doc.ageRatings)
 
   http.post(INDEX_URL, {
     headers = HEADERS,
