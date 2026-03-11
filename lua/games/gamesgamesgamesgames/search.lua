@@ -145,10 +145,75 @@ function handle()
   })
 
   local data = json.decode(resp.body)
+  local hits = data.hits or {}
+
+  -- Collection-aware re-ranking: if the top game result is an exact name
+  -- match, sort other games that share a collection with it by recency.
+  if #hits > 1 and q then
+    local query_lower = string.lower(q)
+    local top = hits[1]
+
+    if top.type == "game" and top.name and string.lower(top.name) == query_lower then
+      -- Build a set of the exact match's collections
+      local top_collections = {}
+      local has_collections = false
+      if top.collections then
+        for _, c in ipairs(top.collections) do
+          top_collections[c] = true
+          has_collections = true
+        end
+      end
+
+      if has_collections then
+        -- Partition: siblings (share a collection) vs others
+        -- Skip index 1 (the exact match stays on top)
+        local siblings = {}
+        local others = {}
+
+        for i = 2, #hits do
+          local hit = hits[i]
+          local is_sibling = false
+
+          if hit.type == "game" and hit.collections then
+            for _, c in ipairs(hit.collections) do
+              if top_collections[c] then
+                is_sibling = true
+                break
+              end
+            end
+          end
+
+          if is_sibling then
+            table.insert(siblings, hit)
+          else
+            table.insert(others, hit)
+          end
+        end
+
+        -- Sort siblings by firstReleaseDate descending (newest first)
+        if #siblings > 0 then
+          table.sort(siblings, function(a, b)
+            local a_date = a.firstReleaseDate or 0
+            local b_date = b.firstReleaseDate or 0
+            return a_date > b_date
+          end)
+
+          -- Reassemble: exact match, then siblings, then others
+          hits = { top }
+          for _, s in ipairs(siblings) do
+            table.insert(hits, s)
+          end
+          for _, o in ipairs(others) do
+            table.insert(hits, o)
+          end
+        end
+      end
+    end
+  end
 
   -- Map hits to our view types
   local results = {}
-  for _, hit in ipairs(data.hits or {}) do
+  for _, hit in ipairs(hits) do
     local mapped = map_hit(hit)
     if mapped then
       table.insert(results, mapped)
