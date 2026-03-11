@@ -98,9 +98,14 @@ function handle()
   local themes_set = parse_types(params.themes)
   local modes_set = parse_types(params.modes)
   local perspectives_set = parse_types(params.playerPerspectives)
+  local include_cancelled = params.includeCancelled == true or params.includeCancelled == "true"
 
   -- Build Meilisearch filter from types and applicationTypes params
   local filter_parts = {}
+
+  if not include_cancelled then
+    table.insert(filter_parts, "cancelled != true")
+  end
 
   if types_set then
     local parts = {}

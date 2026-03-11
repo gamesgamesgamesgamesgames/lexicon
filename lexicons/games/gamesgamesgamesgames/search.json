@@ -79,6 +79,10 @@
 						"type": "array",
 						"items": { "type": "string" }
 					},
+					"includeCancelled": {
+						"type": "boolean",
+						"default": false
+					},
 					"cursor": {
 						"type": "string"
 					}
