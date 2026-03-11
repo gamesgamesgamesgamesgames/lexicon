@@ -52,13 +52,21 @@ local function parse_release_date(s)
   return nil
 end
 
--- Find the earliest release date across all platforms/regions.
-local function get_first_release_date(releases)
-  if not releases then return nil end
+local CANCELLED_STATUSES = { cancelled = true, offline = true }
+
+-- Find the earliest release date and whether the game is cancelled.
+local function get_release_info(releases)
+  if not releases then return nil, false end
   local earliest = nil
+  local has_any = false
+  local all_cancelled = true
   for _, rel in ipairs(releases) do
     if rel.releaseDates then
       for _, rd in ipairs(rel.releaseDates) do
+        has_any = true
+        if not rd.status or not CANCELLED_STATUSES[rd.status] then
+          all_cancelled = false
+        end
         local val = parse_release_date(rd.releasedAt)
         if val and (not earliest or val < earliest) then
           earliest = val
@@ -66,7 +74,11 @@ local function get_first_release_date(releases)
       end
     end
   end
-  return earliest
+  local cancelled = has_any and all_cancelled
+  if cancelled then
+    return 10000101, true
+  end
+  return earliest, false
 end
 
 local APP_TYPE_RANK = {
@@ -104,6 +116,8 @@ function handle()
     slug = slug_rows[1].slug
   end
 
+  local first_release_date, cancelled = get_release_info(record.releases)
+
   local doc = {
     id = to_doc_id(uri),
     type = "game",
@@ -121,8 +135,9 @@ function handle()
     multiplayerModes = record.multiplayerModes,
     applicationType = record.applicationType,
     applicationTypeRank = APP_TYPE_RANK[record.applicationType] or 99,
+    cancelled = cancelled,
     publishedAt = record.publishedAt,
-    firstReleaseDate = get_first_release_date(record.releases),
+    firstReleaseDate = first_release_date,
     media = record.media,
     slug = slug
   }
