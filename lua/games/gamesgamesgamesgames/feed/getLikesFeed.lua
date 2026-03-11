@@ -1,5 +1,5 @@
 function handle()
-  if not did or did == "" then
+  if not caller_did or caller_did == "" then
     return { error = "Authentication required" }
   end
 
@@ -16,7 +16,7 @@ function handle()
   -- Get the user's likes ordered by most recent
   local likes = db.raw(
     "SELECT record, uri AS like_uri FROM records WHERE collection = $1 AND did = $2 ORDER BY indexed_at DESC LIMIT $3 OFFSET $4",
-    {"games.gamesgamesgamesgames.graph.like", did, limit + 1, offset}
+    {"games.gamesgamesgamesgames.graph.like", caller_did, limit + 1, offset}
   )
 
   if not likes then

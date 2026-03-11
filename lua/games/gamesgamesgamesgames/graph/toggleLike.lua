@@ -4,7 +4,7 @@ function handle()
   -- Check if the user already has a like for this game
   local results = db.query({
     collection = "games.gamesgamesgamesgames.graph.like",
-    did = did,
+    did = caller_did,
     limit = 100
   })
 

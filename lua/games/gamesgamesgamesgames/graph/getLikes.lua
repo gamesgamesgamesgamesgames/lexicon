@@ -14,10 +14,10 @@ function handle()
 
   -- Check if the authenticated user has liked this game
   local liked = false
-  if did and did ~= "" then
+  if caller_did and caller_did ~= "" then
     local user_rows = db.raw(
       "SELECT uri FROM records WHERE collection = $1 AND did = $2 AND record->>'subject' = $3 LIMIT 1",
-      {"games.gamesgamesgamesgames.graph.like", did, uri}
+      {"games.gamesgamesgamesgames.graph.like", caller_did, uri}
     )
     if user_rows and #user_rows > 0 then
       liked = true
