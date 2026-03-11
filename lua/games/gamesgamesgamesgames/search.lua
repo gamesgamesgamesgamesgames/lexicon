@@ -140,6 +140,44 @@ function handle()
   if filter then body.filter = filter end
   if sort then body.sort = sort end
 
+  -- Pre-search: find collections matching the query.
+  -- If we get strong collection matches, we'll boost their member games.
+  local boosted_games = {}  -- uri → true
+  if q then
+    local coll_body = {
+      q = q,
+      limit = 5,
+      filter = 'type = "collection"',
+      attributesToRetrieve = toarray({ "uri", "name" })
+    }
+    local coll_resp = http.post(SEARCH_URL, {
+      headers = SEARCH_HEADERS,
+      body = json.encode(coll_body)
+    })
+    local coll_data = json.decode(coll_resp.body)
+    local coll_hits = coll_data.hits or {}
+
+    if #coll_hits > 0 then
+      -- For each matched collection, look up its games via backlinks
+      for _, coll in ipairs(coll_hits) do
+        local backlinks = db.backlinks({
+          collection = "games.gamesgamesgamesgames.game",
+          uri = coll.uri,
+          path = "collections",
+          limit = 200
+        })
+        -- Backlinks may not work for this — games don't reference collections.
+        -- Instead, load the collection record to get its games array.
+        local coll_record = db.get(coll.uri)
+        if coll_record and coll_record.games then
+          for _, game_uri in ipairs(coll_record.games) do
+            boosted_games[game_uri] = true
+          end
+        end
+      end
+    end
+  end
+
   -- Query Meilisearch
   local resp = http.post(SEARCH_URL, {
     headers = SEARCH_HEADERS,
@@ -149,66 +187,36 @@ function handle()
   local data = json.decode(resp.body)
   local hits = data.hits or {}
 
-  -- Collection-aware re-ranking: if the top game result is an exact name
-  -- match, find all games sharing a collection and sort them by recency
-  -- (the exact match is included in the sort, not pinned to the top).
-  if #hits > 1 and q then
-    local query_lower = string.lower(q)
-    local top = hits[1]
+  -- Collection-aware re-ranking: if we found matching collections,
+  -- partition games into boosted (in a matching collection) vs others,
+  -- sort boosted by recency, then append the rest.
+  if #hits > 1 and next(boosted_games) then
+    local boosted = {}
+    local others = {}
 
-    if top.type == "game" and top.name and string.lower(top.name) == query_lower then
-      -- Build a set of the exact match's collections
-      local top_collections = {}
-      local has_collections = false
-      if top.collections then
-        for _, c in ipairs(top.collections) do
-          top_collections[c] = true
-          has_collections = true
-        end
+    for _, hit in ipairs(hits) do
+      if hit.type == "game" and boosted_games[hit.uri] then
+        table.insert(boosted, hit)
+      else
+        table.insert(others, hit)
       end
+    end
 
-      if has_collections then
-        -- Partition: siblings (share a collection, including the exact match) vs others
-        local siblings = {}
-        local others = {}
+    if #boosted > 0 then
+      -- Sort boosted games by firstReleaseDate descending (newest first)
+      table.sort(boosted, function(a, b)
+        local a_date = a.firstReleaseDate or 0
+        local b_date = b.firstReleaseDate or 0
+        return a_date > b_date
+      end)
 
-        for i = 1, #hits do
-          local hit = hits[i]
-          local is_sibling = false
-
-          if hit.type == "game" and hit.collections then
-            for _, c in ipairs(hit.collections) do
-              if top_collections[c] then
-                is_sibling = true
-                break
-              end
-            end
-          end
-
-          if is_sibling then
-            table.insert(siblings, hit)
-          else
-            table.insert(others, hit)
-          end
-        end
-
-        -- Sort siblings by firstReleaseDate descending (newest first)
-        if #siblings > 1 then
-          table.sort(siblings, function(a, b)
-            local a_date = a.firstReleaseDate or 0
-            local b_date = b.firstReleaseDate or 0
-            return a_date > b_date
-          end)
-
-          -- Reassemble: siblings by recency, then others
-          hits = {}
-          for _, s in ipairs(siblings) do
-            table.insert(hits, s)
-          end
-          for _, o in ipairs(others) do
-            table.insert(hits, o)
-          end
-        end
+      -- Reassemble: boosted by recency, then others
+      hits = {}
+      for _, s in ipairs(boosted) do
+        table.insert(hits, s)
+      end
+      for _, o in ipairs(others) do
+        table.insert(hits, o)
       end
     end
   end
