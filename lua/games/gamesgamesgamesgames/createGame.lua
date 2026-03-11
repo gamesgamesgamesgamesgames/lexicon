@@ -37,7 +37,6 @@ function handle()
     ageRatings = input.ageRatings,
     languageSupports = input.languageSupports,
     multiplayerModes = input.multiplayerModes,
-    collections = input.collections,
     engines = input.engines,
     createdAt = now()
   })

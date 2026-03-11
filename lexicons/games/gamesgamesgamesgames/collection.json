@@ -20,6 +20,10 @@
 						"knownValues": ["franchise", "series", "curated"]
 					},
 					"description": { "type": "string" },
+					"games": {
+						"type": "array",
+						"items": { "type": "string", "format": "at-uri" }
+					},
 					"media": {
 						"type": "array",
 						"items": {

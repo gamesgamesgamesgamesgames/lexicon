@@ -65,10 +65,23 @@ function handle()
     ageRatings = record.ageRatings,
     languageSupports = record.languageSupports,
     multiplayerModes = record.multiplayerModes,
-    collections = record.collections,
     engines = record.engines,
     slug = find_slug(record.uri)
   }
+
+  -- Build collections by finding collection records that reference this game
+  local backlinks = db.backlinks({
+    collection = "games.gamesgamesgamesgames.collection",
+    uri = record.uri,
+    limit = 100
+  })
+  if backlinks and backlinks.records and #backlinks.records > 0 then
+    local coll_uris = {}
+    for _, coll in ipairs(backlinks.records) do
+      table.insert(coll_uris, coll.uri)
+    end
+    game.collections = coll_uris
+  end
 
   return { game = game }
 end

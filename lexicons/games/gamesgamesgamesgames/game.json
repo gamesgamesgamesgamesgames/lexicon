@@ -127,10 +127,6 @@
 							"ref": "games.gamesgamesgamesgames.defs#multiplayerMode"
 						}
 					},
-					"collections": {
-						"type": "array",
-						"items": { "type": "string", "format": "at-uri" }
-					},
 					"engines": {
 						"type": "array",
 						"items": { "type": "string", "format": "at-uri" }

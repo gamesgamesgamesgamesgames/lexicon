@@ -30,6 +30,13 @@ function handle()
     return true
   end
 
+  -- Look up slug from the slugs table
+  local slug = nil
+  local slug_rows = db.raw("SELECT slug FROM slugs WHERE uri = $1 LIMIT 1", {uri})
+  if slug_rows and #slug_rows > 0 then
+    slug = slug_rows[1].slug
+  end
+
   local doc = {
     id = to_doc_id(uri),
     type = "collection",
@@ -37,13 +44,51 @@ function handle()
     uri = uri,
     name = record.name,
     description = record.description,
-    collectionType = record.type
+    collectionType = record.type,
+    slug = slug
   }
 
   http.post(INDEX_URL, {
     headers = HEADERS,
     body = json.encode(toarray({ doc }))
   })
+
+  -- Update game documents in Meilisearch with this collection membership
+  if record.games then
+    local game_updates = {}
+    for _, game_uri in ipairs(record.games) do
+      -- For each game, we need to add this collection to its collections array.
+      -- We do a partial update — Meilisearch merges fields on PUT.
+      -- First, find all collections that reference this game.
+      local collections_for_game = { uri }
+
+      -- Check other collection records that reference this game
+      local backlinks = db.backlinks({
+        collection = "games.gamesgamesgamesgames.collection",
+        uri = game_uri,
+        limit = 100
+      })
+      if backlinks and backlinks.records then
+        for _, coll in ipairs(backlinks.records) do
+          if coll.uri ~= uri then
+            table.insert(collections_for_game, coll.uri)
+          end
+        end
+      end
+
+      table.insert(game_updates, {
+        id = to_doc_id(game_uri),
+        collections = collections_for_game
+      })
+    end
+
+    if #game_updates > 0 then
+      http.post(INDEX_URL, {
+        headers = HEADERS,
+        body = json.encode(toarray(game_updates))
+      })
+    end
+  end
 
   return record
 end

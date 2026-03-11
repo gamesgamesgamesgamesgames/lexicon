@@ -25,7 +25,6 @@ function handle()
   game.ageRatings = input.ageRatings
   game.languageSupports = input.languageSupports
   game.multiplayerModes = input.multiplayerModes
-  game.collections = input.collections
   game.engines = input.engines
 
   if input.shouldPublish and not game.publishedAt then
