@@ -1,6 +1,6 @@
 function handle()
   local collection = "games.gamesgamesgamesgames.actor.profile"
-  local uri = "at://" .. ctx.did .. "/" .. collection .. "/self"
+  local uri = "at://" .. caller_did .. "/" .. collection .. "/self"
   local profile = Record.load(uri)
 
   if not profile then
