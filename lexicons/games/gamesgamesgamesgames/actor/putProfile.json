@@ -1,11 +1,11 @@
 {
 	"$type": "com.atproto.lexicon.schema",
 	"lexicon": 1,
-	"id": "games.gamesgamesgamesgames.actor.createProfile",
+	"id": "games.gamesgamesgamesgames.actor.putProfile",
 	"defs": {
 		"main": {
 			"type": "procedure",
-			"description": "Create the authenticated user's actor profile.",
+			"description": "Create or update the authenticated user's actor profile.",
 			"input": {
 				"encoding": "application/json",
 				"schema": {
