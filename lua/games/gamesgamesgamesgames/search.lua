@@ -35,7 +35,9 @@ function map_hit(hit)
       name = hit.name,
       summary = hit.summary,
       media = hit.media,
-      slug = hit.slug
+      slug = hit.slug,
+      applicationType = hit.applicationType,
+      firstReleaseDate = hit.firstReleaseDate
     }
   end
 

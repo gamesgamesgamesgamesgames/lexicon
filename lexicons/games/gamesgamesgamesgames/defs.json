@@ -434,7 +434,15 @@
 						"ref": "games.gamesgamesgamesgames.defs#mediaItem"
 					}
 				},
-				"slug": { "type": "string" }
+				"slug": { "type": "string" },
+				"applicationType": {
+					"type": "ref",
+					"ref": "games.gamesgamesgamesgames.defs#applicationType"
+				},
+				"firstReleaseDate": {
+					"type": "integer",
+					"description": "Earliest release date as YYYYMMDD integer."
+				}
 			}
 		},
 
