@@ -1,53 +1,11 @@
 -- Deprecated: use getGameFeed with the 'likes' feed URI instead.
 
--- Get like count for a game URI
-local function get_like_count(game_uri)
-  local result = db.raw(
-    "SELECT COUNT(*) AS count FROM records WHERE collection = $1 AND record->>'subject' = $2",
-    {"games.gamesgamesgamesgames.graph.like", game_uri}
-  )
-  if result and result[1] then
-    return tonumber(result[1].count) or 0
-  end
-  return 0
-end
+local SEARCH_URL = env.MEILISEARCH_URL .. "/indexes/records/search"
 
--- Get viewer's like URI for a game
-local function get_viewer_like(game_uri)
-  if not caller_did or caller_did == "" then return nil end
-  local result = db.raw(
-    "SELECT uri FROM records WHERE collection = $1 AND did = $2 AND record->>'subject' = $3 LIMIT 1",
-    {"games.gamesgamesgamesgames.graph.like", caller_did, game_uri}
-  )
-  if result and result[1] then return result[1].uri end
-  return nil
-end
-
--- Hydrate a game URI into a gameView
-local function hydrate_game(game_uri)
-  local game = db.get(game_uri)
-  if not game then return nil end
-
-  local view = {
-    uri = game_uri,
-    name = game.name,
-    applicationType = game.applicationType,
-    summary = game.summary,
-    genres = game.genres,
-    themes = game.themes,
-    media = game.media,
-    releases = game.releases,
-    slug = game.slug,
-    likeCount = get_like_count(game_uri),
-  }
-
-  local viewer_like = get_viewer_like(game_uri)
-  if viewer_like then
-    view.viewer = { like = viewer_like }
-  end
-
-  return view
-end
+local SEARCH_HEADERS = {
+  ["Authorization"] = "Bearer " .. env.MEILISEARCH_API_KEY,
+  ["content-type"] = "application/json"
+}
 
 function handle()
   if not caller_did or caller_did == "" then
@@ -64,22 +22,59 @@ function handle()
     offset = tonumber(cursor) or 0
   end
 
+  -- Get liked game URIs from Postgres (likes aren't indexed in meilisearch)
   local likes = db.raw(
-    "SELECT record, uri AS like_uri FROM records WHERE collection = $1 AND did = $2 ORDER BY indexed_at DESC LIMIT $3 OFFSET $4",
+    "SELECT record FROM records WHERE collection = $1 AND did = $2 ORDER BY indexed_at DESC LIMIT $3 OFFSET $4",
     {"games.gamesgamesgamesgames.graph.like", caller_did, limit + 1, offset}
   )
 
-  if not likes then
+  if not likes or #likes == 0 then
     return { feed = toarray({}) }
   end
 
   local has_more = #likes > limit
 
+  -- Collect URIs for meilisearch batch lookup
+  local uris = {}
+  for i = 1, math.min(#likes, limit) do
+    uris[#uris + 1] = '"' .. likes[i].record.subject .. '"'
+  end
+
+  -- Batch fetch game data from meilisearch
+  local body = {
+    q = "",
+    limit = #uris,
+    filter = "uri IN [" .. table.concat(uris, ", ") .. "]",
+    attributesToRetrieve = toarray({ "uri", "name", "slug", "media" })
+  }
+
+  local resp = http.post(SEARCH_URL, { headers = SEARCH_HEADERS, body = json.encode(body) })
+  local data = json.decode(resp.body)
+
+  if resp.status ~= 200 then
+    return { error = "MeilisearchError", message = data.message or resp.body }
+  end
+
+  -- Index hits by URI for ordered lookup
+  local hits_by_uri = {}
+  for _, hit in ipairs(data.hits or {}) do
+    hits_by_uri[hit.uri] = hit
+  end
+
+  -- Build feed in like order
   local feed = {}
   for i = 1, math.min(#likes, limit) do
-    local game_view = hydrate_game(likes[i].record.subject)
-    if game_view then
-      feed[#feed + 1] = { game = game_view }
+    local game_uri = likes[i].record.subject
+    local hit = hits_by_uri[game_uri]
+    if hit then
+      feed[#feed + 1] = {
+        game = {
+          uri = hit.uri,
+          name = hit.name,
+          slug = hit.slug,
+          media = hit.media,
+        }
+      }
     end
   end
 
