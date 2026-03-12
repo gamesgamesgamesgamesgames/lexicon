@@ -10,26 +10,6 @@ local function parse_rkey(uri)
   return uri:match("[^/]+$")
 end
 
--- Base64url encode for Meilisearch document ID
-local b64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
-local function to_doc_id(s)
-  local out = {}
-  local i = 1
-  while i <= #s do
-    local a, b2, c = string.byte(s, i, i + 2)
-    b2 = b2 or 0
-    c = c or 0
-    local n = a * 65536 + b2 * 256 + c
-    local remaining = #s - i + 1
-    table.insert(out, string.sub(b64, math.floor(n / 262144) % 64 + 1, math.floor(n / 262144) % 64 + 1))
-    table.insert(out, string.sub(b64, math.floor(n / 4096) % 64 + 1, math.floor(n / 4096) % 64 + 1))
-    if remaining >= 2 then table.insert(out, string.sub(b64, math.floor(n / 64) % 64 + 1, math.floor(n / 64) % 64 + 1)) end
-    if remaining >= 3 then table.insert(out, string.sub(b64, n % 64 + 1, n % 64 + 1)) end
-    i = i + 3
-  end
-  return table.concat(out)
-end
-
 -- Get like count for a game URI
 local function get_like_count(game_uri)
   local result = db.raw(
@@ -146,13 +126,10 @@ local function algo_similar(limit, cursor, feed_context)
     table.insert(query_terms, spaced)
   end
 
-  local source_id = to_doc_id(source_uri)
-  local filter = 'type = "game" AND id != "' .. source_id .. '" AND applicationType = "game"'
-
   local body = {
     q = table.concat(query_terms, " "),
-    limit = limit,
-    filter = filter,
+    limit = limit + 1,
+    filter = 'type = "game" AND applicationType = "game"',
     attributesToRetrieve = toarray({ "uri" })
   }
 
@@ -162,7 +139,10 @@ local function algo_similar(limit, cursor, feed_context)
 
   local items = {}
   for _, hit in ipairs(hits) do
-    items[#items + 1] = { game = hit.uri, feedContext = source_uri }
+    if hit.uri ~= source_uri then
+      items[#items + 1] = { game = hit.uri, feedContext = source_uri }
+      if #items >= limit then break end
+    end
   end
 
   return items, nil
