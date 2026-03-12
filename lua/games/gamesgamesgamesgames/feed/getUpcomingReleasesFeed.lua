@@ -62,7 +62,9 @@ function handle()
   local offset = 0
   if params.cursor then offset = tonumber(params.cursor) or 0 end
 
-  local today = tonumber(os.date("!%Y%m%d"))
+  -- now() returns ISO 8601 e.g. "2026-03-12T..."
+  local y, m, d = now():match("^(%d%d%d%d)-(%d%d)-(%d%d)")
+  local today = tonumber(y .. m .. d)
 
   local body = {
     q = "",

@@ -125,8 +125,8 @@ local function algo_upcoming(limit, cursor)
   end
 
   -- Get current date as YYYYMMDD integer for comparison
-  local now = os.date("!%Y%m%d")
-  local now_int = tonumber(now)
+  local y, m, d = now():match("^(%d%d%d%d)-(%d%d)-(%d%d)")
+  local now_int = tonumber(y .. m .. d)
 
   local rows = db.raw(
     "SELECT uri, record FROM records WHERE collection = $1 AND record->>'applicationType' = 'game' ORDER BY indexed_at DESC LIMIT $2 OFFSET $3",
