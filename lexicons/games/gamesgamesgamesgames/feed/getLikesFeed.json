@@ -5,7 +5,7 @@
 	"defs": {
 		"main": {
 			"type": "query",
-			"description": "Get the authenticated user's liked games, ordered by most recently liked.",
+			"description": "Get the authenticated user's liked games, ordered by most recently liked. Deprecated: use getGameFeed with the 'likes' feed URI instead.",
 			"parameters": {
 				"type": "params",
 				"properties": {
@@ -13,12 +13,10 @@
 						"type": "integer",
 						"minimum": 1,
 						"maximum": 100,
-						"default": 50,
-						"description": "Maximum number of games to return."
+						"default": 50
 					},
 					"cursor": {
-						"type": "string",
-						"description": "Pagination cursor from a previous response."
+						"type": "string"
 					}
 				}
 			},
@@ -26,40 +24,19 @@
 				"encoding": "application/json",
 				"schema": {
 					"type": "object",
-					"required": ["games"],
+					"required": ["feed"],
 					"properties": {
-						"games": {
+						"feed": {
 							"type": "array",
 							"items": {
 								"type": "ref",
-								"ref": "#gameItem"
+								"ref": "games.gamesgamesgamesgames.defs#gameFeedViewItem"
 							}
 						},
 						"cursor": {
-							"type": "string",
-							"description": "Pagination cursor for the next page."
+							"type": "string"
 						}
 					}
-				}
-			}
-		},
-		"gameItem": {
-			"type": "object",
-			"required": ["uri", "game", "likedAt"],
-			"properties": {
-				"uri": {
-					"type": "string",
-					"format": "at-uri",
-					"description": "AT URI of the game record."
-				},
-				"game": {
-					"type": "unknown",
-					"description": "The game record."
-				},
-				"likedAt": {
-					"type": "string",
-					"format": "datetime",
-					"description": "When the user liked this game."
 				}
 			}
 		}
