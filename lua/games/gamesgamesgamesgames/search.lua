@@ -227,6 +227,11 @@ function handle()
     })
 
     local multi_data = json.decode(multi_resp.body)
+
+    if multi_resp.status ~= 200 then
+      return { error = "MeilisearchError", message = multi_data.message or multi_resp.body }
+    end
+
     local results_list = multi_data.results or {}
 
     data = results_list[1] or {}
@@ -246,6 +251,11 @@ function handle()
       body = json.encode(body)
     })
     data = json.decode(resp.body)
+
+    if resp.status ~= 200 then
+      return { error = "MeilisearchError", message = data.message or resp.body }
+    end
+
     hits = data.hits or {}
     matched_collections = {}
   end

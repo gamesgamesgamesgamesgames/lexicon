@@ -135,6 +135,11 @@ local function algo_similar(limit, cursor, feed_context)
 
   local resp = http.post(SEARCH_URL, { headers = SEARCH_HEADERS, body = json.encode(body) })
   local data = json.decode(resp.body)
+
+  if resp.status ~= 200 then
+    return { error = "MeilisearchError", message = data.message or resp.body }
+  end
+
   local hits = data.hits or {}
 
   local items = {}
@@ -284,6 +289,11 @@ local function algo_personalized(limit, cursor)
 
   local resp = http.post(SEARCH_URL, { headers = SEARCH_HEADERS, body = json.encode(body) })
   local data = json.decode(resp.body)
+
+  if resp.status ~= 200 then
+    return { error = "MeilisearchError", message = data.message or resp.body }
+  end
+
   local hits = data.hits or {}
 
   local items = {}
