@@ -37,8 +37,15 @@ local function get_viewer_like(game_uri)
   return nil
 end
 
+-- Look up slug from the slugs table
+local function find_slug(target_uri)
+  local rows = db.raw("SELECT slug FROM slugs WHERE uri = $1 LIMIT 1", {target_uri})
+  if rows and #rows > 0 then return rows[1].slug end
+  return nil
+end
+
 -- Hydrate a game URI into a gameView
-local function hydrate_game(game_uri)
+local function hydrate_game(game_uri, slug)
   local game = db.get(game_uri)
   if not game then
     return nil
@@ -56,7 +63,7 @@ local function hydrate_game(game_uri)
     themes = game.themes,
     media = game.media,
     releases = game.releases,
-    slug = game.slug,
+    slug = slug or find_slug(game_uri),
     likeCount = like_count,
   }
 
@@ -130,7 +137,7 @@ local function algo_similar(limit, cursor, feed_context)
     q = table.concat(query_terms, " "),
     limit = limit + 1,
     filter = 'type = "game" AND applicationType = "game"',
-    attributesToRetrieve = toarray({ "uri" })
+    attributesToRetrieve = toarray({ "uri", "slug" })
   }
 
   local resp = http.post(SEARCH_URL, { headers = SEARCH_HEADERS, body = json.encode(body) })
@@ -145,7 +152,7 @@ local function algo_similar(limit, cursor, feed_context)
   local items = {}
   for _, hit in ipairs(hits) do
     if hit.uri ~= source_uri then
-      items[#items + 1] = { game = hit.uri, feedContext = source_uri }
+      items[#items + 1] = { game = hit.uri, slug = hit.slug, feedContext = source_uri }
       if #items >= limit then break end
     end
   end
@@ -356,7 +363,7 @@ function handle()
   -- Hydrate each skeleton item
   local feed_items = {}
   for _, item in ipairs(skeleton) do
-    local game_view = hydrate_game(item.game)
+    local game_view = hydrate_game(item.game, item.slug)
     if game_view then
       feed_items[#feed_items + 1] = {
         game = game_view,
