@@ -1,0 +1,48 @@
+{
+	"$type": "com.atproto.lexicon.schema",
+	"lexicon": 1,
+	"id": "games.gamesgamesgamesgames.feed.getFeedSkeleton",
+	"defs": {
+		"main": {
+			"type": "query",
+			"description": "Get a skeleton of a game feed. Auth is optional. Implemented by Feed Generator services.",
+			"parameters": {
+				"type": "params",
+				"required": ["feed"],
+				"properties": {
+					"feed": {
+						"type": "string",
+						"format": "at-uri"
+					},
+					"limit": {
+						"type": "integer",
+						"minimum": 1,
+						"maximum": 100,
+						"default": 50
+					},
+					"cursor": {
+						"type": "string"
+					}
+				}
+			},
+			"output": {
+				"encoding": "application/json",
+				"schema": {
+					"type": "object",
+					"required": ["feed"],
+					"properties": {
+						"cursor": { "type": "string" },
+						"feed": {
+							"type": "array",
+							"items": {
+								"type": "ref",
+								"ref": "games.gamesgamesgamesgames.defs#skeletonGameFeedItem"
+							}
+						}
+					}
+				}
+			},
+			"errors": [{ "name": "UnknownFeed" }]
+		}
+	}
+}

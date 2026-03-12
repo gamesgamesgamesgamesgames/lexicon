@@ -1,0 +1,42 @@
+{
+	"$type": "com.atproto.lexicon.schema",
+	"lexicon": 1,
+	"id": "games.gamesgamesgamesgames.feed.generator",
+	"defs": {
+		"main": {
+			"type": "record",
+			"description": "Record declaring a game feed generator. Can exist in any repository.",
+			"key": "any",
+			"record": {
+				"type": "object",
+				"required": ["did", "displayName", "createdAt"],
+				"properties": {
+					"did": {
+						"type": "string",
+						"format": "did"
+					},
+					"displayName": {
+						"type": "string",
+						"maxGraphemes": 64,
+						"maxLength": 640
+					},
+					"description": {
+						"type": "string",
+						"maxGraphemes": 300,
+						"maxLength": 3000
+					},
+					"avatar": {
+						"type": "blob",
+						"accept": ["image/png", "image/jpeg"],
+						"maxSize": 1000000
+					},
+					"acceptsInteractions": { "type": "boolean" },
+					"createdAt": {
+						"type": "string",
+						"format": "datetime"
+					}
+				}
+			}
+		}
+	}
+}

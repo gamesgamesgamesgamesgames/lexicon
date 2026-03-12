@@ -297,6 +297,82 @@
 			}
 		},
 
+		"skeletonGameFeedItem": {
+			"type": "object",
+			"required": ["game"],
+			"properties": {
+				"game": { "type": "string", "format": "at-uri" },
+				"feedContext": { "type": "string", "maxLength": 2000 }
+			}
+		},
+
+		"gameView": {
+			"type": "object",
+			"required": ["uri", "name", "applicationType"],
+			"properties": {
+				"uri": { "type": "string", "format": "at-uri" },
+				"name": { "type": "string" },
+				"applicationType": {
+					"type": "ref",
+					"ref": "games.gamesgamesgamesgames.defs#applicationType"
+				},
+				"summary": { "type": "string" },
+				"genres": {
+					"type": "array",
+					"items": {
+						"type": "ref",
+						"ref": "games.gamesgamesgamesgames.defs#genre"
+					}
+				},
+				"themes": {
+					"type": "array",
+					"items": {
+						"type": "ref",
+						"ref": "games.gamesgamesgamesgames.defs#theme"
+					}
+				},
+				"media": {
+					"type": "array",
+					"items": {
+						"type": "ref",
+						"ref": "games.gamesgamesgamesgames.defs#mediaItem"
+					}
+				},
+				"releases": {
+					"type": "array",
+					"items": {
+						"type": "ref",
+						"ref": "games.gamesgamesgamesgames.defs#release"
+					}
+				},
+				"slug": { "type": "string" },
+				"likeCount": { "type": "integer", "minimum": 0 },
+				"viewer": {
+					"type": "ref",
+					"ref": "games.gamesgamesgamesgames.defs#viewerState"
+				}
+			}
+		},
+
+		"viewerState": {
+			"type": "object",
+			"properties": {
+				"like": { "type": "string", "format": "at-uri" }
+			}
+		},
+
+		"gameFeedViewItem": {
+			"type": "object",
+			"required": ["game"],
+			"properties": {
+				"game": {
+					"type": "ref",
+					"ref": "games.gamesgamesgamesgames.defs#gameView"
+				},
+				"feedContext": { "type": "string", "maxLength": 2000 }
+			}
+		},
+
 		"gameDetailView": {
 			"type": "object",
 			"required": ["name", "uri", "createdAt"],
