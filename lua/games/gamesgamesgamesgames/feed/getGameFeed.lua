@@ -142,7 +142,8 @@ local function algo_similar(limit, cursor, feed_context)
 
   local query_terms = {}
   for _, term in ipairs(terms) do
-    table.insert(query_terms, term:gsub("(%l)(%u)", "%1 %2"))
+    local spaced = term:gsub("(%l)(%u)", "%1 %2")
+    table.insert(query_terms, spaced)
   end
 
   local source_id = to_doc_id(source_uri)
@@ -288,7 +289,8 @@ local function algo_personalized(limit, cursor)
   for _, term in ipairs(terms) do
     if not seen[term] then
       seen[term] = true
-      table.insert(query_terms, term:gsub("(%l)(%u)", "%1 %2"))
+      local spaced = term:gsub("(%l)(%u)", "%1 %2")
+      table.insert(query_terms, spaced)
     end
   end
 

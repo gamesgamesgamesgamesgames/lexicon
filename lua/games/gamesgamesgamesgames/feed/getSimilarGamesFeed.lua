@@ -86,7 +86,8 @@ function handle()
 
   local query_terms = {}
   for _, term in ipairs(terms) do
-    table.insert(query_terms, term:gsub("(%l)(%u)", "%1 %2"))
+    local spaced = term:gsub("(%l)(%u)", "%1 %2")
+    table.insert(query_terms, spaced)
   end
   local q = table.concat(query_terms, " ")
 
