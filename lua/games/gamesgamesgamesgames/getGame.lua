@@ -25,28 +25,28 @@ function resolve_slug(slug)
   return nil
 end
 
--- Map of param name -> JSON path in record->'externalIds'
-local EXTERNAL_ID_PARAMS = {
-  igdbId = "igdb",
-  steamId = "steam",
-  gogId = "gog",
-  epicGamesId = "epicGames",
-  humbleBundleId = "humbleBundle",
-  playStationId = "playStation",
-  xboxId = "xbox",
-  nintendoEshopId = "nintendoEshop",
-  appleAppStoreId = "appleAppStore",
-  googlePlayId = "googlePlay",
+local SEARCH_URL = env.MEILISEARCH_URL .. "/indexes/records/search"
+
+local SEARCH_HEADERS = {
+  ["Authorization"] = "Bearer " .. env.MEILISEARCH_API_KEY,
+  ["content-type"] = "application/json"
 }
 
-function resolve_external_id(param_name, value)
-  local field = EXTERNAL_ID_PARAMS[param_name]
-  if not field then return nil end
-  local rows = db.raw(
-    "SELECT uri FROM records WHERE collection = $1 AND record->'externalIds'->>'" .. field .. "' = $2 LIMIT 1",
-    {"games.gamesgamesgamesgames.game", value}
-  )
-  if rows and #rows > 0 then return rows[1].uri end
+function resolve_external_id(field, value)
+  local body = {
+    q = "",
+    limit = 1,
+    filter = field .. ' = "' .. value .. '"',
+    attributesToRetrieve = toarray({ "uri" })
+  }
+
+  local resp = http.post(SEARCH_URL, { headers = SEARCH_HEADERS, body = json.encode(body) })
+  if resp.status ~= 200 then return nil end
+
+  local data = json.decode(resp.body)
+  if data.hits and #data.hits > 0 then
+    return data.hits[1].uri
+  end
   return nil
 end
 
@@ -62,12 +62,16 @@ function handle()
 
   -- Check external ID params if no uri or slug was provided
   if not uri or uri == "" then
-    for param_name, _ in pairs(EXTERNAL_ID_PARAMS) do
-      local value = params[param_name]
-      if value and value ~= "" then
-        uri = resolve_external_id(param_name, value)
-        break
-      end
+    if params.igdbId and params.igdbId ~= "" then uri = resolve_external_id("igdbId", params.igdbId)
+    elseif params.steamId and params.steamId ~= "" then uri = resolve_external_id("steamId", params.steamId)
+    elseif params.gogId and params.gogId ~= "" then uri = resolve_external_id("gogId", params.gogId)
+    elseif params.epicGamesId and params.epicGamesId ~= "" then uri = resolve_external_id("epicGamesId", params.epicGamesId)
+    elseif params.humbleBundleId and params.humbleBundleId ~= "" then uri = resolve_external_id("humbleBundleId", params.humbleBundleId)
+    elseif params.playStationId and params.playStationId ~= "" then uri = resolve_external_id("playStationId", params.playStationId)
+    elseif params.xboxId and params.xboxId ~= "" then uri = resolve_external_id("xboxId", params.xboxId)
+    elseif params.nintendoEshopId and params.nintendoEshopId ~= "" then uri = resolve_external_id("nintendoEshopId", params.nintendoEshopId)
+    elseif params.appleAppStoreId and params.appleAppStoreId ~= "" then uri = resolve_external_id("appleAppStoreId", params.appleAppStoreId)
+    elseif params.googlePlayId and params.googlePlayId ~= "" then uri = resolve_external_id("googlePlayId", params.googlePlayId)
     end
   end
 
