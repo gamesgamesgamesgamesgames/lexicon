@@ -15,6 +15,46 @@
 					},
 					"slug": {
 						"type": "string"
+					},
+					"igdbId": {
+						"type": "string",
+						"description": "Look up a game by its IGDB external ID."
+					},
+					"steamId": {
+						"type": "string",
+						"description": "Look up a game by its Steam external ID."
+					},
+					"gogId": {
+						"type": "string",
+						"description": "Look up a game by its GOG external ID."
+					},
+					"epicGamesId": {
+						"type": "string",
+						"description": "Look up a game by its Epic Games external ID."
+					},
+					"humbleBundleId": {
+						"type": "string",
+						"description": "Look up a game by its Humble Bundle external ID."
+					},
+					"playStationId": {
+						"type": "string",
+						"description": "Look up a game by its PlayStation external ID."
+					},
+					"xboxId": {
+						"type": "string",
+						"description": "Look up a game by its Xbox external ID."
+					},
+					"nintendoEshopId": {
+						"type": "string",
+						"description": "Look up a game by its Nintendo eShop external ID."
+					},
+					"appleAppStoreId": {
+						"type": "string",
+						"description": "Look up a game by its Apple App Store external ID."
+					},
+					"googlePlayId": {
+						"type": "string",
+						"description": "Look up a game by its Google Play external ID."
 					}
 				}
 			},

@@ -25,6 +25,31 @@ function resolve_slug(slug)
   return nil
 end
 
+-- Map of param name -> JSON path in record->'externalIds'
+local EXTERNAL_ID_PARAMS = {
+  igdbId = "igdb",
+  steamId = "steam",
+  gogId = "gog",
+  epicGamesId = "epicGames",
+  humbleBundleId = "humbleBundle",
+  playStationId = "playStation",
+  xboxId = "xbox",
+  nintendoEshopId = "nintendoEshop",
+  appleAppStoreId = "appleAppStore",
+  googlePlayId = "googlePlay",
+}
+
+function resolve_external_id(param_name, value)
+  local field = EXTERNAL_ID_PARAMS[param_name]
+  if not field then return nil end
+  local rows = db.raw(
+    "SELECT uri FROM records WHERE collection = $1 AND record->'externalIds'->>'" .. field .. "' = $2 LIMIT 1",
+    {"games.gamesgamesgamesgames.game", value}
+  )
+  if rows and #rows > 0 then return rows[1].uri end
+  return nil
+end
+
 function handle()
   local uri = params.uri
 
@@ -32,6 +57,17 @@ function handle()
     uri = resolve_slug(params.slug)
     if not uri then
       return { game = nil }
+    end
+  end
+
+  -- Check external ID params if no uri or slug was provided
+  if not uri or uri == "" then
+    for param_name, _ in pairs(EXTERNAL_ID_PARAMS) do
+      local value = params[param_name]
+      if value and value ~= "" then
+        uri = resolve_external_id(param_name, value)
+        break
+      end
     end
   end
 
