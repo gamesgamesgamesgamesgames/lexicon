@@ -72,7 +72,9 @@ function handle()
     elseif params.nintendoEshopId and params.nintendoEshopId ~= "" then uri = resolve_external_id("nintendoEshopId", params.nintendoEshopId)
     elseif params.appleAppStoreId and params.appleAppStoreId ~= "" then uri = resolve_external_id("appleAppStoreId", params.appleAppStoreId)
     elseif params.googlePlayId and params.googlePlayId ~= "" then uri = resolve_external_id("googlePlayId", params.googlePlayId)
+    else return { game = nil }
     end
+    if not uri then return { game = nil } end
   end
 
   local record = db.get(uri)
