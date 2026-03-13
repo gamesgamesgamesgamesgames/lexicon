@@ -102,6 +102,7 @@ function handle()
     languageSupports = record.languageSupports,
     multiplayerModes = record.multiplayerModes,
     engines = record.engines,
+    externalIds = record.externalIds,
     slug = find_slug(record.uri)
   }
 
