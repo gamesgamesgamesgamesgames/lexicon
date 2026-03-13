@@ -143,6 +143,31 @@ function handle()
     ageRatings = {}
   }
 
+  -- Upsert external IDs into the external_ids lookup table
+  if record.externalIds then
+    local ids = record.externalIds
+    local services = {
+      { "igdb", ids.igdb },
+      { "steam", ids.steam },
+      { "gog", ids.gog },
+      { "epicGames", ids.epicGames },
+      { "humbleBundle", ids.humbleBundle },
+      { "playStation", ids.playStation },
+      { "xbox", ids.xbox },
+      { "nintendoEshop", ids.nintendoEshop },
+      { "appleAppStore", ids.appleAppStore },
+      { "googlePlay", ids.googlePlay },
+    }
+    for _, pair in ipairs(services) do
+      if pair[2] and pair[2] ~= "" then
+        db.raw(
+          "INSERT INTO external_ids (service, external_id, uri) VALUES ($1, $2, $3) ON CONFLICT (service, external_id) DO UPDATE SET uri = $3",
+          { pair[1], pair[2], uri }
+        )
+      end
+    end
+  end
+
   -- Flatten age ratings into "organization:rating" strings for filtering
   if record.ageRatings then
     for _, ar in ipairs(record.ageRatings) do
