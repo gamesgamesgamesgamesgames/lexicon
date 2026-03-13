@@ -25,19 +25,6 @@ function resolve_slug(slug)
   return nil
 end
 
-local EXTERNAL_ID_SERVICES = {
-  igdbId = "igdb",
-  steamId = "steam",
-  gogId = "gog",
-  epicGamesId = "epicGames",
-  humbleBundleId = "humbleBundle",
-  playStationId = "playStation",
-  xboxId = "xbox",
-  nintendoEshopId = "nintendoEshop",
-  appleAppStoreId = "appleAppStore",
-  googlePlayId = "googlePlay",
-}
-
 function resolve_external_id(service, value)
   local rows = db.raw(
     "SELECT uri FROM external_ids WHERE service = $1 AND external_id = $2 LIMIT 1",
