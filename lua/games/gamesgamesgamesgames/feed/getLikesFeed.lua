@@ -1,5 +1,3 @@
--- Deprecated: use getGameFeed with the 'likes' feed URI instead.
-
 local SEARCH_URL = env.MEILISEARCH_URL .. "/indexes/records/search"
 
 local SEARCH_HEADERS = {
@@ -8,8 +6,9 @@ local SEARCH_HEADERS = {
 }
 
 function handle()
-  if not caller_did or caller_did == "" then
-    return { error = "Authentication required" }
+  local did = params.did
+  if not did or did == "" then
+    return { error = "InvalidRequest", message = "did is required" }
   end
 
   local limit = tonumber(params.limit) or 50
@@ -25,7 +24,7 @@ function handle()
   -- Get liked game URIs from Postgres (likes aren't indexed in meilisearch)
   local likes = db.raw(
     "SELECT record FROM records WHERE collection = $1 AND did = $2 ORDER BY indexed_at DESC LIMIT $3 OFFSET $4",
-    {"games.gamesgamesgamesgames.graph.like", caller_did, limit + 1, offset}
+    {"games.gamesgamesgamesgames.graph.like", did, limit + 1, offset}
   )
 
   if not likes or #likes == 0 then

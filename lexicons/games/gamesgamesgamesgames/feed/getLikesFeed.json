@@ -5,10 +5,15 @@
 	"defs": {
 		"main": {
 			"type": "query",
-			"description": "Get the authenticated user's liked games, ordered by most recently liked. Deprecated: use getGameFeed with the 'likes' feed URI instead.",
+			"description": "Get a user's liked games, ordered by most recently liked.",
 			"parameters": {
 				"type": "params",
+				"required": ["did"],
 				"properties": {
+					"did": {
+						"type": "string",
+						"description": "The DID of the user whose likes to retrieve."
+					},
 					"limit": {
 						"type": "integer",
 						"minimum": 1,
