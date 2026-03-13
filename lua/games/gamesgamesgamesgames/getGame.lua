@@ -8,8 +8,9 @@ function resolve_release_platforms(releases)
   if not releases then return nil end
 
   for _, release in ipairs(releases) do
-    if release.platformUri and not release.platform then
-      local platform_record = db.get(release.platformUri)
+    local platform_uri = release.platformUri or release.platformURI
+    if platform_uri and not release.platform then
+      local platform_record = db.get(platform_uri)
       if platform_record then
         release.platform = platform_record.name
       end
