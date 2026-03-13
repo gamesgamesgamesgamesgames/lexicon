@@ -180,9 +180,9 @@ function handle()
   elseif sort_by == "name_desc" then
     sort = toarray({ "name:desc" })
   elseif sort_by == "published_asc" then
-    sort = toarray({ "publishedAt:asc" })
+    sort = toarray({ "firstReleaseDate:asc" })
   elseif sort_by == "published_desc" then
-    sort = toarray({ "publishedAt:desc" })
+    sort = toarray({ "firstReleaseDate:desc" })
   end
 
   -- Only the fields map_hit actually uses, plus collections for re-ranking
