@@ -6,13 +6,15 @@ end
 
 function handle()
   local limit = tonumber(params.limit) or 20
-  local cursor = tonumber(params.cursor) or 0
 
   local query_opts = {
     collection = "games.gamesgamesgamesgames.game",
     limit = limit,
-    offset = cursor
   }
+
+  if params.cursor then
+    query_opts.cursor = params.cursor
+  end
 
   if params.did then
     query_opts.did = params.did
