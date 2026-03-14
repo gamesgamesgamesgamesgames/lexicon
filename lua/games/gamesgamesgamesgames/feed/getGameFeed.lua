@@ -104,62 +104,6 @@ local function algo_likes(limit, cursor)
   return items, next_cursor
 end
 
-local function algo_similar(limit, cursor, feed_context)
-  local source_uri = feed_context
-  if not source_uri or source_uri == "" then
-    return toarray({}), nil
-  end
-
-  local game = db.get(source_uri)
-  if not game then return toarray({}), nil end
-
-  local terms = {}
-  if game.genres then for _, g in ipairs(game.genres) do table.insert(terms, g) end end
-  if game.themes then for _, t in ipairs(game.themes) do table.insert(terms, t) end end
-  if game.modes then for _, m in ipairs(game.modes) do table.insert(terms, m) end end
-  if game.playerPerspectives then for _, p in ipairs(game.playerPerspectives) do table.insert(terms, p) end end
-  if game.keywords then
-    for i, k in ipairs(game.keywords) do
-      if i > 5 then break end
-      table.insert(terms, k)
-    end
-  end
-
-  if #terms == 0 then return toarray({}), nil end
-
-  local query_terms = {}
-  for _, term in ipairs(terms) do
-    local spaced = term:gsub("(%l)(%u)", "%1 %2")
-    table.insert(query_terms, spaced)
-  end
-
-  local body = {
-    q = table.concat(query_terms, " "),
-    limit = limit + 1,
-    filter = 'type = "game" AND applicationType = "game"',
-    attributesToRetrieve = toarray({ "uri", "slug" })
-  }
-
-  local resp = http.post(SEARCH_URL, { headers = SEARCH_HEADERS, body = json.encode(body) })
-  local data = json.decode(resp.body)
-
-  if resp.status ~= 200 then
-    return { error = "MeilisearchError", message = data.message or resp.body }
-  end
-
-  local hits = data.hits or {}
-
-  local items = {}
-  for _, hit in ipairs(hits) do
-    if hit.uri ~= source_uri then
-      items[#items + 1] = { game = hit.uri, slug = hit.slug, feedContext = source_uri }
-      if #items >= limit then break end
-    end
-  end
-
-  return items, nil
-end
-
 local function algo_upcoming(limit, cursor)
   local offset = 0
   if cursor then offset = tonumber(cursor) or 0 end
@@ -319,7 +263,6 @@ end
 -- Algorithm dispatch table
 local algorithms = {
   likes = algo_likes,
-  similar = algo_similar,
   upcoming = algo_upcoming,
   ["recently-updated"] = algo_recently_updated,
   hot = algo_hot,
@@ -349,11 +292,7 @@ function handle()
   -- Run the skeleton algorithm
   local skeleton, next_cursor
 
-  if rkey == "similar" then
-    skeleton, next_cursor = algo(limit, params.cursor, params.feedContext)
-  else
-    skeleton, next_cursor = algo(limit, params.cursor)
-  end
+  skeleton, next_cursor = algo(limit, params.cursor)
 
   -- Check for auth errors
   if skeleton.error then

@@ -5,7 +5,7 @@
 	"defs": {
 		"main": {
 			"type": "query",
-			"description": "Get games similar to a given game, based on shared genres, themes, and other attributes. Deprecated: use getGameFeed with the 'similar' feed URI instead.",
+			"description": "Get games similar to a given game using vector similarity.",
 			"parameters": {
 				"type": "params",
 				"required": ["uri"],

@@ -1,11 +1,30 @@
--- Deprecated: use getGameFeed with the 'similar' feed URI instead.
+local SIMILAR_URL = env.MEILISEARCH_URL .. "/indexes/records/similar"
 
-local SEARCH_URL = env.MEILISEARCH_URL .. "/indexes/records/search"
-
-local SEARCH_HEADERS = {
+local HEADERS = {
   ["Authorization"] = "Bearer " .. env.MEILISEARCH_API_KEY,
   ["content-type"] = "application/json"
 }
+
+-- Base64url-encode an AT URI into a Meilisearch document ID.
+-- Must match the encoding in game.lua and meilisearch-backfill.ts.
+local b64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
+local function to_doc_id(s)
+  local out = {}
+  local i = 1
+  while i <= #s do
+    local a, b, c = string.byte(s, i, i + 2)
+    b = b or 0
+    c = c or 0
+    local n = a * 65536 + b * 256 + c
+    local remaining = #s - i + 1
+    table.insert(out, string.sub(b64, math.floor(n / 262144) % 64 + 1, math.floor(n / 262144) % 64 + 1))
+    table.insert(out, string.sub(b64, math.floor(n / 4096) % 64 + 1, math.floor(n / 4096) % 64 + 1))
+    if remaining >= 2 then table.insert(out, string.sub(b64, math.floor(n / 64) % 64 + 1, math.floor(n / 64) % 64 + 1)) end
+    if remaining >= 3 then table.insert(out, string.sub(b64, n % 64 + 1, n % 64 + 1)) end
+    i = i + 3
+  end
+  return table.concat(out)
+end
 
 function handle()
   local game_uri = params.uri
@@ -13,49 +32,22 @@ function handle()
   if limit < 1 then limit = 1 end
   if limit > 10 then limit = 10 end
 
-  local source = db.get(game_uri)
-  if not source then
-    return { feed = toarray({}) }
-  end
-
-  -- Build search query from game attributes
-  local terms = {}
-  if source.genres then for _, g in ipairs(source.genres) do table.insert(terms, g) end end
-  if source.themes then for _, t in ipairs(source.themes) do table.insert(terms, t) end end
-  if source.modes then for _, m in ipairs(source.modes) do table.insert(terms, m) end end
-  if source.playerPerspectives then for _, p in ipairs(source.playerPerspectives) do table.insert(terms, p) end end
-  if source.keywords then
-    for i, k in ipairs(source.keywords) do
-      if i > 5 then break end
-      table.insert(terms, k)
-    end
-  end
-
-  if #terms == 0 then
-    return { feed = toarray({}) }
-  end
-
-  local query_terms = {}
-  for _, term in ipairs(terms) do
-    local spaced = term:gsub("(%l)(%u)", "%1 %2")
-    table.insert(query_terms, spaced)
-  end
-  local q = table.concat(query_terms, " ")
-
   local body = {
-    q = q,
+    id = to_doc_id(game_uri),
+    embedder = "game-similarity",
     limit = limit + 1,
     filter = 'type = "game" AND applicationType = "game"',
     attributesToRetrieve = toarray({ "uri", "name", "slug", "media" })
   }
 
-  local resp = http.post(SEARCH_URL, { headers = SEARCH_HEADERS, body = json.encode(body) })
-  local data = json.decode(resp.body)
+  local resp = http.post(SIMILAR_URL, { headers = HEADERS, body = json.encode(body) })
 
   if resp.status ~= 200 then
+    local data = json.decode(resp.body)
     return { error = "MeilisearchError", message = data.message or resp.body }
   end
 
+  local data = json.decode(resp.body)
   local hits = data.hits or {}
 
   local feed = {}
