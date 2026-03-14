@@ -1,3 +1,11 @@
+-- Generic game feed hydrator, modeled after app.bsky.feed.getFeed.
+-- Takes a feed URI, resolves the algorithm, fetches a skeleton, and
+-- hydrates each item into a full game view.
+--
+-- Individual feed algorithms also have their own standalone XRPC
+-- endpoints (e.g. getHotGamesFeed, getUpcomingReleasesFeed) for
+-- direct consumption.
+
 local SEARCH_URL = env.MEILISEARCH_URL .. "/indexes/records/search"
 
 local SEARCH_HEADERS = {
@@ -44,7 +52,7 @@ local function find_slug(target_uri)
   return nil
 end
 
--- Hydrate a game URI into a gameView
+-- Hydrate a game URI into a full gameView with like counts and viewer state
 local function hydrate_game(game_uri, slug)
   local game = db.get(game_uri)
   if not game then
@@ -75,12 +83,14 @@ local function hydrate_game(game_uri, slug)
 end
 
 -- ============================================================
--- Skeleton algorithms (same logic as getFeedSkeleton.lua)
+-- Skeleton algorithms
+-- Each returns { items, cursor } where items is an array of
+-- { game = uri } tables.
 -- ============================================================
 
-local function algo_likes(limit, cursor)
+local function skeleton_likes(limit, cursor)
   if not caller_did or caller_did == "" then
-    return { error = "Authentication required" }
+    return nil, nil, "Authentication required"
   end
 
   local offset = 0
@@ -91,7 +101,7 @@ local function algo_likes(limit, cursor)
     {"games.gamesgamesgamesgames.graph.like", caller_did, limit + 1, offset}
   )
 
-  if not likes then return toarray({}), nil end
+  if not likes then return {}, nil end
 
   local has_more = #likes > limit
   local items = {}
@@ -104,7 +114,7 @@ local function algo_likes(limit, cursor)
   return items, next_cursor
 end
 
-local function algo_upcoming(limit, cursor)
+local function skeleton_upcoming(limit, cursor)
   local offset = 0
   if cursor then offset = tonumber(cursor) or 0 end
 
@@ -116,7 +126,7 @@ local function algo_upcoming(limit, cursor)
     {"games.gamesgamesgamesgames.game", limit * 3, offset}
   )
 
-  if not rows then return toarray({}), nil end
+  if not rows then return {}, nil end
 
   local items = {}
   for _, row in ipairs(rows) do
@@ -148,7 +158,7 @@ local function algo_upcoming(limit, cursor)
   return items, next_cursor
 end
 
-local function algo_recently_updated(limit, cursor)
+local function skeleton_recently_updated(limit, cursor)
   local offset = 0
   if cursor then offset = tonumber(cursor) or 0 end
 
@@ -157,7 +167,7 @@ local function algo_recently_updated(limit, cursor)
     {"games.gamesgamesgamesgames.game", limit + 1, offset}
   )
 
-  if not rows then return toarray({}), nil end
+  if not rows then return {}, nil end
 
   local has_more = #rows > limit
   local items = {}
@@ -170,7 +180,7 @@ local function algo_recently_updated(limit, cursor)
   return items, next_cursor
 end
 
-local function algo_hot(limit, cursor)
+local function skeleton_hot(limit, cursor)
   local offset = 0
   if cursor then offset = tonumber(cursor) or 0 end
 
@@ -179,7 +189,7 @@ local function algo_hot(limit, cursor)
     {"games.gamesgamesgamesgames.graph.like", limit + 1, offset}
   )
 
-  if not rows then return toarray({}), nil end
+  if not rows then return {}, nil end
 
   local has_more = #rows > limit
   local items = {}
@@ -192,9 +202,9 @@ local function algo_hot(limit, cursor)
   return items, next_cursor
 end
 
-local function algo_personalized(limit, cursor)
+local function skeleton_personalized(limit, cursor)
   if not caller_did or caller_did == "" then
-    return { error = "Authentication required" }
+    return nil, nil, "Authentication required"
   end
 
   local offset = 0
@@ -205,7 +215,7 @@ local function algo_personalized(limit, cursor)
     {"games.gamesgamesgamesgames.graph.like", caller_did}
   )
 
-  if not likes or #likes == 0 then return toarray({}), nil end
+  if not likes or #likes == 0 then return {}, nil end
 
   local terms = {}
   local liked_uris = {}
@@ -218,7 +228,7 @@ local function algo_personalized(limit, cursor)
     end
   end
 
-  if #terms == 0 then return toarray({}), nil end
+  if #terms == 0 then return {}, nil end
 
   local seen = {}
   local query_terms = {}
@@ -240,11 +250,6 @@ local function algo_personalized(limit, cursor)
 
   local resp = http.post(SEARCH_URL, { headers = SEARCH_HEADERS, body = json.encode(body) })
   local data = json.decode(resp.body)
-
-  if resp.status ~= 200 then
-    return { error = "MeilisearchError", message = data.message or resp.body }
-  end
-
   local hits = data.hits or {}
 
   local items = {}
@@ -262,11 +267,11 @@ end
 
 -- Algorithm dispatch table
 local algorithms = {
-  likes = algo_likes,
-  upcoming = algo_upcoming,
-  ["recently-updated"] = algo_recently_updated,
-  hot = algo_hot,
-  personalized = algo_personalized,
+  likes = skeleton_likes,
+  upcoming = skeleton_upcoming,
+  ["recently-updated"] = skeleton_recently_updated,
+  hot = skeleton_hot,
+  personalized = skeleton_personalized,
 }
 
 function handle()
@@ -289,17 +294,18 @@ function handle()
     return { error = "UnknownFeed" }
   end
 
-  -- Run the skeleton algorithm
-  local skeleton, next_cursor
+  -- Get skeleton
+  local skeleton, next_cursor, err = algo(limit, params.cursor)
 
-  skeleton, next_cursor = algo(limit, params.cursor)
-
-  -- Check for auth errors
-  if skeleton.error then
-    return skeleton
+  if err then
+    return { error = err }
   end
 
-  -- Hydrate each skeleton item
+  if not skeleton or #skeleton == 0 then
+    return { feed = toarray({}) }
+  end
+
+  -- Hydrate each skeleton item into a full game view
   local feed_items = {}
   for _, item in ipairs(skeleton) do
     local game_view = hydrate_game(item.game, item.slug)
