@@ -53,11 +53,13 @@
 		},
 		"bold": {
 			"type": "object",
-			"description": "Facet feature for bold text."
+			"description": "Facet feature for bold text.",
+			"properties": {}
 		},
 		"italic": {
 			"type": "object",
-			"description": "Facet feature for italic text."
+			"description": "Facet feature for italic text.",
+			"properties": {}
 		},
 		"heading": {
 			"type": "object",
