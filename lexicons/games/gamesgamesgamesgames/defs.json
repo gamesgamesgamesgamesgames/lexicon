@@ -492,7 +492,55 @@
 					"type": "ref",
 					"ref": "games.gamesgamesgamesgames.defs#externalIds"
 				},
-				"slug": { "type": "string" }
+				"slug": { "type": "string" },
+				"orgCredits": {
+					"type": "array",
+					"items": {
+						"type": "ref",
+						"ref": "games.gamesgamesgamesgames.defs#orgCreditView"
+					}
+				},
+				"actorCredits": {
+					"type": "array",
+					"items": {
+						"type": "ref",
+						"ref": "games.gamesgamesgamesgames.defs#actorCreditView"
+					}
+				}
+			}
+		},
+
+		"orgCreditView": {
+			"type": "object",
+			"required": ["uri", "roles"],
+			"properties": {
+				"uri": { "type": "string", "format": "at-uri" },
+				"orgUri": { "type": "string", "format": "at-uri" },
+				"displayName": { "type": "string", "maxLength": 640 },
+				"roles": {
+					"type": "array",
+					"items": {
+						"type": "ref",
+						"ref": "games.gamesgamesgamesgames.defs#companyRole"
+					}
+				}
+			}
+		},
+
+		"actorCreditView": {
+			"type": "object",
+			"required": ["uri", "credits"],
+			"properties": {
+				"uri": { "type": "string", "format": "at-uri" },
+				"actorUri": { "type": "string", "format": "at-uri" },
+				"displayName": { "type": "string", "maxLength": 640 },
+				"credits": {
+					"type": "array",
+					"items": {
+						"type": "ref",
+						"ref": "games.gamesgamesgamesgames.defs#creditEntry"
+					}
+				}
 			}
 		},
 

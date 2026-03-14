@@ -111,5 +111,49 @@ function handle()
     game.collections = coll_uris
   end
 
+  -- Organization credits
+  if params.includeOrgCredits == true or params.includeOrgCredits == "true" then
+    local org_backlinks = db.backlinks({
+      collection = "games.gamesgamesgamesgames.org.credit",
+      uri = record.uri,
+      limit = 100
+    })
+    if org_backlinks and org_backlinks.records and #org_backlinks.records > 0 then
+      local org_credits = {}
+      for _, credit in ipairs(org_backlinks.records) do
+        table.insert(org_credits, {
+          ["$type"] = "games.gamesgamesgamesgames.defs#orgCreditView",
+          uri = credit.uri,
+          orgUri = credit.org and credit.org.uri or nil,
+          displayName = credit.displayName,
+          roles = credit.roles
+        })
+      end
+      game.orgCredits = org_credits
+    end
+  end
+
+  -- Actor credits
+  if params.includeActorCredits == true or params.includeActorCredits == "true" then
+    local actor_backlinks = db.backlinks({
+      collection = "games.gamesgamesgamesgames.actor.credit",
+      uri = record.uri,
+      limit = 500
+    })
+    if actor_backlinks and actor_backlinks.records and #actor_backlinks.records > 0 then
+      local actor_credits = {}
+      for _, credit in ipairs(actor_backlinks.records) do
+        table.insert(actor_credits, {
+          ["$type"] = "games.gamesgamesgamesgames.defs#actorCreditView",
+          uri = credit.uri,
+          actorUri = credit.actor and credit.actor.uri or nil,
+          displayName = credit.displayName,
+          credits = credit.credits
+        })
+      end
+      game.actorCredits = actor_credits
+    end
+  end
+
   return { game = game }
 end

@@ -55,6 +55,14 @@
 					"googlePlayId": {
 						"type": "string",
 						"description": "Look up a game by its Google Play external ID."
+					},
+					"includeOrgCredits": {
+						"type": "boolean",
+						"description": "Include organization credits for this game."
+					},
+					"includeActorCredits": {
+						"type": "boolean",
+						"description": "Include individual actor credits for this game."
 					}
 				}
 			},
