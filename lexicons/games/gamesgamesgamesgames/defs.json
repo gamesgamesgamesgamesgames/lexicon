@@ -232,7 +232,8 @@
 				"xbox": { "type": "string" },
 				"nintendoEshop": { "type": "string" },
 				"appleAppStore": { "type": "string" },
-				"googlePlay": { "type": "string" }
+				"googlePlay": { "type": "string" },
+				"twitch": { "type": "string" }
 			}
 		},
 

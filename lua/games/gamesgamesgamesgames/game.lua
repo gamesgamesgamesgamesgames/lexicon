@@ -157,6 +157,7 @@ function handle()
       { "nintendoEshop", ids.nintendoEshop },
       { "appleAppStore", ids.appleAppStore },
       { "googlePlay", ids.googlePlay },
+      { "twitch", ids.twitch },
     }
     for _, pair in ipairs(services) do
       if pair[2] and pair[2] ~= "" then
