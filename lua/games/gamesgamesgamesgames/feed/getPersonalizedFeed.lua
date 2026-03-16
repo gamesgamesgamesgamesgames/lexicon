@@ -1,9 +1,30 @@
-local SEARCH_URL = env.MEILISEARCH_URL .. "/indexes/records/search"
+local SIMILAR_URL = env.MEILISEARCH_URL .. "/indexes/records/similar"
 
-local SEARCH_HEADERS = {
+local HEADERS = {
   ["Authorization"] = "Bearer " .. env.MEILISEARCH_API_KEY,
   ["content-type"] = "application/json"
 }
+
+-- Base64url-encode an AT URI into a Meilisearch document ID.
+-- Must match the encoding in game.lua and meilisearch-backfill.ts.
+local b64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
+local function to_doc_id(s)
+  local out = {}
+  local i = 1
+  while i <= #s do
+    local a, b, c = string.byte(s, i, i + 2)
+    b = b or 0
+    c = c or 0
+    local n = a * 65536 + b * 256 + c
+    local remaining = #s - i + 1
+    table.insert(out, string.sub(b64, math.floor(n / 262144) % 64 + 1, math.floor(n / 262144) % 64 + 1))
+    table.insert(out, string.sub(b64, math.floor(n / 4096) % 64 + 1, math.floor(n / 4096) % 64 + 1))
+    if remaining >= 2 then table.insert(out, string.sub(b64, math.floor(n / 64) % 64 + 1, math.floor(n / 64) % 64 + 1)) end
+    if remaining >= 3 then table.insert(out, string.sub(b64, n % 64 + 1, n % 64 + 1)) end
+    i = i + 3
+  end
+  return table.concat(out)
+end
 
 function handle()
   if not caller_did or caller_did == "" then
@@ -27,72 +48,68 @@ function handle()
     return { feed = toarray({}) }
   end
 
-  -- Collect genres and themes from liked games
-  local terms = {}
   local liked_uris = {}
   for _, like in ipairs(likes) do
     liked_uris[like.game_uri] = true
-    local game = db.get(like.game_uri)
-    if game then
-      if game.genres then
-        for _, g in ipairs(game.genres) do table.insert(terms, g) end
-      end
-      if game.themes then
-        for _, t in ipairs(game.themes) do table.insert(terms, t) end
+  end
+
+  -- Fetch similar games for each liked game via vector embeddings
+  local scores = {}  -- uri -> { score, game }
+  local per_like_limit = math.ceil(limit / #likes) + 1
+
+  for _, like in ipairs(likes) do
+    local body = {
+      id = to_doc_id(like.game_uri),
+      embedder = "game-similarity",
+      limit = per_like_limit,
+      filter = 'type = "game" AND applicationType = "game"',
+      attributesToRetrieve = toarray({ "uri", "name", "slug", "media" })
+    }
+
+    local resp = http.post(SIMILAR_URL, { headers = HEADERS, body = json.encode(body) })
+
+    if resp.status == 200 then
+      local data = json.decode(resp.body)
+      local hits = data.hits or {}
+
+      for rank, hit in ipairs(hits) do
+        if not liked_uris[hit.uri] then
+          -- Accumulate a relevance score: higher-ranked hits from more liked
+          -- games score higher. 1/rank gives diminishing returns per result.
+          local contribution = 1 / rank
+          if scores[hit.uri] then
+            scores[hit.uri].score = scores[hit.uri].score + contribution
+          else
+            scores[hit.uri] = {
+              score = contribution,
+              game = {
+                uri = hit.uri,
+                name = hit.name,
+                slug = hit.slug,
+                media = hit.media,
+              }
+            }
+          end
+        end
       end
     end
   end
 
-  if #terms == 0 then
-    return { feed = toarray({}) }
+  -- Sort by accumulated score descending
+  local sorted = {}
+  for _, entry in pairs(scores) do
+    sorted[#sorted + 1] = entry
   end
+  table.sort(sorted, function(a, b) return a.score > b.score end)
 
-  -- Deduplicate and space-separate camelCase terms
-  local seen = {}
-  local query_terms = {}
-  for _, term in ipairs(terms) do
-    if not seen[term] then
-      seen[term] = true
-      local spaced = term:gsub("(%l)(%u)", "%1 %2")
-      table.insert(query_terms, spaced)
-    end
-  end
-
-  local body = {
-    q = table.concat(query_terms, " "),
-    limit = limit + #likes,
-    offset = offset,
-    filter = 'type = "game" AND applicationType = "game"',
-    attributesToRetrieve = toarray({ "uri", "name", "slug", "media" })
-  }
-
-  local resp = http.post(SEARCH_URL, { headers = SEARCH_HEADERS, body = json.encode(body) })
-  local data = json.decode(resp.body)
-
-  if resp.status ~= 200 then
-    return { error = "MeilisearchError", message = data.message or resp.body }
-  end
-
-  local hits = data.hits or {}
-
-  -- Filter out already-liked games and build feed
+  -- Apply pagination
   local feed = {}
-  for _, hit in ipairs(hits) do
-    if not liked_uris[hit.uri] then
-      feed[#feed + 1] = {
-        game = {
-          uri = hit.uri,
-          name = hit.name,
-          slug = hit.slug,
-          media = hit.media,
-        }
-      }
-      if #feed >= limit then break end
-    end
+  for i = offset + 1, math.min(offset + limit, #sorted) do
+    feed[#feed + 1] = { game = sorted[i].game }
   end
 
   local result = { feed = toarray(feed) }
-  if #feed >= limit then
+  if offset + limit < #sorted then
     result.cursor = tostring(offset + limit)
   end
   return result
