@@ -274,9 +274,19 @@ local algorithms = {
   personalized = skeleton_personalized,
 }
 
+-- Parse the DID from a feed AT-URI (at://did/collection/rkey)
+local function parse_did(uri)
+  return uri:match("^at://([^/]+)/")
+end
+
 function handle()
   local feed_uri = params.feed
   if not feed_uri or feed_uri == "" then
+    return { error = "UnknownFeed" }
+  end
+
+  local feed_did = parse_did(feed_uri)
+  if not feed_did then
     return { error = "UnknownFeed" }
   end
 
@@ -289,13 +299,46 @@ function handle()
   if limit < 1 then limit = 1 end
   if limit > 100 then limit = 100 end
 
-  local algo = algorithms[rkey]
-  if not algo then
-    return { error = "UnknownFeed" }
-  end
+  local skeleton, next_cursor, err
 
-  -- Get skeleton
-  local skeleton, next_cursor, err = algo(limit, params.cursor)
+  if feed_did == env.SERVICE_DID then
+    -- Internal feed: use local skeleton algorithm
+    local algo = algorithms[rkey]
+    if not algo then
+      return { error = "UnknownFeed" }
+    end
+    skeleton, next_cursor, err = algo(limit, params.cursor)
+  else
+    -- External feed: resolve DID and call remote getFeedSkeleton
+    local service_url = atproto.resolve_service_endpoint(feed_did)
+    if not service_url then
+      return { error = "UnknownFeed", message = "Could not resolve feed generator DID" }
+    end
+
+    local qs = "feed=" .. feed_uri .. "&limit=" .. limit
+    if params.cursor then
+      qs = qs .. "&cursor=" .. params.cursor
+    end
+
+    local resp = http.get(
+      service_url .. "/xrpc/games.gamesgamesgamesgames.feed.getFeedSkeleton?" .. qs
+    )
+
+    if resp.status ~= 200 then
+      return { error = "UnknownFeed", message = "Feed generator returned status " .. resp.status }
+    end
+
+    local data = json.decode(resp.body)
+    if not data or not data.feed then
+      return { error = "UnknownFeed", message = "Invalid skeleton response" }
+    end
+
+    skeleton = {}
+    for _, item in ipairs(data.feed) do
+      skeleton[#skeleton + 1] = { game = item.game }
+    end
+    next_cursor = data.cursor
+  end
 
   if err then
     return { error = err }
