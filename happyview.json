@@ -1,14 +1,49 @@
 {
-  "games.gamesgamesgamesgames.createGame": { "target_collection": "games.gamesgamesgamesgames.game", "action": "create" },
-  "games.gamesgamesgamesgames.putGame": { "target_collection": "games.gamesgamesgamesgames.game", "action": "upsert" },
-  "games.gamesgamesgamesgames.actor.createProfile": { "target_collection": "games.gamesgamesgamesgames.actor.profile", "action": "create" },
-  "games.gamesgamesgamesgames.org.createProfile": { "target_collection": "games.gamesgamesgamesgames.org.profile", "action": "create" },
-  "games.gamesgamesgamesgames.getGame": { "target_collection": "games.gamesgamesgamesgames.game" },
-  "games.gamesgamesgamesgames.listGames": { "target_collection": "games.gamesgamesgamesgames.game" },
-  "games.gamesgamesgamesgames.getProfile": {},
-  "games.gamesgamesgamesgames.actor.getProfile": { "target_collection": "games.gamesgamesgamesgames.actor.profile" },
-  "games.gamesgamesgamesgames.org.getProfile": { "target_collection": "games.gamesgamesgamesgames.org.profile" },
-  "games.gamesgamesgamesgames.search": {},
-  "games.gamesgamesgamesgames.searchSlugs": { "target_collection": "games.gamesgamesgamesgames.slug" },
-  "games.gamesgamesgamesgames.searchProfilesTypeahead": {}
+	"games.gamesgamesgamesgames.createGame": {
+		"target_collection": "games.gamesgamesgamesgames.game",
+		"action": "create"
+	},
+	"games.gamesgamesgamesgames.putGame": {
+		"target_collection": "games.gamesgamesgamesgames.game",
+		"action": "upsert"
+	},
+	"games.gamesgamesgamesgames.actor.createProfile": {
+		"target_collection": "games.gamesgamesgamesgames.actor.profile",
+		"action": "create"
+	},
+	"games.gamesgamesgamesgames.org.createProfile": {
+		"target_collection": "games.gamesgamesgamesgames.org.profile",
+		"action": "create"
+	},
+	"games.gamesgamesgamesgames.getGame": {
+		"target_collection": "games.gamesgamesgamesgames.game"
+	},
+	"games.gamesgamesgamesgames.listGames": {
+		"target_collection": "games.gamesgamesgamesgames.game"
+	},
+	"games.gamesgamesgamesgames.getProfile": {},
+	"games.gamesgamesgamesgames.actor.getProfile": {
+		"target_collection": "games.gamesgamesgamesgames.actor.profile"
+	},
+	"games.gamesgamesgamesgames.org.getProfile": {
+		"target_collection": "games.gamesgamesgamesgames.org.profile"
+	},
+	"games.gamesgamesgamesgames.search": {},
+	"games.gamesgamesgamesgames.searchProfilesTypeahead": {},
+	"games.gamesgamesgamesgames.createClaim": {
+		"target_collection": "games.gamesgamesgamesgames.claim",
+		"action": "create"
+	},
+	"games.gamesgamesgamesgames.reviewClaim": {
+		"target_collection": "games.gamesgamesgamesgames.claimReview",
+		"action": "create"
+	},
+	"games.gamesgamesgamesgames.migrateClaim": {},
+	"games.gamesgamesgamesgames.getClaim": {
+		"target_collection": "games.gamesgamesgamesgames.claim"
+	},
+	"games.gamesgamesgamesgames.listClaims": {
+		"target_collection": "games.gamesgamesgamesgames.claim"
+	},
+	"games.gamesgamesgamesgames.listOrgGames": {}
 }
