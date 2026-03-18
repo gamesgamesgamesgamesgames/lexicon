@@ -62,6 +62,17 @@ function handle()
     if not uri then return { game = nil } end
   end
 
+  -- Redirect resolution: check if this URI has been redirected
+  local redirected_from = nil
+  local redirect_rows = db.raw(
+    "SELECT record FROM records WHERE collection = 'games.gamesgamesgamesgames.redirect' AND record->>'sourceUri' = $1 LIMIT 1",
+    { uri }
+  )
+  if redirect_rows and #redirect_rows > 0 then
+    redirected_from = uri
+    uri = redirect_rows[1].record.targetUri -- record column is already a Lua table
+  end
+
   local record = db.get(uri)
 
   if not record then
@@ -94,7 +105,8 @@ function handle()
     multiplayerModes = record.multiplayerModes,
     engines = record.engines,
     externalIds = record.externalIds,
-    slug = find_slug(record.uri)
+    slug = find_slug(record.uri),
+    redirectedFrom = redirected_from,
   }
 
   -- Build collections by finding collection records that reference this game

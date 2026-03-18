@@ -1,0 +1,103 @@
+{
+	"$type": "com.atproto.lexicon.schema",
+	"lexicon": 1,
+	"id": "games.gamesgamesgamesgames.getClaim",
+	"defs": {
+		"main": {
+			"type": "query",
+			"description": "Get details of an ownership claim.",
+			"parameters": {
+				"type": "params",
+				"required": ["uri"],
+				"properties": {
+					"uri": {
+						"type": "string",
+						"format": "at-uri"
+					}
+				}
+			},
+			"output": {
+				"encoding": "application/json",
+				"schema": {
+					"type": "object",
+					"required": ["claim"],
+					"properties": {
+						"claim": {
+							"type": "ref",
+							"ref": "#claimView"
+						}
+					}
+				}
+			}
+		},
+		"claimView": {
+			"type": "object",
+			"required": ["uri", "cid", "type", "claimantDid", "createdAt"],
+			"properties": {
+				"uri": {
+					"type": "string",
+					"format": "at-uri"
+				},
+				"cid": {
+					"type": "string"
+				},
+				"type": {
+					"type": "string",
+					"knownValues": ["game", "org"]
+				},
+				"claimantDid": {
+					"type": "string",
+					"format": "did"
+				},
+				"createdAt": { "type": "string", "format": "datetime" },
+				"games": {
+					"type": "array",
+					"items": {
+						"type": "ref",
+						"ref": "games.gamesgamesgamesgames.defs#gameSummaryView"
+					}
+				},
+				"org": {
+					"type": "string",
+					"format": "at-uri"
+				},
+				"message": {
+					"type": "string"
+				},
+				"contact": {
+					"type": "string"
+				},
+				"review": {
+					"type": "ref",
+					"ref": "#reviewView"
+				}
+			}
+		},
+		"reviewView": {
+			"type": "object",
+			"required": ["uri", "status", "reviewedBy", "createdAt"],
+			"properties": {
+				"uri": {
+					"type": "string",
+					"format": "at-uri"
+				},
+				"status": {
+					"type": "string",
+					"knownValues": ["approved", "denied"]
+				},
+				"reviewedBy": {
+					"type": "string",
+					"format": "did"
+				},
+				"createdAt": { "type": "string", "format": "datetime" },
+				"approvedGames": {
+					"type": "array",
+					"items": { "type": "string", "format": "at-uri" }
+				},
+				"reason": {
+					"type": "string"
+				}
+			}
+		}
+	}
+}

@@ -1,0 +1,49 @@
+{
+	"$type": "com.atproto.lexicon.schema",
+	"lexicon": 1,
+	"id": "games.gamesgamesgamesgames.listOrgGames",
+	"defs": {
+		"main": {
+			"type": "query",
+			"description": "List games associated with an organization.",
+			"parameters": {
+				"type": "params",
+				"required": ["org"],
+				"properties": {
+					"org": {
+						"type": "string",
+						"format": "at-uri"
+					},
+					"limit": {
+						"type": "integer",
+						"minimum": 1,
+						"maximum": 100,
+						"default": 50
+					},
+					"cursor": {
+						"type": "string"
+					}
+				}
+			},
+			"output": {
+				"encoding": "application/json",
+				"schema": {
+					"type": "object",
+					"required": ["games"],
+					"properties": {
+						"games": {
+							"type": "array",
+							"items": {
+								"type": "ref",
+								"ref": "games.gamesgamesgamesgames.defs#gameSummaryView"
+							}
+						},
+						"cursor": {
+							"type": "string"
+						}
+					}
+				}
+			}
+		}
+	}
+}

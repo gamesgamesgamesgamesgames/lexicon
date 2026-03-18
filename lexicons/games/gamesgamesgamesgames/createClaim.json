@@ -1,0 +1,44 @@
+{
+	"$type": "com.atproto.lexicon.schema",
+	"lexicon": 1,
+	"id": "games.gamesgamesgamesgames.createClaim",
+	"defs": {
+		"main": {
+			"type": "procedure",
+			"description": "Submit a new ownership claim for game or organization records.",
+			"input": {
+				"encoding": "application/json",
+				"schema": {
+					"type": "object",
+					"required": ["type", "contact"],
+					"properties": {
+						"type": { "type": "string" },
+						"contact": { "type": "string", "maxGraphemes": 500 },
+						"games": {
+							"type": "array",
+							"items": { "type": "string", "format": "at-uri" }
+						},
+						"org": {
+							"type": "string",
+							"format": "at-uri"
+						},
+						"message": {
+							"type": "string",
+							"maxGraphemes": 3000
+						}
+					}
+				}
+			},
+			"output": {
+				"encoding": "application/json",
+				"schema": {
+					"type": "object",
+					"required": ["uri"],
+					"properties": {
+						"uri": { "type": "string", "format": "at-uri" }
+					}
+				}
+			}
+		}
+	}
+}

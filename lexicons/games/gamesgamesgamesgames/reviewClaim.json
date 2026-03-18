@@ -1,0 +1,46 @@
+{
+	"$type": "com.atproto.lexicon.schema",
+	"lexicon": 1,
+	"id": "games.gamesgamesgamesgames.reviewClaim",
+	"defs": {
+		"main": {
+			"type": "procedure",
+			"description": "Submit a review decision for an ownership claim.",
+			"input": {
+				"encoding": "application/json",
+				"schema": {
+					"type": "object",
+					"required": ["claim", "status"],
+					"properties": {
+						"claim": {
+							"type": "ref",
+							"ref": "com.atproto.repo.strongRef"
+						},
+						"status": {
+							"type": "string",
+							"knownValues": ["approved", "denied"]
+						},
+						"approvedGames": {
+							"type": "array",
+							"items": { "type": "string", "format": "at-uri" }
+						},
+						"reason": {
+							"type": "string",
+							"maxGraphemes": 3000
+						}
+					}
+				}
+			},
+			"output": {
+				"encoding": "application/json",
+				"schema": {
+					"type": "object",
+					"required": ["uri"],
+					"properties": {
+						"uri": { "type": "string", "format": "at-uri" }
+					}
+				}
+			}
+		}
+	}
+}

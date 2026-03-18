@@ -1,0 +1,65 @@
+{
+	"$type": "com.atproto.lexicon.schema",
+	"lexicon": 1,
+	"id": "games.gamesgamesgamesgames.migrateClaim",
+	"defs": {
+		"main": {
+			"type": "procedure",
+			"description": "Execute migration of game records based on an approved claim.",
+			"input": {
+				"encoding": "application/json",
+				"schema": {
+					"type": "object",
+					"required": ["claim", "claimReview"],
+					"properties": {
+						"claim": {
+							"type": "string",
+							"format": "at-uri"
+						},
+						"claimReview": {
+							"type": "string",
+							"format": "at-uri"
+						}
+					}
+				}
+			},
+			"output": {
+				"encoding": "application/json",
+				"schema": {
+					"type": "object",
+					"required": ["results"],
+					"properties": {
+						"results": {
+							"type": "array",
+							"items": {
+								"type": "ref",
+								"ref": "#migrationResult"
+							}
+						}
+					}
+				}
+			}
+		},
+		"migrationResult": {
+			"type": "object",
+			"required": ["gameUri", "status"],
+			"properties": {
+				"gameUri": {
+					"type": "string",
+					"format": "at-uri"
+				},
+				"status": {
+					"type": "string",
+					"knownValues": ["success", "failed", "skipped"]
+				},
+				"newUri": {
+					"type": "string",
+					"format": "at-uri"
+				},
+				"error": {
+					"type": "string"
+				}
+			}
+		}
+	}
+}

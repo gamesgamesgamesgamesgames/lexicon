@@ -1,0 +1,40 @@
+{
+	"$type": "com.atproto.lexicon.schema",
+	"lexicon": 1,
+	"id": "games.gamesgamesgamesgames.claim",
+	"defs": {
+		"main": {
+			"description": "A claim for ownership of game or organization records.",
+			"type": "record",
+			"key": "tid",
+			"record": {
+				"type": "object",
+				"required": ["type", "createdAt"],
+				"properties": {
+					"type": {
+						"type": "string",
+						"knownValues": ["game", "org"]
+					},
+					"createdAt": { "type": "string", "format": "datetime" },
+					"games": {
+						"type": "array",
+						"items": { "type": "string", "format": "at-uri" }
+					},
+					"org": {
+						"type": "string",
+						"format": "at-uri"
+					},
+					"message": {
+						"type": "string",
+						"maxGraphemes": 3000
+					},
+					"contact": {
+						"type": "string",
+						"maxGraphemes": 500,
+						"description": "Contact information for the claimant (filtered from responses unless caller is admin)"
+					}
+				}
+			}
+		}
+	}
+}

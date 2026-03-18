@@ -1,0 +1,31 @@
+{
+	"$type": "com.atproto.lexicon.schema",
+	"lexicon": 1,
+	"id": "games.gamesgamesgamesgames.redirect",
+	"defs": {
+		"main": {
+			"description": "A redirect mapping a source AT URI to a target AT URI after migration.",
+			"type": "record",
+			"key": "tid",
+			"record": {
+				"type": "object",
+				"required": ["sourceUri", "targetUri", "collection", "createdAt"],
+				"properties": {
+					"sourceUri": {
+						"type": "string",
+						"format": "at-uri"
+					},
+					"targetUri": {
+						"type": "string",
+						"format": "at-uri"
+					},
+					"collection": {
+						"type": "string",
+						"format": "nsid"
+					},
+					"createdAt": { "type": "string", "format": "datetime" }
+				}
+			}
+		}
+	}
+}
