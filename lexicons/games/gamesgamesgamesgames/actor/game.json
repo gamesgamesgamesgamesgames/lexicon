@@ -1,0 +1,61 @@
+{
+	"lexicon": 1,
+	"id": "games.gamesgamesgamesgames.actor.game",
+	"defs": {
+		"main": {
+			"type": "record",
+			"description": "A record indicating the actor owns a game on a specific platform. May include attestation signatures proving ownership was verified by an external service.",
+			"key": "tid",
+			"record": {
+				"type": "object",
+				"required": ["game", "platform", "createdAt"],
+				"properties": {
+					"game": {
+						"type": "ref",
+						"ref": "#gameRef",
+						"description": "Reference to the game record."
+					},
+					"platform": {
+						"type": "string",
+						"description": "The platform where ownership was verified.",
+						"knownValues": ["steam", "gog", "epic", "playstation", "xbox", "nintendo", "itchio", "humble"]
+					},
+					"signatures": {
+						"type": "array",
+						"description": "Attestation signatures proving ownership was verified. Can be inline signatures or strongRefs to remote proof records.",
+						"items": {
+							"type": "union",
+							"refs": [
+								"games.gamesgamesgamesgames.defs#signature",
+								"com.atproto.repo.strongRef"
+							]
+						}
+					},
+					"createdAt": {
+						"type": "string",
+						"format": "datetime"
+					}
+				}
+			}
+		},
+		"gameRef": {
+			"type": "object",
+			"description": "Reference to a game, either by AT URI or external platform ID.",
+			"properties": {
+				"uri": {
+					"type": "string",
+					"format": "at-uri",
+					"description": "AT URI of the game record."
+				},
+				"platform": {
+					"type": "string",
+					"description": "External platform for ID lookup."
+				},
+				"externalId": {
+					"type": "string",
+					"description": "External platform's ID for the game."
+				}
+			}
+		}
+	}
+}

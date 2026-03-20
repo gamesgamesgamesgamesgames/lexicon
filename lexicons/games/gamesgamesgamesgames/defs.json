@@ -939,6 +939,26 @@
 					]
 				}
 			}
+		},
+
+		"signature": {
+			"type": "object",
+			"description": "An inline attestation signature.",
+			"required": ["$type", "key", "signature"],
+			"properties": {
+				"$type": {
+					"type": "string",
+					"description": "The signature type identifier."
+				},
+				"key": {
+					"type": "string",
+					"description": "DID key reference (e.g., did:web:example.com#signing1)."
+				},
+				"signature": {
+					"type": "bytes",
+					"description": "The signature bytes."
+				}
+			}
 		}
 	}
 }

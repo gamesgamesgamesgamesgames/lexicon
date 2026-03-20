@@ -1,0 +1,66 @@
+{
+	"lexicon": 1,
+	"id": "games.gamesgamesgamesgames.actor.stats",
+	"defs": {
+		"main": {
+			"type": "record",
+			"description": "Statistics for a game from a specific platform. May include attestation signatures proving the data was verified by an external service.",
+			"key": "tid",
+			"record": {
+				"type": "object",
+				"required": ["game", "source", "createdAt"],
+				"properties": {
+					"game": {
+						"type": "ref",
+						"ref": "games.gamesgamesgamesgames.actor.game#gameRef",
+						"description": "Reference to the game record."
+					},
+					"source": {
+						"type": "string",
+						"description": "The platform that provided this statistics data.",
+						"knownValues": ["steam", "gog", "epic", "playstation", "xbox", "nintendo", "itchio", "humble"]
+					},
+					"playtime": {
+						"type": "integer",
+						"description": "Total playtime recorded in minutes.",
+						"minimum": 0
+					},
+					"lastPlayed": {
+						"type": "string",
+						"format": "datetime",
+						"description": "When the game was last played according to this source."
+					},
+					"achievements": {
+						"type": "object",
+						"description": "Achievement progress from this source.",
+						"properties": {
+							"unlocked": {
+								"type": "integer",
+								"minimum": 0
+							},
+							"total": {
+								"type": "integer",
+								"minimum": 0
+							}
+						}
+					},
+					"signatures": {
+						"type": "array",
+						"description": "Attestation signatures proving stats were verified. Can be inline signatures or strongRefs to remote proof records.",
+						"items": {
+							"type": "union",
+							"refs": [
+								"games.gamesgamesgamesgames.defs#signature",
+								"com.atproto.repo.strongRef"
+							]
+						}
+					},
+					"createdAt": {
+						"type": "string",
+						"format": "datetime"
+					}
+				}
+			}
+		}
+	}
+}
