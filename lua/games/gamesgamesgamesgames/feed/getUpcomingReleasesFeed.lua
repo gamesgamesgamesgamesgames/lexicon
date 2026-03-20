@@ -23,7 +23,7 @@ function handle()
     offset = offset,
     filter = "type = \"game\" AND cancelled != true AND firstReleaseDate > " .. today,
     sort = toarray({ "firstReleaseDate:asc" }),
-    attributesToRetrieve = toarray({ "uri", "name", "slug", "media" })
+    attributesToRetrieve = toarray({ "uri", "name", "slug", "media", "releases" })
   }
 
   local resp = http.post(SEARCH_URL, { headers = SEARCH_HEADERS, body = json.encode(body) })
@@ -45,6 +45,7 @@ function handle()
         name = hit.name,
         slug = hit.slug,
         media = hit.media,
+        releases = hit.releases,
       }
     }
   end
