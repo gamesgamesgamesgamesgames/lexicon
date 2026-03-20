@@ -65,12 +65,13 @@ function handle()
   -- Redirect resolution: check if this URI has been redirected
   local redirected_from = nil
   local redirect_rows = db.raw(
-    "SELECT record FROM records WHERE collection = 'games.gamesgamesgamesgames.redirect' AND record->>'sourceUri' = $1 LIMIT 1",
+    "SELECT record FROM records WHERE collection = 'games.gamesgamesgamesgames.redirect' AND json_extract(record, '$.sourceUri') = $1 LIMIT 1",
     { uri }
   )
   if redirect_rows and #redirect_rows > 0 then
     redirected_from = uri
-    uri = redirect_rows[1].record.targetUri -- record column is already a Lua table
+    local redirect_rec = json.decode(redirect_rows[1].record)
+    uri = redirect_rec.targetUri
   end
 
   local record = db.get(uri)

@@ -80,7 +80,7 @@ function handle()
           "WHERE c.collection = 'games.gamesgamesgamesgames.claim' " ..
           "AND NOT EXISTS (" ..
             "SELECT 1 FROM records r WHERE r.collection = 'games.gamesgamesgamesgames.claimReview' " ..
-            "AND r.record->'claim'->>'uri' = c.uri" ..
+            "AND json_extract(r.record, '$.claim.uri') = c.uri" ..
           ")"
 
     if not is_admin then
@@ -97,8 +97,8 @@ function handle()
     -- Claims with a review matching the given status
     sql = "SELECT c.uri, c.cid, c.record, c.indexed_at FROM records c " ..
           "INNER JOIN records r ON r.collection = 'games.gamesgamesgamesgames.claimReview' " ..
-          "AND r.record->'claim'->>'uri' = c.uri " ..
-          "AND r.record->>'status' = " .. next_param(status_filter) .. " " ..
+          "AND json_extract(r.record, '$.claim.uri') = c.uri " ..
+          "AND json_extract(r.record, '$.status') = " .. next_param(status_filter) .. " " ..
           "WHERE c.collection = 'games.gamesgamesgamesgames.claim'"
 
     if not is_admin then
@@ -133,7 +133,7 @@ function handle()
   local last_row = nil
 
   for _, row in ipairs(rows or {}) do
-    local record = row.record -- already a Lua table
+    local record = json.decode(row.record)
     local claimant_did = row.uri:match("^at://([^/]+)/")
 
     local claim_view = {
@@ -167,12 +167,12 @@ function handle()
 
     -- Look up associated claimReview
     local review_rows = db.raw(
-      "SELECT uri, record FROM records WHERE collection = 'games.gamesgamesgamesgames.claimReview' AND record->'claim'->>'uri' = $1 LIMIT 1",
+      "SELECT uri, record FROM records WHERE collection = 'games.gamesgamesgamesgames.claimReview' AND json_extract(record, '$.claim.uri') = $1 LIMIT 1",
       { row.uri }
     )
 
     if review_rows and #review_rows > 0 then
-      local review_record = review_rows[1].record -- already a Lua table
+      local review_record = json.decode(review_rows[1].record)
       claim_view.review = {
         ["$type"] = "games.gamesgamesgamesgames.getClaim#reviewView",
         uri = review_rows[1].uri,

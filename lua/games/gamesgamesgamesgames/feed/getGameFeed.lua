@@ -21,7 +21,7 @@ end
 -- Get like count for a game URI
 local function get_like_count(game_uri)
   local result = db.raw(
-    "SELECT COUNT(*) AS count FROM records WHERE collection = $1 AND record->>'subject' = $2",
+    "SELECT COUNT(*) AS count FROM records WHERE collection = $1 AND json_extract(record, '$.subject') = $2",
     {"games.gamesgamesgamesgames.graph.like", game_uri}
   )
   if result and result[1] then
@@ -36,7 +36,7 @@ local function get_viewer_like(game_uri)
     return nil
   end
   local result = db.raw(
-    "SELECT uri FROM records WHERE collection = $1 AND did = $2 AND record->>'subject' = $3 LIMIT 1",
+    "SELECT uri FROM records WHERE collection = $1 AND did = $2 AND json_extract(record, '$.subject') = $3 LIMIT 1",
     {"games.gamesgamesgamesgames.graph.like", caller_did, game_uri}
   )
   if result and result[1] then
@@ -106,7 +106,8 @@ local function skeleton_likes(limit, cursor)
   local has_more = #likes > limit
   local items = {}
   for i = 1, math.min(#likes, limit) do
-    items[#items + 1] = { game = likes[i].record.subject }
+    local rec = json.decode(likes[i].record)
+    items[#items + 1] = { game = rec.subject }
   end
 
   local next_cursor = nil
@@ -122,7 +123,7 @@ local function skeleton_upcoming(limit, cursor)
   local now_int = tonumber(y .. m .. d)
 
   local rows = db.raw(
-    "SELECT uri, record FROM records WHERE collection = $1 AND record->>'applicationType' = 'game' ORDER BY indexed_at DESC LIMIT $2 OFFSET $3",
+    "SELECT uri, record FROM records WHERE collection = $1 AND json_extract(record, '$.applicationType') = 'game' ORDER BY indexed_at DESC LIMIT $2 OFFSET $3",
     {"games.gamesgamesgamesgames.game", limit * 3, offset}
   )
 
@@ -130,7 +131,7 @@ local function skeleton_upcoming(limit, cursor)
 
   local items = {}
   for _, row in ipairs(rows) do
-    local game = row.record
+    local game = json.decode(row.record)
     if game and game.releases then
       local is_upcoming = false
       for _, release in ipairs(game.releases) do
@@ -163,7 +164,7 @@ local function skeleton_recently_updated(limit, cursor)
   if cursor then offset = tonumber(cursor) or 0 end
 
   local rows = db.raw(
-    "SELECT uri FROM records WHERE collection = $1 AND record->>'applicationType' = 'game' ORDER BY indexed_at DESC LIMIT $2 OFFSET $3",
+    "SELECT uri FROM records WHERE collection = $1 AND json_extract(record, '$.applicationType') = 'game' ORDER BY indexed_at DESC LIMIT $2 OFFSET $3",
     {"games.gamesgamesgamesgames.game", limit + 1, offset}
   )
 
@@ -185,8 +186,8 @@ local function skeleton_hot(limit, cursor)
   if cursor then offset = tonumber(cursor) or 0 end
 
   local rows = db.raw(
-    "SELECT record->>'subject' AS game_uri, COUNT(*) AS like_count FROM records WHERE collection = $1 AND indexed_at > NOW() - INTERVAL '7 days' GROUP BY record->>'subject' ORDER BY like_count DESC LIMIT $2 OFFSET $3",
-    {"games.gamesgamesgamesgames.graph.like", limit + 1, offset}
+    "SELECT json_extract(record, '$.subject') AS game_uri, COUNT(*) AS like_count FROM records WHERE collection = $1 AND indexed_at > $2 GROUP BY json_extract(record, '$.subject') ORDER BY like_count DESC LIMIT $3 OFFSET $4",
+    {"games.gamesgamesgamesgames.graph.like", os.date("!%Y-%m-%dT%H:%M:%SZ", os.time() - 7 * 24 * 3600), limit + 1, offset}
   )
 
   if not rows then return {}, nil end
@@ -211,7 +212,7 @@ local function skeleton_personalized(limit, cursor)
   if cursor then offset = tonumber(cursor) or 0 end
 
   local likes = db.raw(
-    "SELECT record->>'subject' AS game_uri FROM records WHERE collection = $1 AND did = $2 LIMIT 50",
+    "SELECT json_extract(record, '$.subject') AS game_uri FROM records WHERE collection = $1 AND did = $2 LIMIT 50",
     {"games.gamesgamesgamesgames.graph.like", caller_did}
   )
 

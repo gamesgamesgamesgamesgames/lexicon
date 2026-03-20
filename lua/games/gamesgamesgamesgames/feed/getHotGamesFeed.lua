@@ -13,10 +13,14 @@ function handle()
   local offset = 0
   if params.cursor then offset = tonumber(params.cursor) or 0 end
 
+  -- Compute the cutoff timestamp (7 days ago) using os.time/os.date
+  local t = os.time() - 7 * 24 * 3600
+  local cutoff = os.date("!%Y-%m-%dT%H:%M:%SZ", t)
+
   -- Get games with the most likes in the last 7 days
   local rows = db.raw(
-    "SELECT record->>'subject' AS game_uri, COUNT(*) AS like_count FROM records WHERE collection = $1 AND indexed_at > NOW() - INTERVAL '7 days' GROUP BY record->>'subject' ORDER BY like_count DESC LIMIT $2 OFFSET $3",
-    {"games.gamesgamesgamesgames.graph.like", limit + 1, offset}
+    "SELECT json_extract(record, '$.subject') AS game_uri, COUNT(*) AS like_count FROM records WHERE collection = $1 AND indexed_at > $2 GROUP BY json_extract(record, '$.subject') ORDER BY like_count DESC LIMIT $3 OFFSET $4",
+    {"games.gamesgamesgamesgames.graph.like", cutoff, limit + 1, offset}
   )
 
   if not rows or #rows == 0 then

@@ -63,7 +63,7 @@ function handle()
   end
 
   local row = rows[1]
-  local record = row.record -- already a Lua table, do NOT json.decode
+  local record = json.decode(row.record)
 
   -- Extract claimantDid from URI: at://did:plc:xxx/collection/rkey
   local claimant_did = uri:match("^at://([^/]+)/")
@@ -140,15 +140,14 @@ function handle()
   end
 
   -- Look up associated claimReview
-  -- record column is already a Lua table, so use JSONB operators
   local review_rows = db.raw(
-    "SELECT uri, record FROM records WHERE collection = 'games.gamesgamesgamesgames.claimReview' AND record->'claim'->>'uri' = $1 LIMIT 1",
+    "SELECT uri, record FROM records WHERE collection = 'games.gamesgamesgamesgames.claimReview' AND json_extract(record, '$.claim.uri') = $1 LIMIT 1",
     { uri }
   )
 
   if review_rows and #review_rows > 0 then
     local review_row = review_rows[1]
-    local review_record = review_row.record -- already a Lua table
+    local review_record = json.decode(review_row.record)
     claim_view.review = {
       ["$type"] = "games.gamesgamesgamesgames.getClaim#reviewView",
       uri = review_row.uri,

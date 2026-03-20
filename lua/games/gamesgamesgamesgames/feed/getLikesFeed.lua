@@ -36,7 +36,8 @@ function handle()
   -- Collect URIs for meilisearch batch lookup
   local uris = {}
   for i = 1, math.min(#likes, limit) do
-    uris[#uris + 1] = '"' .. likes[i].record.subject .. '"'
+    local rec = json.decode(likes[i].record)
+    uris[#uris + 1] = '"' .. rec.subject .. '"'
   end
 
   -- Batch fetch game data from meilisearch
@@ -63,7 +64,8 @@ function handle()
   -- Build feed in like order
   local feed = {}
   for i = 1, math.min(#likes, limit) do
-    local game_uri = likes[i].record.subject
+    local like_rec = json.decode(likes[i].record)
+    local game_uri = like_rec.subject
     local hit = hits_by_uri[game_uri]
     if hit then
       feed[#feed + 1] = {

@@ -13,23 +13,24 @@ function handle()
   end
 
   local rows = db.raw(
-    "SELECT uri, did, record FROM records WHERE collection = $1 AND record->'identifiers'->>'igdbId' = $2 ORDER BY record->>'createdAt' DESC LIMIT $3 OFFSET $4",
+    "SELECT uri, did, record FROM records WHERE collection = $1 AND json_extract(record, '$.identifiers.igdbId') = $2 ORDER BY json_extract(record, '$.createdAt') DESC LIMIT $3 OFFSET $4",
     {"social.popfeed.feed.review", igdb_id, limit, cursor}
   )
 
   local reviews = {}
   for _, row in ipairs(rows) do
+    local rec = json.decode(row.record)
     table.insert(reviews, {
       ["$type"] = "games.gamesgamesgamesgames.getReviews#popfeedReview",
       uri = row.uri,
       did = row.did,
-      rating = row.record.rating,
-      text = row.record.text,
-      facets = row.record.facets,
-      title = row.record.title,
-      tags = row.record.tags,
-      createdAt = row.record.createdAt,
-      containsSpoilers = row.record.containsSpoilers,
+      rating = rec.rating,
+      text = rec.text,
+      facets = rec.facets,
+      title = rec.title,
+      tags = rec.tags,
+      createdAt = rec.createdAt,
+      containsSpoilers = rec.containsSpoilers,
     })
   end
 

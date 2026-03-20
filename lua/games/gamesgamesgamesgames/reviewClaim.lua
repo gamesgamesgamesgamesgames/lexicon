@@ -30,7 +30,7 @@ function handle()
   if input.status == "approved" and input.approvedGames then
     for _, game_uri in ipairs(input.approvedGames) do
       local existing = db.raw(
-        "SELECT uri FROM records WHERE collection = 'games.gamesgamesgamesgames.claimReview' AND record->>'status' = 'approved' AND record->'approvedGames' ? $1 LIMIT 1",
+        "SELECT uri FROM records WHERE collection = 'games.gamesgamesgamesgames.claimReview' AND json_extract(record, '$.status') = 'approved' AND EXISTS (SELECT 1 FROM json_each(json_extract(record, '$.approvedGames')) WHERE value = $1) LIMIT 1",
         { game_uri }
       )
       if existing and #existing > 0 then

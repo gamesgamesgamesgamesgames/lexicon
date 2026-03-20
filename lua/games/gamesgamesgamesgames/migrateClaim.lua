@@ -49,11 +49,12 @@ function handle()
   -- Helper: check if a redirect already exists for a source URI
   function resolve_redirect(source_uri)
     local rows = db.raw(
-      "SELECT uri, record FROM records WHERE collection = 'games.gamesgamesgamesgames.redirect' AND record->>'sourceUri' = $1 LIMIT 1",
+      "SELECT uri, record FROM records WHERE collection = 'games.gamesgamesgamesgames.redirect' AND json_extract(record, '$.sourceUri') = $1 LIMIT 1",
       { source_uri }
     )
     if rows and #rows > 0 then
-      return rows[1].record.targetUri -- record is already a Lua table
+      local rec = json.decode(rows[1].record)
+      return rec.targetUri
     end
     return nil
   end

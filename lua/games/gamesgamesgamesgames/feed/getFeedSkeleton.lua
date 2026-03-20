@@ -33,7 +33,8 @@ local function algo_likes(limit, cursor)
   local has_more = #likes > limit
   local items = {}
   for i = 1, math.min(#likes, limit) do
-    items[#items + 1] = { game = likes[i].record.subject }
+    local rec = json.decode(likes[i].record)
+    items[#items + 1] = { game = rec.subject }
   end
 
   local result = { feed = toarray(items) }
@@ -55,7 +56,7 @@ local function algo_upcoming(limit, cursor)
   local now_int = tonumber(y .. m .. d)
 
   local rows = db.raw(
-    "SELECT uri, record FROM records WHERE collection = $1 AND record->>'applicationType' = 'game' ORDER BY indexed_at DESC LIMIT $2 OFFSET $3",
+    "SELECT uri, record FROM records WHERE collection = $1 AND json_extract(record, '$.applicationType') = 'game' ORDER BY indexed_at DESC LIMIT $2 OFFSET $3",
     {"games.gamesgamesgamesgames.game", limit * 3, offset}
   )
 
@@ -65,7 +66,7 @@ local function algo_upcoming(limit, cursor)
 
   local items = {}
   for _, row in ipairs(rows) do
-    local game = row.record
+    local game = json.decode(row.record)
     if game and game.releases then
       local is_upcoming = false
       for _, release in ipairs(game.releases) do
@@ -107,7 +108,7 @@ local function algo_recently_updated(limit, cursor)
   end
 
   local rows = db.raw(
-    "SELECT uri FROM records WHERE collection = $1 AND record->>'applicationType' = 'game' ORDER BY indexed_at DESC LIMIT $2 OFFSET $3",
+    "SELECT uri FROM records WHERE collection = $1 AND json_extract(record, '$.applicationType') = 'game' ORDER BY indexed_at DESC LIMIT $2 OFFSET $3",
     {"games.gamesgamesgamesgames.game", limit + 1, offset}
   )
 
@@ -136,8 +137,8 @@ local function algo_hot(limit, cursor)
   end
 
   local rows = db.raw(
-    "SELECT record->>'subject' AS game_uri, COUNT(*) AS like_count FROM records WHERE collection = $1 AND indexed_at > NOW() - INTERVAL '7 days' GROUP BY record->>'subject' ORDER BY like_count DESC LIMIT $2 OFFSET $3",
-    {"games.gamesgamesgamesgames.graph.like", limit + 1, offset}
+    "SELECT json_extract(record, '$.subject') AS game_uri, COUNT(*) AS like_count FROM records WHERE collection = $1 AND indexed_at > $2 GROUP BY json_extract(record, '$.subject') ORDER BY like_count DESC LIMIT $3 OFFSET $4",
+    {"games.gamesgamesgamesgames.graph.like", os.date("!%Y-%m-%dT%H:%M:%SZ", os.time() - 7 * 24 * 3600), limit + 1, offset}
   )
 
   if not rows then
@@ -170,7 +171,7 @@ local function algo_personalized(limit, cursor)
 
   -- Get user's liked game URIs
   local likes = db.raw(
-    "SELECT record->>'subject' AS game_uri FROM records WHERE collection = $1 AND did = $2 LIMIT 50",
+    "SELECT json_extract(record, '$.subject') AS game_uri FROM records WHERE collection = $1 AND did = $2 LIMIT 50",
     {"games.gamesgamesgamesgames.graph.like", caller_did}
   )
 
