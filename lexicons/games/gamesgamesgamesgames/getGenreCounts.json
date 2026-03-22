@@ -1,0 +1,35 @@
+{
+	"$type": "com.atproto.lexicon.schema",
+	"lexicon": 1,
+	"id": "games.gamesgamesgamesgames.getGenreCounts",
+	"defs": {
+		"main": {
+			"type": "query",
+			"description": "Get game counts grouped by genre.",
+			"output": {
+				"encoding": "application/json",
+				"schema": {
+					"type": "object",
+					"required": ["genres"],
+					"properties": {
+						"genres": {
+							"type": "array",
+							"items": {
+								"type": "object",
+								"required": ["genre", "count"],
+								"properties": {
+									"genre": {
+										"type": "string"
+									},
+									"count": {
+										"type": "integer"
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}

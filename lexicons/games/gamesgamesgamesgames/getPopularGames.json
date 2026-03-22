@@ -1,0 +1,38 @@
+{
+	"$type": "com.atproto.lexicon.schema",
+	"lexicon": 1,
+	"id": "games.gamesgamesgamesgames.getPopularGames",
+	"defs": {
+		"main": {
+			"type": "query",
+			"description": "Get popular games ranked by concurrent player count from SteamSpy data.",
+			"parameters": {
+				"type": "params",
+				"properties": {
+					"limit": {
+						"type": "integer",
+						"minimum": 1,
+						"maximum": 100,
+						"default": 20
+					}
+				}
+			},
+			"output": {
+				"encoding": "application/json",
+				"schema": {
+					"type": "object",
+					"required": ["games"],
+					"properties": {
+						"games": {
+							"type": "array",
+							"items": {
+								"type": "ref",
+								"ref": "games.gamesgamesgamesgames.defs#gameSummaryView"
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}

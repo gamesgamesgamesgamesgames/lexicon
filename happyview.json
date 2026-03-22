@@ -45,5 +45,8 @@
 	"games.gamesgamesgamesgames.listClaims": {
 		"target_collection": "games.gamesgamesgamesgames.claim"
 	},
-	"games.gamesgamesgamesgames.listOrgGames": {}
+	"games.gamesgamesgamesgames.listOrgGames": {},
+	"games.gamesgamesgamesgames.getStats": {},
+	"games.gamesgamesgamesgames.getGenreCounts": {},
+	"games.gamesgamesgamesgames.getPopularGames": {}
 }

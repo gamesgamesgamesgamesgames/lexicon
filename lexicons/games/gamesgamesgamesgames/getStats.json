@@ -1,0 +1,29 @@
+{
+	"$type": "com.atproto.lexicon.schema",
+	"lexicon": 1,
+	"id": "games.gamesgamesgamesgames.getStats",
+	"defs": {
+		"main": {
+			"type": "query",
+			"description": "Get platform-wide statistics: total games, studios, and reviews.",
+			"output": {
+				"encoding": "application/json",
+				"schema": {
+					"type": "object",
+					"required": ["totalGames", "totalStudios", "totalReviews"],
+					"properties": {
+						"totalGames": {
+							"type": "integer"
+						},
+						"totalStudios": {
+							"type": "integer"
+						},
+						"totalReviews": {
+							"type": "integer"
+						}
+					}
+				}
+			}
+		}
+	}
+}
