@@ -6,6 +6,95 @@ local SEARCH_HEADERS = {
   ["content-type"] = "application/json"
 }
 
+-- Age-to-rating filter mapping. For a given age, all ratings at or below the
+-- ceiling are acceptable. Built from the ceiling table in the spec.
+-- Source of truth: docs/superpowers/specs/2026-03-22-semantic-search-design.md
+
+-- Ordered list of ratings per org, from youngest to oldest.
+local RATING_ORDER = {
+  esrb = { "E", "E10", "T", "M", "AO" },
+  pegi = { "Three", "Seven", "Twelve", "Sixteen", "Eighteen" },
+  cero = { "A", "B", "C", "D", "Z" },
+  usk = { "0", "6", "12", "16", "18" },
+  grac = { "All", "Twelve", "Fifteen", "Eighteen" },
+  gcrb = { "All", "Twelve", "Fifteen", "Eighteen" },
+  classInd = { "L", "10", "12", "14", "16", "18" },
+  acb = { "G", "PG", "M", "MA15", "R18", "X18" },
+}
+
+-- Age thresholds for each rating (the minimum age to access that rating)
+local RATING_MIN_AGE = {
+  esrb = { E = 0, E10 = 10, T = 13, M = 17, AO = 18 },
+  pegi = { Three = 3, Seven = 7, Twelve = 12, Sixteen = 16, Eighteen = 18 },
+  cero = { A = 0, B = 12, C = 15, D = 17, Z = 18 },
+  usk = { ["0"] = 0, ["6"] = 6, ["12"] = 12, ["16"] = 16, ["18"] = 18 },
+  grac = { All = 0, Twelve = 12, Fifteen = 15, Eighteen = 18 },
+  gcrb = { All = 0, Twelve = 12, Fifteen = 15, Eighteen = 18 },
+  classInd = { L = 0, ["10"] = 10, ["12"] = 12, ["14"] = 14, ["16"] = 16, ["18"] = 18 },
+  acb = { G = 0, PG = 0, M = 15, MA15 = 15, R18 = 18, X18 = 18 },
+}
+
+-- Given an age, returns all acceptable "org:rating" strings across all orgs.
+local function get_acceptable_ratings(age)
+  local acceptable = {}
+  for org, order in pairs(RATING_ORDER) do
+    local min_ages = RATING_MIN_AGE[org]
+    for _, rating in ipairs(order) do
+      if min_ages[rating] <= age then
+        table.insert(acceptable, org .. ":" .. rating)
+      end
+    end
+  end
+  return acceptable
+end
+
+-- Extract an age hint from the query string. Returns age (number) or nil.
+local function extract_age(q)
+  -- "14yo", "14 yo", "14y/o", "14 y/o"
+  local age = q:match("(%d+)%s*y/?o")
+  if age then return tonumber(age) end
+
+  -- "14 year old", "14 years old", "14 year-old"
+  age = q:match("(%d+)%s*year")
+  if age then return tonumber(age) end
+
+  -- Named age groups
+  if q:match("for%s+kids") or q:match("for%s+children") then return 7 end
+  if q:match("kid%s*friendly") or q:match("child%s*friendly") then return 7 end
+  if q:match("family%s*friendly") then return 10 end
+  if q:match("for%s+teens") or q:match("for%s+teenagers") then return 13 end
+  if q:match("for%s+adults") then return 18 end
+
+  return nil
+end
+
+-- Detect region hints in the query. Returns true if any region term found.
+local REGION_PATTERNS = {
+  "australia", "australian", "american", "european", "japanese",
+  "german", "korean", "brazilian", "japan", "europe", "america",
+  "germany", "korea", "brazil"
+}
+
+local function has_region_hint(q)
+  local lower = q:lower()
+  for _, pat in ipairs(REGION_PATTERNS) do
+    if lower:find(pat, 1, true) then return true end
+  end
+  return false
+end
+
+-- Compute semantic ratio based on query characteristics
+local function compute_semantic_ratio(q, has_age, has_region)
+  local word_count = 0
+  for _ in q:gmatch("%S+") do
+    word_count = word_count + 1
+  end
+
+  if word_count >= 6 then return 0.7 end
+  if word_count >= 3 or has_age or has_region then return 0.5 end
+  return 0.3
+end
+
 function parse_types(types)
   if not types then return nil end
   if type(types) == "table" then
@@ -102,6 +191,16 @@ function handle()
   local include_unrated = params.includeUnrated == true or params.includeUnrated == "true"
   local include_cancelled = params.includeCancelled == true or params.includeCancelled == "true"
 
+  -- Semantic search: extract age/region hints and compute hybrid ratio
+  local extracted_age = nil
+  local region_hint = false
+  local semantic_ratio = 0.3
+  if q and q ~= "" then
+    extracted_age = extract_age(q)
+    region_hint = has_region_hint(q)
+    semantic_ratio = compute_semantic_ratio(q, extracted_age ~= nil, region_hint)
+  end
+
   -- Build Meilisearch filter from types and applicationTypes params
   local filter_parts = {}
 
@@ -168,6 +267,20 @@ function handle()
     table.insert(filter_parts, "(" .. table.concat(parts, " OR ") .. ")")
   end
 
+  -- Age filter from heuristic extraction (separate from explicit ageRatings param)
+  if extracted_age and not age_ratings_set then
+    local acceptable = get_acceptable_ratings(extracted_age)
+    if #acceptable > 0 then
+      local parts = {}
+      for _, ar in ipairs(acceptable) do
+        table.insert(parts, 'ageRatings = "' .. ar .. '"')
+      end
+      -- Include games with no age ratings (they haven't been rated, not necessarily inappropriate)
+      table.insert(parts, "ageRatings IS EMPTY")
+      table.insert(filter_parts, "(" .. table.concat(parts, " OR ") .. ")")
+    end
+  end
+
   local filter = nil
   if #filter_parts > 0 then
     filter = table.concat(filter_parts, " AND ")
@@ -202,6 +315,15 @@ function handle()
   }
   if filter then body.filter = filter end
   if sort then body.sort = sort end
+
+  -- Hybrid semantic search (only when game results are possible, since the
+  -- embedder is configured for game documents only)
+  if not types_set or types_set["game"] then
+    body.hybrid = {
+      semanticRatio = semantic_ratio,
+      embedder = "game-similarity"
+    }
+  end
 
   -- Check if game results are possible (collection boost only matters for games)
   local needs_collection_boost = not types_set or types_set["game"]
