@@ -49,5 +49,6 @@
 	"games.gamesgamesgamesgames.getStats": {},
 	"games.gamesgamesgamesgames.getGenreCounts": {},
 	"games.gamesgamesgamesgames.getPopularGames": {},
+	"games.gamesgamesgamesgames.putPopularity": {},
 	"games.gamesgamesgamesgames.refreshCaches": {}
 }

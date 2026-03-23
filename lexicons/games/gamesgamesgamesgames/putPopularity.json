@@ -1,0 +1,56 @@
+{
+	"$type": "com.atproto.lexicon.schema",
+	"lexicon": 1,
+	"id": "games.gamesgamesgamesgames.putPopularity",
+	"defs": {
+		"main": {
+			"type": "procedure",
+			"description": "Upsert game popularity data (concurrent player counts). Requires admin auth.",
+			"input": {
+				"encoding": "application/json",
+				"schema": {
+					"type": "object",
+					"required": ["games"],
+					"properties": {
+						"games": {
+							"type": "array",
+							"description": "List of games with popularity data to upsert.",
+							"items": {
+								"type": "ref",
+								"ref": "#gamePopularity"
+							}
+						}
+					}
+				}
+			},
+			"output": {
+				"encoding": "application/json",
+				"schema": {
+					"type": "object",
+					"required": ["upserted"],
+					"properties": {
+						"upserted": {
+							"type": "integer",
+							"description": "Number of records upserted."
+						}
+					}
+				}
+			}
+		},
+		"gamePopularity": {
+			"type": "object",
+			"required": ["steamId", "ccu"],
+			"properties": {
+				"steamId": {
+					"type": "string",
+					"description": "Steam app ID."
+				},
+				"ccu": {
+					"type": "integer",
+					"description": "Concurrent player count.",
+					"minimum": 0
+				}
+			}
+		}
+	}
+}
