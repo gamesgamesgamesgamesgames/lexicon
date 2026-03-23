@@ -10,9 +10,10 @@
 				"encoding": "application/json",
 				"schema": {
 					"type": "object",
-					"required": ["uri", "name"],
+					"required": ["uri"],
 					"properties": {
 						"uri": { "type": "string", "format": "at-uri" },
+						"slug": { "type": "string" },
 						"name": { "type": "string" },
 						"summary": { "type": "string" },
 						"applicationType": { "type": "ref", "ref": "games.gamesgamesgamesgames.defs#applicationType" },
