@@ -39,21 +39,20 @@ function handle()
   local feed = {}
   for i = 1, math.min(#hits, limit) do
     local hit = hits[i]
-    feed[#feed + 1] = {
-      -- Convert firstReleaseDate integer (20260321) to "2026-03-21"
-      local release_date_str = nil
-      if hit.firstReleaseDate then
-        local ds = tostring(hit.firstReleaseDate)
-        release_date_str = ds:sub(1, 4) .. "-" .. ds:sub(5, 6) .. "-" .. ds:sub(7, 8)
-      end
 
-      game = {
-        uri = hit.uri,
-        name = hit.name,
-        slug = hit.slug,
-        media = hit.media,
-        firstReleaseDate = release_date_str,
-      }
+    -- Convert firstReleaseDate integer (20260321) to "2026-03-21"
+    local release_date_str = nil
+    if hit.firstReleaseDate then
+      local ds = tostring(hit.firstReleaseDate)
+      release_date_str = ds:sub(1, 4) .. "-" .. ds:sub(5, 6) .. "-" .. ds:sub(7, 8)
+    end
+
+    feed[#feed + 1] = {
+      uri = hit.uri,
+      name = hit.name,
+      slug = hit.slug,
+      media = hit.media,
+      firstReleaseDate = release_date_str,
     }
   end
 
