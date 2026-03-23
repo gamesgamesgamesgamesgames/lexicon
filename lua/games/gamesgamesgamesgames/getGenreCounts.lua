@@ -1,7 +1,7 @@
 function handle()
   local rows = db.raw(
-    "SELECT je.value AS genre, COUNT(*) AS count FROM records, json_each(record, '$.genres') AS je WHERE collection = $1 GROUP BY je.value ORDER BY count DESC",
-    {"games.gamesgamesgamesgames.game"}
+    "SELECT genre, count FROM genre_counts_cache ORDER BY count DESC",
+    {}
   )
 
   local genres = {}

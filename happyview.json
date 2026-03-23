@@ -48,5 +48,6 @@
 	"games.gamesgamesgamesgames.listOrgGames": {},
 	"games.gamesgamesgamesgames.getStats": {},
 	"games.gamesgamesgamesgames.getGenreCounts": {},
-	"games.gamesgamesgamesgames.getPopularGames": {}
+	"games.gamesgamesgamesgames.getPopularGames": {},
+	"games.gamesgamesgamesgames.refreshCaches": {}
 }

@@ -10,10 +10,10 @@ function handle()
   if limit < 1 then limit = 1 end
   if limit > 100 then limit = 100 end
 
-  -- Get games with popularity data, ordered by concurrent users
+  -- Scan game_popularity (small) and look up records via expression index
   local rows = db.raw(
-    "SELECT r.uri FROM records r JOIN game_popularity gp ON json_extract(r.record, '$.externalIds.steam') = gp.steam_id WHERE r.collection = $1 ORDER BY gp.ccu DESC LIMIT $2",
-    {"games.gamesgamesgamesgames.game", limit}
+    "SELECT r.uri FROM game_popularity gp JOIN records r ON r.collection = 'games.gamesgamesgamesgames.game' AND json_extract(r.record, '$.externalIds.steam') = gp.steam_id ORDER BY gp.ccu DESC LIMIT $1",
+    { limit }
   )
 
   if not rows or #rows == 0 then
