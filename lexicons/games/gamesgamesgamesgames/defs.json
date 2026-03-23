@@ -147,7 +147,15 @@
 			"properties": {
 				"organization": {
 					"type": "string",
-					"knownValues": ["esrb", "pegi", "cero", "usk", "grac", "classInd", "acb"]
+					"knownValues": [
+						"esrb",
+						"pegi",
+						"cero",
+						"usk",
+						"grac",
+						"classInd",
+						"acb"
+					]
 				},
 				"rating": { "type": "string" },
 				"contentDescriptors": {
@@ -293,7 +301,28 @@
 				"url": { "type": "string", "format": "uri" },
 				"type": {
 					"type": "string",
-					"knownValues": ["official", "wiki", "steam", "gog", "epicGames", "itchIo", "twitter", "instagram", "youtube", "twitch", "discord", "reddit", "facebook", "wikipedia", "bluesky", "xbox", "playstation", "nintendo", "meta", "other"]
+					"knownValues": [
+						"official",
+						"wiki",
+						"steam",
+						"gog",
+						"epicGames",
+						"itchIo",
+						"twitter",
+						"instagram",
+						"youtube",
+						"twitch",
+						"discord",
+						"reddit",
+						"facebook",
+						"wikipedia",
+						"bluesky",
+						"xbox",
+						"playstation",
+						"nintendo",
+						"meta",
+						"other"
+					]
 				}
 			}
 		},
@@ -579,7 +608,11 @@
 				"did": { "type": "string", "format": "did" },
 				"profileType": { "type": "string", "knownValues": ["actor", "org"] },
 				"displayName": { "type": "string", "maxLength": 640 },
-				"avatar": { "type": "blob", "accept": ["image/png", "image/jpeg"], "maxSize": 10000000 }
+				"avatar": {
+					"type": "blob",
+					"accept": ["image/png", "image/jpeg"],
+					"maxSize": 10000000
+				}
 			}
 		},
 
@@ -660,13 +693,7 @@
 				"country": { "type": "string" },
 				"status": {
 					"type": "string",
-					"knownValues": [
-						"active",
-						"inactive",
-						"merged",
-						"acquired",
-						"defunct"
-					]
+					"knownValues": ["active", "inactive", "merged", "acquired", "defunct"]
 				},
 				"parent": {
 					"type": "string",
@@ -849,7 +876,14 @@
 			"properties": {
 				"platform": {
 					"type": "string",
-					"knownValues": ["steam", "gog", "epicGames", "playStation", "xbox", "nintendoEshop"]
+					"knownValues": [
+						"steam",
+						"gog",
+						"epicGames",
+						"playStation",
+						"xbox",
+						"nintendoEshop"
+					]
 				},
 				"features": {
 					"type": "array",
@@ -944,12 +978,8 @@
 		"signature": {
 			"type": "object",
 			"description": "An inline attestation signature.",
-			"required": ["$type", "key", "signature"],
+			"required": ["key", "signature"],
 			"properties": {
-				"$type": {
-					"type": "string",
-					"description": "The signature type identifier."
-				},
 				"key": {
 					"type": "string",
 					"description": "DID key reference (e.g., did:web:example.com#signing1)."
