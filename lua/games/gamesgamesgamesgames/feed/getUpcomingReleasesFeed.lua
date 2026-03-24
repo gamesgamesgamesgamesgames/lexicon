@@ -10,18 +10,19 @@ function handle()
   if limit < 1 then limit = 1 end
   if limit > 100 then limit = 100 end
 
-  local offset = 0
-  if params.cursor then offset = tonumber(params.cursor) or 0 end
-
   -- now() returns ISO 8601 e.g. "2026-03-12T..."
   local y, m, d = now():match("^(%d%d%d%d)-(%d%d)-(%d%d)")
   local today = tonumber(y .. m .. d)
 
+  -- Calculate one week from now
+  local ts = os.time({ year = tonumber(y), month = tonumber(m), day = tonumber(d) + 7 })
+  local next_week = os.date("%Y%m%d", ts)
+
+  -- Fetch all releases in the next 7 days, then shuffle and trim to limit
   local body = {
     q = "",
-    limit = limit + 1,
-    offset = offset,
-    filter = "type = \"game\" AND cancelled != true AND firstReleaseDate > " .. today,
+    limit = 1000,
+    filter = "type = \"game\" AND cancelled != true AND firstReleaseDate > " .. today .. " AND firstReleaseDate <= " .. next_week,
     sort = toarray({ "firstReleaseDate:asc" }),
     attributesToRetrieve = toarray({ "uri", "name", "slug", "media", "firstReleaseDate" })
   }
@@ -34,12 +35,16 @@ function handle()
   end
 
   local hits = data.hits or {}
-  local has_more = #hits > limit
+
+  -- Fisher-Yates shuffle
+  for i = #hits, 2, -1 do
+    local j = math.random(i)
+    hits[i], hits[j] = hits[j], hits[i]
+  end
 
   local feed = {}
   for i = 1, math.min(#hits, limit) do
     local hit = hits[i]
-
     -- Convert firstReleaseDate integer (20260321) to "2026-03-21"
     local release_date_str = nil
     if hit.firstReleaseDate then
@@ -56,9 +61,5 @@ function handle()
     }
   end
 
-  local result = { feed = toarray(feed) }
-  if has_more then
-    result.cursor = tostring(offset + limit)
-  end
-  return result
+  return { feed = toarray(feed) }
 end
