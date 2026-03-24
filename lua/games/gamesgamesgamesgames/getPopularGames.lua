@@ -10,9 +10,9 @@ function handle()
   if limit < 1 then limit = 1 end
   if limit > 100 then limit = 100 end
 
-  -- Scan game_popularity (small) and look up records via expression index
+  -- Scan game_popularity (small) and look up URIs via external_ids index table
   local rows = db.raw(
-    "SELECT r.uri FROM game_popularity gp JOIN records r ON r.collection = 'games.gamesgamesgamesgames.game' AND json_extract(r.record, '$.externalIds.steam') = gp.steam_id ORDER BY gp.ccu DESC LIMIT $1",
+    "SELECT eid.uri FROM game_popularity gp JOIN external_ids eid ON eid.service = 'steam' AND eid.external_id = gp.steam_id ORDER BY gp.ccu DESC LIMIT $1",
     { limit }
   )
 
