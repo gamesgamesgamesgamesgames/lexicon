@@ -1,0 +1,42 @@
+{
+	"$type": "com.atproto.lexicon.schema",
+	"lexicon": 1,
+	"id": "games.gamesgamesgamesgames.feed.getRecentlyReleasedFeed",
+	"defs": {
+		"main": {
+			"type": "query",
+			"description": "Get games released within the past 7 days, ordered by most recent first.",
+			"parameters": {
+				"type": "params",
+				"properties": {
+					"limit": {
+						"type": "integer",
+						"minimum": 1,
+						"maximum": 100,
+						"default": 50
+					},
+					"cursor": {
+						"type": "string"
+					}
+				}
+			},
+			"output": {
+				"encoding": "application/json",
+				"schema": {
+					"type": "object",
+					"required": ["feed"],
+					"properties": {
+						"cursor": { "type": "string" },
+						"feed": {
+							"type": "array",
+							"items": {
+								"type": "ref",
+								"ref": "games.gamesgamesgamesgames.defs#gameFeedViewItem"
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}
