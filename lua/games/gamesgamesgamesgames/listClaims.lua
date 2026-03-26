@@ -80,7 +80,7 @@ function handle()
           "WHERE c.collection = 'games.gamesgamesgamesgames.claim' " ..
           "AND NOT EXISTS (" ..
             "SELECT 1 FROM records r WHERE r.collection = 'games.gamesgamesgamesgames.claimReview' " ..
-            "AND json_extract(r.record, '$.claim.uri') = c.uri" ..
+            "AND r.record::jsonb->'claim'->>'uri' = c.uri" ..
           ")"
 
     if not is_admin then
@@ -97,8 +97,8 @@ function handle()
     -- Claims with a review matching the given status
     sql = "SELECT c.uri, c.cid, c.record, c.indexed_at FROM records c " ..
           "INNER JOIN records r ON r.collection = 'games.gamesgamesgamesgames.claimReview' " ..
-          "AND json_extract(r.record, '$.claim.uri') = c.uri " ..
-          "AND json_extract(r.record, '$.status') = " .. next_param(status_filter) .. " " ..
+          "AND r.record::jsonb->'claim'->>'uri' = c.uri " ..
+          "AND r.record::jsonb->>'status' = " .. next_param(status_filter) .. " " ..
           "WHERE c.collection = 'games.gamesgamesgamesgames.claim'"
 
     if not is_admin then
@@ -167,7 +167,7 @@ function handle()
 
     -- Look up associated claimReview
     local review_rows = db.raw(
-      "SELECT uri, record FROM records WHERE collection = 'games.gamesgamesgamesgames.claimReview' AND json_extract(record, '$.claim.uri') = $1 LIMIT 1",
+      "SELECT uri, record FROM records WHERE collection = 'games.gamesgamesgamesgames.claimReview' AND record::jsonb->'claim'->>'uri' = $1 LIMIT 1",
       { row.uri }
     )
 

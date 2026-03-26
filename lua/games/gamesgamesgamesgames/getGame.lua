@@ -65,7 +65,7 @@ function handle()
   -- Redirect resolution: check if this URI has been redirected
   local redirected_from = nil
   local redirect_rows = db.raw(
-    "SELECT record FROM records WHERE collection = 'games.gamesgamesgamesgames.redirect' AND json_extract(record, '$.sourceUri') = $1 LIMIT 1",
+    "SELECT record FROM records WHERE collection = 'games.gamesgamesgamesgames.redirect' AND record::jsonb->>'sourceUri' = $1 LIMIT 1",
     { uri }
   )
   if redirect_rows and #redirect_rows > 0 then

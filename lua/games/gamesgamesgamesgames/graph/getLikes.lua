@@ -3,7 +3,7 @@ function handle()
 
   -- Count total likes for this game
   local count_rows = db.raw(
-    "SELECT COUNT(*) as count FROM records WHERE collection = $1 AND json_extract(record, '$.subject') = $2",
+    "SELECT COUNT(*) as count FROM records WHERE collection = $1 AND record::jsonb->>'subject' = $2",
     {"games.gamesgamesgamesgames.graph.like", uri}
   )
 
@@ -16,7 +16,7 @@ function handle()
   local liked = false
   if caller_did and caller_did ~= "" then
     local user_rows = db.raw(
-      "SELECT uri FROM records WHERE collection = $1 AND did = $2 AND json_extract(record, '$.subject') = $3 LIMIT 1",
+      "SELECT uri FROM records WHERE collection = $1 AND did = $2 AND record::jsonb->>'subject' = $3 LIMIT 1",
       {"games.gamesgamesgamesgames.graph.like", caller_did, uri}
     )
     if user_rows and #user_rows > 0 then

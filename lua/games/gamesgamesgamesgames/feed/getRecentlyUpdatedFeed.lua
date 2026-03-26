@@ -15,7 +15,7 @@ function handle()
 
   -- Get games ordered by most recently indexed
   local rows = db.raw(
-    "SELECT uri FROM records WHERE collection = $1 AND json_extract(record, '$.applicationType') = 'game' ORDER BY indexed_at DESC LIMIT $2 OFFSET $3",
+    "SELECT uri FROM records WHERE collection = $1 AND record::jsonb->>'applicationType' = 'game' ORDER BY indexed_at DESC LIMIT $2 OFFSET $3",
     {"games.gamesgamesgamesgames.game", limit + 1, offset}
   )
 

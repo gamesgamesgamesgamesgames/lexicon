@@ -19,7 +19,7 @@ function handle()
 
   -- Get games with the most likes in the last 7 days
   local rows = db.raw(
-    "SELECT json_extract(record, '$.subject') AS game_uri, COUNT(*) AS like_count FROM records WHERE collection = $1 AND indexed_at > $2 GROUP BY json_extract(record, '$.subject') ORDER BY like_count DESC LIMIT $3 OFFSET $4",
+    "SELECT record::jsonb->>'subject' AS game_uri, COUNT(*) AS like_count FROM records WHERE collection = $1 AND indexed_at > $2 GROUP BY record::jsonb->>'subject' ORDER BY like_count DESC LIMIT $3 OFFSET $4",
     {"games.gamesgamesgamesgames.graph.like", cutoff, limit + 1, offset}
   )
 

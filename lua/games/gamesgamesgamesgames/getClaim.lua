@@ -141,7 +141,7 @@ function handle()
 
   -- Look up associated claimReview
   local review_rows = db.raw(
-    "SELECT uri, record FROM records WHERE collection = 'games.gamesgamesgamesgames.claimReview' AND json_extract(record, '$.claim.uri') = $1 LIMIT 1",
+    "SELECT uri, record FROM records WHERE collection = 'games.gamesgamesgamesgames.claimReview' AND record::jsonb->'claim'->>'uri' = $1 LIMIT 1",
     { uri }
   )
 

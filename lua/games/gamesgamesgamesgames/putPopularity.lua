@@ -22,7 +22,7 @@ function handle()
   for _, game in ipairs(input.games) do
     if game.steamId and game.ccu then
       db.raw(
-        "INSERT INTO game_popularity (steam_id, ccu, updated_at) VALUES ($1, $2, datetime('now')) ON CONFLICT (steam_id) DO UPDATE SET ccu = $2, updated_at = datetime('now')",
+        "INSERT INTO game_popularity (steam_id, ccu, updated_at) VALUES ($1, $2, NOW()) ON CONFLICT (steam_id) DO UPDATE SET ccu = $2, updated_at = NOW()",
         { game.steamId, game.ccu }
       )
       count = count + 1

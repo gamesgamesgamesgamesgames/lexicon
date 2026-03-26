@@ -17,7 +17,7 @@ end
 -- Get like count for a game URI
 local function get_like_count(game_uri)
   local result = db.raw(
-    "SELECT COUNT(*) AS count FROM records WHERE collection = $1 AND json_extract(record, '$.subject') = $2",
+    "SELECT COUNT(*) AS count FROM records WHERE collection = $1 AND record::jsonb->>'subject' = $2",
     {"games.gamesgamesgamesgames.graph.like", game_uri}
   )
   if result and result[1] then
@@ -32,7 +32,7 @@ local function get_viewer_like(game_uri)
     return nil
   end
   local result = db.raw(
-    "SELECT uri FROM records WHERE collection = $1 AND did = $2 AND json_extract(record, '$.subject') = $3 LIMIT 1",
+    "SELECT uri FROM records WHERE collection = $1 AND did = $2 AND record::jsonb->>'subject' = $3 LIMIT 1",
     {"games.gamesgamesgamesgames.graph.like", caller_did, game_uri}
   )
   if result and result[1] then
