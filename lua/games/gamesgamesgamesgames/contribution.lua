@@ -14,7 +14,7 @@ function handle()
   -- Verify at least one signature is from our HappyView instance
   local valid = false
   for _, sig in ipairs(record.signatures) do
-    if verify_signature(sig) then
+    if atproto.verify_signature(record, sig, did) then
       valid = true
       break
     end

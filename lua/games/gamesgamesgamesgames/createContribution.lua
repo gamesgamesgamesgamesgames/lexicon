@@ -102,7 +102,7 @@ function handle()
   end
 
   -- Sign with HappyView's key for inline attestation
-  local sig = sign(contribution_data)
+  local sig = atproto.sign(contribution_data)
   if sig then
     contribution_data.signatures = toarray({ sig })
   end
