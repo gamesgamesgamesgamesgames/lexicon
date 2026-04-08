@@ -6,7 +6,7 @@
 		"main": {
 			"type": "record",
 			"description": "A declaration of a Pentaract org profile.",
-			"key": "literal:self",
+			"key": "any",
 			"record": {
 				"type": "object",
 				"required": ["displayName", "createdAt"],
@@ -63,6 +63,10 @@
 						"description": "Image to be displayed on profile page. AKA, 'profile picture'",
 						"accept": ["image/png", "image/jpeg"],
 						"maxSize": 10000000
+					},
+					"externalIds": {
+						"type": "ref",
+						"ref": "games.gamesgamesgamesgames.defs#externalIds"
 					},
 					"createdAt": { "type": "string", "format": "datetime" }
 				}
