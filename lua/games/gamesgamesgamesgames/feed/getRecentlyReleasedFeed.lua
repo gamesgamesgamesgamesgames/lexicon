@@ -10,19 +10,27 @@ function handle()
   if limit < 1 then limit = 1 end
   if limit > 100 then limit = 100 end
 
-  -- now() returns ISO 8601 e.g. "2026-03-12T..."
-  local y, m, d = now():match("^(%d%d%d%d)-(%d%d)-(%d%d)")
-  local today = tonumber(y .. m .. d)
+  -- Use client-provided now (YYYYMMDD) if available, otherwise fall back to UTC
+  local current_date
+  if params.now and params.now:match("^%d%d%d%d%d%d%d%d$") then
+    current_date = tonumber(params.now)
+  else
+    local y, m, d = now():match("^(%d%d%d%d)-(%d%d)-(%d%d)")
+    current_date = tonumber(y .. m .. d)
+  end
 
   -- Calculate 7 days ago
-  local ts = os.time({ year = tonumber(y), month = tonumber(m), day = tonumber(d) - 7 })
+  local y = math.floor(current_date / 10000)
+  local m = math.floor((current_date % 10000) / 100)
+  local d = current_date % 100
+  local ts = os.time({ year = y, month = m, day = d - 7 })
   local week_ago = tonumber(os.date("%Y%m%d", ts))
 
-  -- Fetch games released in the past 7 days (up to and including today)
+  -- Fetch games released in the past 7 days (up to and including now)
   local body = {
     q = "",
     limit = 1000,
-    filter = "type = \"game\" AND cancelled != true AND firstReleaseDate >= " .. week_ago .. " AND firstReleaseDate <= " .. today,
+    filter = "type = \"game\" AND cancelled != true AND firstReleaseDate >= " .. week_ago .. " AND firstReleaseDate <= " .. current_date,
     sort = toarray({ "firstReleaseDate:desc" }),
     attributesToRetrieve = toarray({ "uri", "name", "slug", "media", "firstReleaseDate" })
   }
