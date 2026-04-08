@@ -1,0 +1,36 @@
+{
+	"$type": "com.atproto.lexicon.schema",
+	"lexicon": 1,
+	"id": "games.gamesgamesgamesgames.contributionPatch",
+	"defs": {
+		"main": {
+			"description": "A mod-approved patch representing changes to apply to an entity. Created on mod approval, deleted when the entity owner accepts and merges.",
+			"type": "record",
+			"key": "tid",
+			"record": {
+				"type": "object",
+				"required": ["contribution", "contributionReview", "subject", "changes", "createdAt"],
+				"properties": {
+					"contribution": {
+						"type": "ref",
+						"ref": "com.atproto.repo.strongRef"
+					},
+					"contributionReview": {
+						"type": "ref",
+						"ref": "com.atproto.repo.strongRef"
+					},
+					"subject": {
+						"type": "string",
+						"format": "at-uri",
+						"description": "The entity these changes apply to."
+					},
+					"changes": {
+						"type": "unknown",
+						"description": "The approved changes to overlay on the entity."
+					},
+					"createdAt": { "type": "string", "format": "datetime" }
+				}
+			}
+		}
+	}
+}

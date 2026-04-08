@@ -1,0 +1,48 @@
+{
+	"$type": "com.atproto.lexicon.schema",
+	"lexicon": 1,
+	"id": "games.gamesgamesgamesgames.contribution",
+	"defs": {
+		"main": {
+			"description": "A community contribution proposing changes to a game or submitting a new game.",
+			"type": "record",
+			"key": "tid",
+			"record": {
+				"type": "object",
+				"required": ["contributionType", "changes", "createdAt"],
+				"properties": {
+					"subject": {
+						"type": "string",
+						"format": "at-uri",
+						"description": "The entity being modified. Required for corrections and additions, absent for new game submissions."
+					},
+					"contributionType": {
+						"type": "string",
+						"knownValues": ["correction", "addition", "newGame"]
+					},
+					"changes": {
+						"type": "unknown",
+						"description": "A partial object matching the target record schema. Only changed fields are present."
+					},
+					"message": {
+						"type": "string",
+						"maxGraphemes": 3000,
+						"description": "Explanation of what is being changed and why."
+					},
+					"signatures": {
+						"type": "array",
+						"description": "Inline attestation signatures from the AppView that created this contribution.",
+						"items": {
+							"type": "union",
+							"refs": [
+								"games.gamesgamesgamesgames.defs#signature",
+								"com.atproto.repo.strongRef"
+							]
+						}
+					},
+					"createdAt": { "type": "string", "format": "datetime" }
+				}
+			}
+		}
+	}
+}

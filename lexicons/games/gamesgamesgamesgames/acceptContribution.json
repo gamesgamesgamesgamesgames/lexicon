@@ -1,0 +1,39 @@
+{
+	"$type": "com.atproto.lexicon.schema",
+	"lexicon": 1,
+	"id": "games.gamesgamesgamesgames.acceptContribution",
+	"defs": {
+		"main": {
+			"type": "procedure",
+			"description": "Accept a mod-approved contribution patch, merging changes into the entity record.",
+			"input": {
+				"encoding": "application/json",
+				"schema": {
+					"type": "object",
+					"required": ["contributionPatch"],
+					"properties": {
+						"contributionPatch": {
+							"type": "string",
+							"format": "at-uri",
+							"description": "URI of the contributionPatch record to accept."
+						}
+					}
+				}
+			},
+			"output": {
+				"encoding": "application/json",
+				"schema": {
+					"type": "object",
+					"required": ["uri"],
+					"properties": {
+						"uri": {
+							"type": "string",
+							"format": "at-uri",
+							"description": "URI of the updated entity record."
+						}
+					}
+				}
+			}
+		}
+	}
+}

@@ -1,0 +1,42 @@
+{
+	"$type": "com.atproto.lexicon.schema",
+	"lexicon": 1,
+	"id": "games.gamesgamesgamesgames.reviewContribution",
+	"defs": {
+		"main": {
+			"type": "procedure",
+			"description": "Submit a review decision for a community contribution.",
+			"input": {
+				"encoding": "application/json",
+				"schema": {
+					"type": "object",
+					"required": ["contribution", "status"],
+					"properties": {
+						"contribution": {
+							"type": "ref",
+							"ref": "com.atproto.repo.strongRef"
+						},
+						"status": {
+							"type": "string",
+							"knownValues": ["approved", "denied", "needsRevision"]
+						},
+						"reason": {
+							"type": "string",
+							"maxGraphemes": 3000
+						}
+					}
+				}
+			},
+			"output": {
+				"encoding": "application/json",
+				"schema": {
+					"type": "object",
+					"required": ["uri"],
+					"properties": {
+						"uri": { "type": "string", "format": "at-uri" }
+					}
+				}
+			}
+		}
+	}
+}

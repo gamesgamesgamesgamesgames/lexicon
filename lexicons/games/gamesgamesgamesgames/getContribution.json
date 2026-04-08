@@ -1,0 +1,141 @@
+{
+	"$type": "com.atproto.lexicon.schema",
+	"lexicon": 1,
+	"id": "games.gamesgamesgamesgames.getContribution",
+	"defs": {
+		"main": {
+			"type": "query",
+			"description": "Get details of a community contribution.",
+			"parameters": {
+				"type": "params",
+				"required": ["uri"],
+				"properties": {
+					"uri": {
+						"type": "string",
+						"format": "at-uri"
+					}
+				}
+			},
+			"output": {
+				"encoding": "application/json",
+				"schema": {
+					"type": "object",
+					"required": ["contribution"],
+					"properties": {
+						"contribution": {
+							"type": "ref",
+							"ref": "#contributionView"
+						}
+					}
+				}
+			}
+		},
+		"contributionView": {
+			"type": "object",
+			"required": ["uri", "cid", "contributorDid", "contributionType", "changes", "createdAt"],
+			"properties": {
+				"uri": {
+					"type": "string",
+					"format": "at-uri"
+				},
+				"cid": {
+					"type": "string"
+				},
+				"contributorDid": {
+					"type": "string",
+					"format": "did"
+				},
+				"contributionType": {
+					"type": "string",
+					"knownValues": ["correction", "addition", "newGame"]
+				},
+				"subject": {
+					"type": "string",
+					"format": "at-uri"
+				},
+				"subjectName": {
+					"type": "string",
+					"description": "Resolved name of the subject entity for display."
+				},
+				"changes": {
+					"type": "unknown"
+				},
+				"message": {
+					"type": "string"
+				},
+				"createdAt": { "type": "string", "format": "datetime" },
+				"review": {
+					"type": "ref",
+					"ref": "#reviewView"
+				},
+				"patch": {
+					"type": "ref",
+					"ref": "#patchView"
+				},
+				"verification": {
+					"type": "ref",
+					"ref": "#verificationView"
+				}
+			}
+		},
+		"reviewView": {
+			"type": "object",
+			"required": ["uri", "status", "reviewedBy", "createdAt"],
+			"properties": {
+				"uri": {
+					"type": "string",
+					"format": "at-uri"
+				},
+				"status": {
+					"type": "string",
+					"knownValues": ["approved", "denied", "needsRevision"]
+				},
+				"reviewedBy": {
+					"type": "string",
+					"format": "did"
+				},
+				"reason": {
+					"type": "string"
+				},
+				"createdAt": { "type": "string", "format": "datetime" }
+			}
+		},
+		"patchView": {
+			"type": "object",
+			"required": ["uri", "subject", "changes", "createdAt"],
+			"properties": {
+				"uri": {
+					"type": "string",
+					"format": "at-uri"
+				},
+				"subject": {
+					"type": "string",
+					"format": "at-uri"
+				},
+				"changes": {
+					"type": "unknown"
+				},
+				"createdAt": { "type": "string", "format": "datetime" }
+			}
+		},
+		"verificationView": {
+			"type": "object",
+			"required": ["uri", "contributor", "acceptedBy", "createdAt"],
+			"properties": {
+				"uri": {
+					"type": "string",
+					"format": "at-uri"
+				},
+				"contributor": {
+					"type": "string",
+					"format": "did"
+				},
+				"acceptedBy": {
+					"type": "string",
+					"knownValues": ["mod", "owner", "both"]
+				},
+				"createdAt": { "type": "string", "format": "datetime" }
+			}
+		}
+	}
+}

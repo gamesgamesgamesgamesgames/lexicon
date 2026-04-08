@@ -1,0 +1,62 @@
+{
+	"$type": "com.atproto.lexicon.schema",
+	"lexicon": 1,
+	"id": "games.gamesgamesgamesgames.getContributionStats",
+	"defs": {
+		"main": {
+			"type": "query",
+			"description": "Get contribution statistics and badges for a user.",
+			"parameters": {
+				"type": "params",
+				"required": ["did"],
+				"properties": {
+					"did": {
+						"type": "string",
+						"format": "did"
+					}
+				}
+			},
+			"output": {
+				"encoding": "application/json",
+				"schema": {
+					"type": "object",
+					"required": ["stats", "badges"],
+					"properties": {
+						"stats": {
+							"type": "ref",
+							"ref": "#contributionStats"
+						},
+						"badges": {
+							"type": "array",
+							"items": {
+								"type": "ref",
+								"ref": "#badge"
+							}
+						}
+					}
+				}
+			}
+		},
+		"contributionStats": {
+			"type": "object",
+			"required": ["totalContributions", "corrections", "additions", "newGames", "uniqueEntities", "ownerAccepted"],
+			"properties": {
+				"totalContributions": { "type": "integer" },
+				"corrections": { "type": "integer" },
+				"additions": { "type": "integer" },
+				"newGames": { "type": "integer" },
+				"uniqueEntities": { "type": "integer" },
+				"ownerAccepted": { "type": "integer" }
+			}
+		},
+		"badge": {
+			"type": "object",
+			"required": ["id", "name"],
+			"properties": {
+				"id": { "type": "string" },
+				"name": { "type": "string" },
+				"description": { "type": "string" }
+			}
+		}
+	}
+}

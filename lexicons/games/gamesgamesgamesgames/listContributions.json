@@ -1,0 +1,58 @@
+{
+	"$type": "com.atproto.lexicon.schema",
+	"lexicon": 1,
+	"id": "games.gamesgamesgamesgames.listContributions",
+	"defs": {
+		"main": {
+			"type": "query",
+			"description": "List community contributions, optionally filtered by status, subject, or contributor.",
+			"parameters": {
+				"type": "params",
+				"properties": {
+					"status": {
+						"type": "string",
+						"knownValues": ["pending", "approved", "denied", "needsRevision"]
+					},
+					"subject": {
+						"type": "string",
+						"format": "at-uri",
+						"description": "Filter to contributions targeting a specific entity."
+					},
+					"contributor": {
+						"type": "string",
+						"format": "did",
+						"description": "Filter to contributions from a specific user."
+					},
+					"limit": {
+						"type": "integer",
+						"minimum": 1,
+						"maximum": 100,
+						"default": 25
+					},
+					"cursor": {
+						"type": "string"
+					}
+				}
+			},
+			"output": {
+				"encoding": "application/json",
+				"schema": {
+					"type": "object",
+					"required": ["contributions"],
+					"properties": {
+						"contributions": {
+							"type": "array",
+							"items": {
+								"type": "ref",
+								"ref": "games.gamesgamesgamesgames.getContribution#contributionView"
+							}
+						},
+						"cursor": {
+							"type": "string"
+						}
+					}
+				}
+			}
+		}
+	}
+}

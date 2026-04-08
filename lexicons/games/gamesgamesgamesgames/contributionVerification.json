@@ -1,0 +1,39 @@
+{
+	"$type": "com.atproto.lexicon.schema",
+	"lexicon": 1,
+	"id": "games.gamesgamesgamesgames.contributionVerification",
+	"defs": {
+		"main": {
+			"description": "A permanent record crediting a contributor for an accepted contribution. Never deleted.",
+			"type": "record",
+			"key": "tid",
+			"record": {
+				"type": "object",
+				"required": ["contribution", "contributor", "subject", "contributionType", "acceptedBy", "createdAt"],
+				"properties": {
+					"contribution": {
+						"type": "ref",
+						"ref": "com.atproto.repo.strongRef"
+					},
+					"contributor": {
+						"type": "string",
+						"format": "did"
+					},
+					"subject": {
+						"type": "string",
+						"format": "at-uri"
+					},
+					"contributionType": {
+						"type": "string",
+						"knownValues": ["correction", "addition", "newGame"]
+					},
+					"acceptedBy": {
+						"type": "string",
+						"knownValues": ["mod", "owner", "both"]
+					},
+					"createdAt": { "type": "string", "format": "datetime" }
+				}
+			}
+		}
+	}
+}

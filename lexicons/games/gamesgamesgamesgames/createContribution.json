@@ -1,0 +1,47 @@
+{
+	"$type": "com.atproto.lexicon.schema",
+	"lexicon": 1,
+	"id": "games.gamesgamesgamesgames.createContribution",
+	"defs": {
+		"main": {
+			"type": "procedure",
+			"description": "Submit a new community contribution proposing changes to an entity or a new game.",
+			"input": {
+				"encoding": "application/json",
+				"schema": {
+					"type": "object",
+					"required": ["contributionType", "changes"],
+					"properties": {
+						"subject": {
+							"type": "string",
+							"format": "at-uri",
+							"description": "The entity being modified. Required for corrections and additions."
+						},
+						"contributionType": {
+							"type": "string",
+							"knownValues": ["correction", "addition", "newGame"]
+						},
+						"changes": {
+							"type": "unknown",
+							"description": "A partial object with only changed fields."
+						},
+						"message": {
+							"type": "string",
+							"maxGraphemes": 3000
+						}
+					}
+				}
+			},
+			"output": {
+				"encoding": "application/json",
+				"schema": {
+					"type": "object",
+					"required": ["uri"],
+					"properties": {
+						"uri": { "type": "string", "format": "at-uri" }
+					}
+				}
+			}
+		}
+	}
+}
