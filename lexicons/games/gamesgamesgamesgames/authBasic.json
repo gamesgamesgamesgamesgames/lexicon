@@ -1,0 +1,69 @@
+{
+  "lexicon": 1,
+  "id": "games.gamesgamesgamesgames.authBasic",
+  "defs": {
+    "main": {
+      "type": "permission-set",
+      "title": "Cartridge Basic",
+      "detail": "Browse games, manage your profile, like games, submit contributions, and create collections.",
+      "permissions": [
+        {
+          "type": "permission",
+          "resource": "repo",
+          "collection": [
+            "games.gamesgamesgamesgames.actor.credit",
+            "games.gamesgamesgamesgames.actor.game",
+            "games.gamesgamesgamesgames.actor.profile",
+            "games.gamesgamesgamesgames.actor.stats",
+            "games.gamesgamesgamesgames.claim",
+            "games.gamesgamesgamesgames.collection",
+            "games.gamesgamesgamesgames.contribution",
+            "games.gamesgamesgamesgames.feed.generator",
+            "games.gamesgamesgamesgames.graph.like"
+          ]
+        },
+        {
+          "type": "permission",
+          "resource": "rpc",
+          "inheritAud": true,
+          "lxm": [
+            "games.gamesgamesgamesgames.actor.createProfile",
+            "games.gamesgamesgamesgames.actor.getProfile",
+            "games.gamesgamesgamesgames.actor.putProfile",
+            "games.gamesgamesgamesgames.createClaim",
+            "games.gamesgamesgamesgames.createContribution",
+            "games.gamesgamesgamesgames.feed.describeFeedGenerator",
+            "games.gamesgamesgamesgames.feed.getFeedSkeleton",
+            "games.gamesgamesgamesgames.feed.getGameFeed",
+            "games.gamesgamesgamesgames.feed.getHotGamesFeed",
+            "games.gamesgamesgamesgames.feed.getLikesFeed",
+            "games.gamesgamesgamesgames.feed.getOrgDevelopedFeed",
+            "games.gamesgamesgamesgames.feed.getOrgPublishedFeed",
+            "games.gamesgamesgamesgames.feed.getPersonalizedFeed",
+            "games.gamesgamesgamesgames.feed.getRecentlyReleasedFeed",
+            "games.gamesgamesgamesgames.feed.getRecentlyUpdatedFeed",
+            "games.gamesgamesgamesgames.feed.getSimilarGamesFeed",
+            "games.gamesgamesgamesgames.feed.getUpcomingReleasesFeed",
+            "games.gamesgamesgamesgames.getClaim",
+            "games.gamesgamesgamesgames.getContribution",
+            "games.gamesgamesgamesgames.getContributionStats",
+            "games.gamesgamesgamesgames.getGame",
+            "games.gamesgamesgamesgames.getGenreCounts",
+            "games.gamesgamesgamesgames.getPopularGames",
+            "games.gamesgamesgamesgames.getProfile",
+            "games.gamesgamesgamesgames.getReviews",
+            "games.gamesgamesgamesgames.getStats",
+            "games.gamesgamesgamesgames.graph.getLikes",
+            "games.gamesgamesgamesgames.graph.toggleLike",
+            "games.gamesgamesgamesgames.listClaims",
+            "games.gamesgamesgamesgames.listContributions",
+            "games.gamesgamesgamesgames.listGames",
+            "games.gamesgamesgamesgames.listOrgGames",
+            "games.gamesgamesgamesgames.search",
+            "games.gamesgamesgamesgames.searchProfilesTypeahead"
+          ]
+        }
+      ]
+    }
+  }
+}
