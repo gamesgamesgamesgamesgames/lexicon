@@ -31,8 +31,7 @@ function handle()
       end
     else
       -- Resolve handle to DID via com.atproto.identity.resolveHandle (supports both DNS and HTTP resolution)
-      local resolve_url = env.INTERNAL_URL .. "/xrpc/com.atproto.identity.resolveHandle?handle=" .. handle_param
-      local resp = http.get(resolve_url)
+      local resp = xrpc.query("com.atproto.identity.resolveHandle", { handle = handle_param })
       if not resp or resp.status ~= 200 or not resp.body or resp.body == "" then
         return { profile = nil, profileType = nil, handle = handle_param }
       end
