@@ -1,0 +1,50 @@
+{
+	"$type": "com.atproto.lexicon.schema",
+	"lexicon": 1,
+	"id": "games.gamesgamesgamesgames.feed.getOrgDevelopedFeed",
+	"defs": {
+		"main": {
+			"type": "query",
+			"description": "Get games developed by an organization.",
+			"parameters": {
+				"type": "params",
+				"required": ["org"],
+				"properties": {
+					"org": {
+						"type": "string",
+						"format": "at-uri",
+						"description": "The AT URI of the organization profile."
+					},
+					"limit": {
+						"type": "integer",
+						"minimum": 1,
+						"maximum": 100,
+						"default": 50
+					},
+					"cursor": {
+						"type": "string"
+					}
+				}
+			},
+			"output": {
+				"encoding": "application/json",
+				"schema": {
+					"type": "object",
+					"required": ["feed"],
+					"properties": {
+						"feed": {
+							"type": "array",
+							"items": {
+								"type": "ref",
+								"ref": "games.gamesgamesgamesgames.defs#gameFeedViewItem"
+							}
+						},
+						"cursor": {
+							"type": "string"
+						}
+					}
+				}
+			}
+		}
+	}
+}
