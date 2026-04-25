@@ -1,0 +1,49 @@
+{
+	"$type": "com.atproto.lexicon.schema",
+	"lexicon": 1,
+	"id": "games.gamesgamesgamesgames.feed.getActivityFeed",
+	"defs": {
+		"main": {
+			"type": "query",
+			"description": "Get a user's activity feed, including likes and reviews in reverse chronological order.",
+			"parameters": {
+				"type": "params",
+				"required": ["did"],
+				"properties": {
+					"did": {
+						"type": "string",
+						"description": "The DID of the user whose activity to retrieve."
+					},
+					"limit": {
+						"type": "integer",
+						"minimum": 1,
+						"maximum": 100,
+						"default": 30
+					},
+					"cursor": {
+						"type": "string"
+					}
+				}
+			},
+			"output": {
+				"encoding": "application/json",
+				"schema": {
+					"type": "object",
+					"required": ["feed"],
+					"properties": {
+						"feed": {
+							"type": "array",
+							"items": {
+								"type": "ref",
+								"ref": "games.gamesgamesgamesgames.defs#activityFeedItem"
+							}
+						},
+						"cursor": {
+							"type": "string"
+						}
+					}
+				}
+			}
+		}
+	}
+}

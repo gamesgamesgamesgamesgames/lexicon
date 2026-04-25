@@ -989,6 +989,66 @@
 					"description": "The signature bytes."
 				}
 			}
+		},
+
+		"activityFeedItem": {
+			"type": "object",
+			"required": ["type", "createdAt", "game"],
+			"properties": {
+				"type": {
+					"type": "string",
+					"knownValues": ["like", "review"],
+					"description": "The type of activity."
+				},
+				"createdAt": {
+					"type": "string",
+					"format": "datetime",
+					"description": "When the activity occurred."
+				},
+				"game": {
+					"type": "ref",
+					"ref": "games.gamesgamesgamesgames.defs#gameView",
+					"description": "The game associated with this activity."
+				},
+				"review": {
+					"type": "ref",
+					"ref": "games.gamesgamesgamesgames.defs#activityReviewView",
+					"description": "Review data, present when type is 'review'."
+				}
+			}
+		},
+
+		"activityReviewView": {
+			"type": "object",
+			"required": ["uri", "rating", "createdAt"],
+			"properties": {
+				"uri": {
+					"type": "string",
+					"format": "at-uri"
+				},
+				"rating": {
+					"type": "integer",
+					"minimum": 0,
+					"maximum": 10
+				},
+				"text": {
+					"type": "string"
+				},
+				"title": {
+					"type": "string"
+				},
+				"tags": {
+					"type": "array",
+					"items": { "type": "string" }
+				},
+				"containsSpoilers": {
+					"type": "boolean"
+				},
+				"createdAt": {
+					"type": "string",
+					"format": "datetime"
+				}
+			}
 		}
 	}
 }
