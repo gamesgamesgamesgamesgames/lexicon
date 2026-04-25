@@ -41,6 +41,10 @@
 						},
 						"cursor": {
 							"type": "string"
+						},
+						"totalCount": {
+							"type": "integer",
+							"description": "Total number of games with this role for the organization."
 						}
 					}
 				}

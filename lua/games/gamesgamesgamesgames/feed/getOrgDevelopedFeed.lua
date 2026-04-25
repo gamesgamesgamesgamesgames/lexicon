@@ -77,8 +77,10 @@ function handle()
     table.insert(page_uris, game_uris[i])
   end
 
+  local total_count = #game_uris
+
   if #page_uris == 0 then
-    return { feed = toarray({}) }
+    return { feed = toarray({}), totalCount = total_count }
   end
 
   -- Batch fetch game data from meilisearch
@@ -128,7 +130,7 @@ function handle()
     end
   end
 
-  local result = { feed = toarray(feed) }
+  local result = { feed = toarray(feed), totalCount = total_count }
   if page_end < #game_uris then
     result.cursor = tostring(page_end)
   end
