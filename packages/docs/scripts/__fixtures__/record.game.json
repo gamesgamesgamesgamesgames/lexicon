@@ -1,0 +1,23 @@
+{
+  "lexicon": 1,
+  "id": "games.gamesgamesgamesgames.game",
+  "defs": {
+    "main": {
+      "type": "record",
+      "description": "A video game.",
+      "key": "any",
+      "record": {
+        "type": "object",
+        "required": ["name", "createdAt"],
+        "properties": {
+          "name": { "type": "string" },
+          "createdAt": { "type": "string", "format": "datetime" },
+          "genres": {
+            "type": "array",
+            "items": { "type": "ref", "ref": "games.gamesgamesgamesgames.defs#genre" }
+          }
+        }
+      }
+    }
+  }
+}

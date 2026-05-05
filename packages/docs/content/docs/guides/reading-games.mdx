@@ -1,0 +1,635 @@
+---
+title: Reading games
+description: Patterns for fetching game records by slug, AT-URI, external ID, and repo.
+---
+
+Reading games from the Pentaract is the most common use case. This guide covers common use cases: fetching a single game by identity, retrieving a list of games, and searching all games.
+
+Every request needs an `X-Client-Key` header (see [Quickstart: Register an API client](/docs/getting-started/quickstart#register-an-api-client)).
+
+## Fetch a game
+
+`getGame` returns all data about a game. The game can be referenced by several different keys.
+
+### By AT URI
+
+The most reliable way to refer to a game is by it's AT URI. This is a direct pointer to the game's location on the AT Protocol.
+
+<Tabs groupId="lang" items={['TypeScript', 'JavaScript', 'Go', 'Rust', 'cURL']} persist>
+<Tab value="TypeScript">
+```ts
+const url = new URL(
+  '/xrpc/games.gamesgamesgamesgames.getGame',
+  'https://gamesgamesgamesgames.games'
+)
+url.searchParams.append('uri', 'at://did:web:gamesgamesgamesgames.games/games.gamesgamesgamesgames.game/3mghbcajpt52d')
+
+const response = await fetch(url, {
+  headers: { "X-Client-Key": "API_CLIENT_KEY" }
+});
+const { game } = (await response.json()) as { game: { name: string } };
+
+console.log(game.name);
+```
+</Tab>
+
+<Tab value="JavaScript">
+```js
+const url = new URL(
+  '/xrpc/games.gamesgamesgamesgames.getGame',
+  'https://gamesgamesgamesgames.games'
+)
+url.searchParams.append('uri', 'at://did:web:gamesgamesgamesgames.games/games.gamesgamesgamesgames.game/3mghbcajpt52d')
+
+const response = await fetch(url, {
+  headers: { "X-Client-Key": "API_CLIENT_KEY" }
+});
+const { game } = await response.json();
+
+console.log(game.name);
+```
+</Tab>
+
+<Tab value="Go">
+```go
+req, _ := http.NewRequest("GET",
+  "https://gamesgamesgamesgames.games/xrpc/games.gamesgamesgamesgames.getGame?uri=at%3A%2F%2Fdid%3Aweb%3Agamesgamesgamesgames.games%2Fgames.gamesgamesgamesgames.game%2F3mghktn5e5m2d",
+  nil,
+)
+req.Header.Set("X-Client-Key", "API_CLIENT_KEY")
+
+res, err := http.DefaultClient.Do(req)
+if err != nil {
+  panic(err)
+}
+defer res.Body.Close()
+
+var body struct {
+  Game struct {
+    Name string `json:"name"`
+  } `json:"game"`
+}
+json.NewDecoder(res.Body).Decode(&body)
+fmt.Println(body.Game.Name)
+```
+</Tab>
+
+<Tab value="Rust">
+```rust
+let res: Response = reqwest::Client::new()
+  .get("https://gamesgamesgamesgames.games/xrpc/games.gamesgamesgamesgames.getGame")
+  .query(&[("uri", "at://did:web:gamesgamesgamesgames.games/games.gamesgamesgamesgames.game/3mghbcajpt52d")])
+  .header("X-Client-Key", "API_CLIENT_KEY")
+  .send()
+  .await?
+  .json()
+  .await?;
+
+println!("{}", res.game.name);
+```
+</Tab>
+
+<Tab value="cURL">
+```bash
+curl -s \
+  -H "X-Client-Key: YOUR_API_CLIENT_KEY" \
+  --data-urlencode "uri=at://did:web:gamesgamesgamesgames.games/games.gamesgamesgamesgames.game/3mghbcajpt52d" \
+  -G "https://gamesgamesgamesgames.games/xrpc/games.gamesgamesgamesgames.getGame"
+```
+</Tab>
+</Tabs>
+
+
+### By slug
+
+If you have a game's URL-friendly slug (set via `createGame` or `putGame`), you can look it up directly:
+
+<Tabs groupId="lang" items={['TypeScript', 'JavaScript', 'Go', 'Rust', 'cURL']} persist>
+<Tab value="TypeScript">
+```ts
+const url = new URL(
+  '/xrpc/games.gamesgamesgamesgames.getGame',
+  'https://gamesgamesgamesgames.games'
+)
+url.searchParams.append('slug', 'final-fantasy-vii')
+
+const response = await fetch(url, {
+  headers: { "X-Client-Key": "API_CLIENT_KEY" }
+});
+const { game } = (await response.json()) as { game: { name: string } };
+
+console.log(game.name);
+```
+</Tab>
+
+<Tab value="JavaScript">
+```js
+const url = new URL(
+  '/xrpc/games.gamesgamesgamesgames.getGame',
+  'https://gamesgamesgamesgames.games'
+)
+url.searchParams.append('slug', 'final-fantasy-vii')
+
+const response = await fetch(url, {
+  headers: { "X-Client-Key": "API_CLIENT_KEY" }
+});
+const { game } = await response.json();
+
+console.log(game.name);
+```
+</Tab>
+
+<Tab value="Go">
+```go
+req, _ := http.NewRequest("GET",
+  "https://gamesgamesgamesgames.games/xrpc/games.gamesgamesgamesgames.getGame?slug=final-fantasy-vii",
+  nil,
+)
+req.Header.Set("X-Client-Key", "API_CLIENT_KEY")
+
+res, err := http.DefaultClient.Do(req)
+if err != nil {
+  panic(err)
+}
+defer res.Body.Close()
+
+var body struct {
+  Game struct {
+    Name string `json:"name"`
+  } `json:"game"`
+}
+json.NewDecoder(res.Body).Decode(&body)
+fmt.Println(body.Game.Name)
+```
+</Tab>
+
+<Tab value="Rust">
+```rust
+let res: Response = reqwest::Client::new()
+  .get("https://gamesgamesgamesgames.games/xrpc/games.gamesgamesgamesgames.getGame")
+  .query(&[("slug", "final-fantasy-vii")])
+  .header("X-Client-Key", "API_CLIENT_KEY")
+  .send()
+  .await?
+  .json()
+  .await?;
+
+println!("{}", res.game.name);
+```
+</Tab>
+
+<Tab value="cURL">
+```bash
+curl -s \
+  -H "X-Client-Key: YOUR_API_CLIENT_KEY" \
+  "https://gamesgamesgamesgames.games/xrpc/games.gamesgamesgamesgames.getGame?slug=final-fantasy-vii"
+```
+</Tab>
+</Tabs>
+
+Slugs are unique across the Pentaract, but they can be changed by the owner. See [Publishing a game record](/docs/guides/publishing-a-game-record#slugs) for how they're created.
+
+### By external ID
+
+`getGame` also supports lookup by platform-specific IDs. This is useful when integrating with storefronts or external databases:
+
+<Tabs groupId="lang" items={['TypeScript', 'JavaScript', 'Go', 'Rust', 'cURL']} persist>
+<Tab value="TypeScript">
+```ts
+const url = new URL(
+  '/xrpc/games.gamesgamesgamesgames.getGame',
+  'https://gamesgamesgamesgames.games'
+)
+url.searchParams.append('igdbId', '427')
+
+const response = await fetch(url, {
+  headers: { "X-Client-Key": "API_CLIENT_KEY" }
+});
+const { game } = (await response.json()) as { game: { name: string } };
+```
+</Tab>
+
+<Tab value="JavaScript">
+```js
+const url = new URL(
+  '/xrpc/games.gamesgamesgamesgames.getGame',
+  'https://gamesgamesgamesgames.games'
+)
+url.searchParams.append('igdbId', '427')
+
+const response = await fetch(url, {
+  headers: { "X-Client-Key": "API_CLIENT_KEY" }
+});
+const { game } = await response.json();
+```
+</Tab>
+
+<Tab value="Go">
+```go
+req, _ := http.NewRequest("GET",
+  "https://gamesgamesgamesgames.games/xrpc/games.gamesgamesgamesgames.getGame?igdbId=427",
+  nil,
+)
+req.Header.Set("X-Client-Key", "API_CLIENT_KEY")
+
+res, err := http.DefaultClient.Do(req)
+if err != nil {
+  panic(err)
+}
+defer res.Body.Close()
+
+var body struct {
+  Game struct {
+    Name string `json:"name"`
+  } `json:"game"`
+}
+json.NewDecoder(res.Body).Decode(&body)
+```
+</Tab>
+
+<Tab value="Rust">
+```rust
+let res: Response = reqwest::Client::new()
+  .get("https://gamesgamesgamesgames.games/xrpc/games.gamesgamesgamesgames.getGame")
+  .query(&[("igdbId", "427")])
+  .header("X-Client-Key", "API_CLIENT_KEY")
+  .send()
+  .await?
+  .json()
+  .await?;
+```
+</Tab>
+
+<Tab value="cURL">
+```bash
+curl -s \
+  -H "X-Client-Key: YOUR_API_CLIENT_KEY" \
+  "https://gamesgamesgamesgames.games/xrpc/games.gamesgamesgamesgames.getGame?igdbId=427"
+```
+</Tab>
+</Tabs>
+
+#### Supported IDs
+| Platform | Key |
+|----------|-----|
+| [IGDB](https://igdb.com) | `igdbId` |
+| [Steam](https://steampowered.com) | `steamId` |
+| [GOG](https://gog.com) | `gogId` |
+| [Epic Games Store](https://store.epicgames.com) | `epicGamesId` |
+| [Humble](https://www.humblebundle.com) | `humbleBundleId` |
+| [PlayStation](https://www.playstation.com) | `playStationId` |
+| [Xbox](https://xbox.com) | `xboxId` |
+| [Nintendo Eshop](https://www.nintendo.com/us/store) | `nintendoEshopId` |
+| Apple App Store | `appleAppStoreId` |
+| Google Play Store | `googlePlayId` |
+
+Only one identifier may be passed per call. Note that while a game may exist in many of these systems, the Pentaracxt is not guaranteed to have all of them. If you find missing external IDs, please submit an addition. The easiest way to do so is to find the game on [Cartridge](https://cartridge.dev) and use the "Suggest Edit" button.
+
+### Including credits
+
+`getGame` also supports including org and actor credits in responses by adding `includeOrgCredits=true` and/or `includeActorCredits=true`:
+
+<Tabs groupId="lang" items={['TypeScript', 'JavaScript', 'Go', 'Rust', 'cURL']} persist>
+<Tab value="TypeScript">
+```ts
+const url = new URL(
+  '/xrpc/games.gamesgamesgamesgames.getGame',
+  'https://gamesgamesgamesgames.games'
+)
+url.searchParams.append('igdbId', '1942')
+url.searchParams.append('includeOrgCredits', 'true')
+url.searchParams.append('includeActorCredits', 'true')
+
+const response = await fetch(url, {
+  headers: { "X-Client-Key": "API_CLIENT_KEY" }
+});
+const { game } = (await response.json()) as { game: { name: string } };
+```
+</Tab>
+
+<Tab value="JavaScript">
+```js
+const url = new URL(
+  '/xrpc/games.gamesgamesgamesgames.getGame',
+  'https://gamesgamesgamesgames.games'
+)
+url.searchParams.append('igdbId', '1942')
+url.searchParams.append('includeOrgCredits', 'true')
+url.searchParams.append('includeActorCredits', 'true')
+
+const response = await fetch(url, {
+  headers: { "X-Client-Key": "API_CLIENT_KEY" }
+});
+const { game } = await response.json();
+```
+</Tab>
+
+<Tab value="Go">
+```go
+req, _ := http.NewRequest("GET",
+  "https://gamesgamesgamesgames.games/xrpc/games.gamesgamesgamesgames.getGame?igdbId=1942&includeOrgCredits=true&includeActorCredits=true",
+  nil,
+)
+req.Header.Set("X-Client-Key", "API_CLIENT_KEY")
+
+res, err := http.DefaultClient.Do(req)
+if err != nil {
+  panic(err)
+}
+defer res.Body.Close()
+
+var body struct {
+  Game struct {
+    Name string `json:"name"`
+  } `json:"game"`
+}
+json.NewDecoder(res.Body).Decode(&body)
+```
+</Tab>
+
+<Tab value="Rust">
+```rust
+let res: Response = reqwest::Client::new()
+  .get("https://gamesgamesgamesgames.games/xrpc/games.gamesgamesgamesgames.getGame")
+  .query(&[
+    ("igdbId", "1942"),
+    ("includeOrgCredits", "true"),
+    ("includeActorCredits", "true"),
+  ])
+  .header("X-Client-Key", "API_CLIENT_KEY")
+  .send()
+  .await?
+  .json()
+  .await?;
+```
+</Tab>
+
+<Tab value="cURL">
+```bash
+curl -s \
+  -H "X-Client-Key: YOUR_API_CLIENT_KEY" \
+  "https://gamesgamesgamesgames.games/xrpc/games.gamesgamesgamesgames.getGame?igdbId=1942&includeOrgCredits=true&includeActorCredits=true"
+```
+</Tab>
+</Tabs>
+
+## Listing games
+
+The `listGames` XRPC returns a list of all games across the network.
+
+<Tabs groupId="lang" items={['TypeScript', 'JavaScript', 'Go', 'Rust', 'cURL']} persist>
+<Tab value="TypeScript">
+```ts
+const url = new URL(
+  '/xrpc/games.gamesgamesgamesgames.listGames',
+  'https://gamesgamesgamesgames.games'
+)
+url.searchParams.append('limit', '50')
+
+const response = await fetch(url, {
+  headers: { "X-Client-Key": "API_CLIENT_KEY" }
+});
+const { games, cursor } = (await response.json()) as {
+  games: Array<{ uri: string; name: string }>;
+  cursor?: string;
+};
+
+for (const game of games) {
+  console.log(game.uri, game.name);
+}
+```
+</Tab>
+
+<Tab value="JavaScript">
+```js
+const url = new URL(
+  '/xrpc/games.gamesgamesgamesgames.listGames',
+  'https://gamesgamesgamesgames.games'
+)
+url.searchParams.append('limit', '50')
+
+const response = await fetch(url, {
+  headers: { "X-Client-Key": "API_CLIENT_KEY" }
+});
+const { games, cursor } = await response.json();
+
+for (const game of games) {
+  console.log(game.uri, game.name);
+}
+```
+</Tab>
+
+<Tab value="Go">
+```go
+req, _ := http.NewRequest("GET",
+  "https://gamesgamesgamesgames.games/xrpc/games.gamesgamesgamesgames.listGames?limit=50",
+  nil,
+)
+req.Header.Set("X-Client-Key", "API_CLIENT_KEY")
+
+res, err := http.DefaultClient.Do(req)
+if err != nil {
+  panic(err)
+}
+defer res.Body.Close()
+
+var body struct {
+  Games []struct {
+    URI  string `json:"uri"`
+    Name string `json:"name"`
+  } `json:"games"`
+  Cursor string `json:"cursor"`
+}
+json.NewDecoder(res.Body).Decode(&body)
+
+for _, game := range body.Games {
+  fmt.Println(game.URI, game.Name)
+}
+```
+</Tab>
+
+<Tab value="Rust">
+```rust
+#[derive(Deserialize)]
+struct ListResponse {
+  games: Vec<GameSummary>,
+  cursor: Option<String>,
+}
+
+#[derive(Deserialize)]
+struct GameSummary {
+  uri: String,
+  name: String,
+}
+
+let res: ListResponse = reqwest::Client::new()
+  .get("https://gamesgamesgamesgames.games/xrpc/games.gamesgamesgamesgames.listGames")
+  .query(&[
+    ("limit", "50"),
+  ])
+  .header("X-Client-Key", "API_CLIENT_KEY")
+  .send()
+  .await?
+  .json()
+  .await?;
+
+for game in &res.games {
+  println!("{} {}", game.uri, game.name);
+}
+```
+</Tab>
+
+<Tab value="cURL">
+```bash
+curl -s \
+  -H "X-Client-Key: YOUR_API_CLIENT_KEY" \
+  -G "https://gamesgamesgamesgames.games/xrpc/games.gamesgamesgamesgames.listGames?limit=50"
+```
+</Tab>
+</Tabs>
+
+For pagination, responses will return a `cursor` property in the response. Attach the `cursor=${CURSOR_VALUE}` query parameter to get the next page.
+
+## Searching
+
+The `search` query is the Pentaract's full-text and semantic search across games, profiles, platforms, collections, and engines. It supports filtering and sorting:
+
+<Tabs groupId="lang" items={['TypeScript', 'JavaScript', 'Go', 'Rust', 'cURL']} persist>
+<Tab value="TypeScript">
+```ts
+const url = new URL(
+  '/xrpc/games.gamesgamesgamesgames.search',
+  'https://gamesgamesgamesgames.games'
+)
+url.searchParams.append('q', 'metroidvania')
+url.searchParams.append('types', 'game')
+url.searchParams.append('genres', 'platform')
+url.searchParams.append('modes', 'singlePlayer')
+url.searchParams.append('sort', 'published_desc')
+url.searchParams.append('limit', '25')
+
+const response = await fetch(url, {
+  headers: { "X-Client-Key": "API_CLIENT_KEY" }
+});
+const { results, totalResults, cursor } = (await response.json()) as {
+  results: Array<{ uri: string; name: string }>;
+  totalResults: number;
+  cursor?: string;
+};
+```
+</Tab>
+
+<Tab value="JavaScript">
+```js
+const url = new URL(
+  '/xrpc/games.gamesgamesgamesgames.search',
+  'https://gamesgamesgamesgames.games'
+)
+url.searchParams.append('q', 'metroidvania')
+url.searchParams.append('types', 'game')
+url.searchParams.append('genres', 'platform')
+url.searchParams.append('modes', 'singlePlayer')
+url.searchParams.append('sort', 'published_desc')
+url.searchParams.append('limit', '25')
+
+const response = await fetch(url, {
+  headers: { "X-Client-Key": "API_CLIENT_KEY" }
+});
+const { results, totalResults, cursor } = await response.json();
+```
+</Tab>
+
+<Tab value="Go">
+```go
+req, _ := http.NewRequest("GET",
+  "https://gamesgamesgamesgames.games/xrpc/games.gamesgamesgamesgames.search?q=metroidvania&types=game&genres=platform&modes=singlePlayer&sort=published_desc&limit=25",
+  nil,
+)
+req.Header.Set("X-Client-Key", "API_CLIENT_KEY")
+
+res, err := http.DefaultClient.Do(req)
+if err != nil {
+  panic(err)
+}
+defer res.Body.Close()
+
+var body struct {
+  Results []struct {
+    URI  string `json:"uri"`
+    Name string `json:"name"`
+  } `json:"results"`
+  TotalResults int    `json:"totalResults"`
+  Cursor       string `json:"cursor"`
+}
+json.NewDecoder(res.Body).Decode(&body)
+```
+</Tab>
+
+<Tab value="Rust">
+```rust
+#[derive(Deserialize)]
+struct SearchResponse {
+  results: Vec<SearchResult>,
+  #[serde(rename = "totalResults")]
+  total_results: u64,
+  cursor: Option<String>,
+}
+
+#[derive(Deserialize)]
+struct SearchResult {
+  uri: String,
+  name: String,
+}
+
+let res: SearchResponse = reqwest::Client::new()
+  .get("https://gamesgamesgamesgames.games/xrpc/games.gamesgamesgamesgames.search")
+  .query(&[
+    ("q", "metroidvania"),
+    ("types", "game"),
+    ("genres", "platform"),
+    ("modes", "singlePlayer"),
+    ("sort", "published_desc"),
+    ("limit", "25"),
+  ])
+  .header("X-Client-Key", "API_CLIENT_KEY")
+  .send()
+  .await?
+  .json()
+  .await?;
+```
+</Tab>
+
+<Tab value="cURL">
+```bash
+curl -s \
+  -H "X-Client-Key: YOUR_API_CLIENT_KEY" \
+  "https://gamesgamesgamesgames.games/xrpc/games.gamesgamesgamesgames.search?q=metroidvania&types=game&genres=platform&modes=singlePlayer&sort=published_desc&limit=25"
+```
+</Tab>
+</Tabs>
+
+### Available filters
+
+| Parameter | Description |
+|---|---|
+| `types` | Entity types to return: `game`, `profile`, `platform`, `collection`, `engine` |
+| `genres` | Filter by genre (e.g. `platform`, `rpg`, `puzzle`) |
+| `themes` | Filter by theme |
+| `modes` | Filter by mode (e.g. `singlePlayer`, `multiplayer`) |
+| `playerPerspectives` | Filter by perspective (e.g. `sideView`, `thirdPerson`) |
+| `applicationTypes` | Filter by type (e.g. `game`, `dlc`, `expansion`, `remake`, `remaster`) |
+| `ageRatings` | Filter by rating in `organization:rating` format (e.g. `esrb:M`, `pegi:Eighteen`) |
+| `includeUnrated` | Include games with no age ratings when filtering by ratings (default `false`) |
+| `includeCancelled` | Include cancelled games (default `false`) |
+| `sort` | One of `name_asc`, `name_desc`, `published_asc`, `published_desc` |
+
+## Caching
+
+Raw game records change rarely, so cache them aggressively. Hydrated `getGame` views sit in between; minutes is usually fine. Search results and list queries change more often — cache them briefly (seconds to a minute).
+
+## See also
+
+- [Core Concepts](/docs/getting-started/core-concepts)
+- [Reference: getGame](/docs/reference/queries/games.gamesgamesgamesgames.getGame)
+- [Reference: search](/docs/reference/queries/games.gamesgamesgamesgames.search)
+- [Cookbook: Filter a feed by genre](/docs/cookbook/filter-by-genre)

@@ -1,0 +1,32 @@
+{
+  "name": "@lexicon/design-system",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./tailwind.config": "./tailwind.config.ts",
+    "./tokens.css": "./src/tokens.css",
+    "./globals.css": "./src/globals.css",
+    "./fonts": "./src/fonts.ts"
+  },
+  "scripts": {
+    "lint": "echo 'no lint for design-system v1' && exit 0",
+    "typecheck": "tsc --noEmit",
+    "test": "echo 'no tests for design-system v1' && exit 0"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "tailwindcss": "^3.4.0",
+    "next": "^15.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "tailwindcss": "^3.4.0",
+    "typescript": "^5.6.0"
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "lexicon": 1,
+  "id": "games.gamesgamesgamesgames.defs",
+  "defs": {
+    "genre": {
+      "type": "string",
+      "description": "A game genre.",
+      "knownValues": ["action", "rpg", "puzzle"]
+    }
+  }
+}

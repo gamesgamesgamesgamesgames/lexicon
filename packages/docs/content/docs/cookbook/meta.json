@@ -1,0 +1,4 @@
+{
+  "title": "Cookbook",
+  "pages": ["auth-public-client", "auth-confidential-client", "filter-by-genre", "popularity-feed"]
+}

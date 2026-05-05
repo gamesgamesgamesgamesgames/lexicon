@@ -1,0 +1,208 @@
+---
+title: Publishing a game record
+description: Write a games.gamesgamesgamesgames.game record via the Pentaract.
+---
+
+This guide covers constructing a valid `game` record and publishing it through the Pentaract.
+
+## When to use this flow
+
+There are three ways game data gets into the namespace:
+
+1. **Direct publishing** (this guide): a studio or solo developer writes records about games they control. This is the primary path for authoring tools.
+2. **Contributions** (see [Contributions guide](/docs/guides/contributions)): a community member proposes a change; the Pentaract merges it. Used for most crowd-sourced data.
+3. **Claims** (see [Claims and migration guide](/docs/guides/claims-and-migration)): a studio claims an existing community-created record and takes ownership.
+
+## Authenticate
+
+Publishing through the Pentaract requires [authentication](/docs/guides/authentication) with the [`authStudio` permission set](/docs/guides/permissions):
+
+<Tabs groupId="lang" items={['TypeScript', 'JavaScript']} persist>
+<Tab value="TypeScript">
+```ts
+const scopes = [
+  'atproto',
+  'include:games.gamesgamesgamesgames.authBasic',
+  'include:games.gamesgamesgamesgames.authStudio',
+]
+await oauthClient.signIn("studio.example.com", {
+  scope: scopes.join(' ')
+});
+```
+</Tab>
+<Tab value="JavaScript">
+```js
+const scopes = [
+  'atproto',
+  'include:games.gamesgamesgamesgames.authBasic',
+  'include:games.gamesgamesgamesgames.authStudio',
+]
+await oauthClient.signIn("studio.example.com", {
+  scope: scopes.join(' ')
+});
+```
+</Tab>
+</Tabs>
+
+## Construct the record data
+
+A game requires `name` at minimum. Everything else is optional but valuable.
+
+<Tabs groupId="lang" items={['TypeScript', 'JavaScript']} persist>
+<Tab value="TypeScript">
+```ts
+// Types generated with @atproto/lex CLI
+import type { games } from "./lexicons/index.js";
+
+const gameData: games.gamesgamesgamesgames.createGame.$InputBody = {
+  name: "Crescent Hollow",
+  applicationType: "game",
+  summary: "A side-scrolling metroidvania about a cartographer who can't stop mapping.",
+  genres: ["platform", "puzzle"],
+  modes: ["singlePlayer"],
+  playerPerspectives: ["sideView"],
+  releases: [
+    {
+      platform: "at://did:plc:.../games.gamesgamesgamesgames.platform/windows",
+      releasedAt: "2026-09-14T00:00:00.000Z",
+      region: "worldwide",
+    },
+  ],
+  websites: [
+    { url: "https://crescenthollow.example.com", category: "official" },
+  ],
+};
+```
+</Tab>
+<Tab value="JavaScript">
+```js
+const gameData = {
+  name: "Crescent Hollow",
+  applicationType: "game",
+  summary: "A side-scrolling metroidvania about a cartographer who can't stop mapping.",
+  genres: ["platform", "puzzle"],
+  modes: ["singlePlayer"],
+  playerPerspectives: ["sideView"],
+  releases: [
+    {
+      platform: "at://did:plc:.../games.gamesgamesgamesgames.platform/windows",
+      releasedAt: "2026-09-14T00:00:00.000Z",
+      region: "worldwide",
+    },
+  ],
+  websites: [
+    { url: "https://crescenthollow.example.com", category: "official" },
+  ],
+};
+```
+</Tab>
+</Tabs>
+
+The `applicationType`, `genres`, `modes`, and `playerPerspectives` values all reference shared definitions in [`games.gamesgamesgamesgames.defs`](/docs/reference/shared-definitions). Values use camelCase (e.g. `singlePlayer`, `sideView`, `pointAndClick`). Use the known values listed there; custom values are allowed but ignored everywhere but search.
+
+## Create via the Pentaract
+
+The `createGame` procedure is the recommended way to publish. The Pentaract creates the record in your repo, generates a slug, and indexes it in one step:
+
+<Tabs groupId="lang" items={['TypeScript', 'JavaScript']} persist>
+<Tab value="TypeScript">
+```ts
+const res = await client.call(games.gamesgamesgamesgames.createGame, {
+  ...gameData,
+  slug: "crescent-hollow",
+  shouldPublish: true,
+});
+
+console.log(res.uri);
+// at://did:plc:.../games.gamesgamesgamesgames.game/...
+```
+</Tab>
+<Tab value="JavaScript">
+```js
+const res = await client.call(games.gamesgamesgamesgames.createGame, {
+  ...gameData,
+  slug: "crescent-hollow",
+  shouldPublish: true,
+});
+
+console.log(res.uri);
+// at://did:plc:.../games.gamesgamesgamesgames.game/...
+```
+</Tab>
+</Tabs>
+
+### Slugs
+
+The `slug` field is a URL-friendly identifier for the game (max 640 characters). Once set, the game is queryable by slug:
+
+<Tabs groupId="lang" items={['TypeScript', 'JavaScript']} persist>
+<Tab value="TypeScript">
+```ts
+const { game } = await client.call(games.gamesgamesgamesgames.getGame, {
+  slug: "crescent-hollow",
+});
+```
+</Tab>
+<Tab value="JavaScript">
+```js
+const { game } = await client.call(games.gamesgamesgamesgames.getGame, {
+  slug: "crescent-hollow",
+});
+```
+</Tab>
+</Tabs>
+
+If you don't provide a slug, the Pentaract generates one from the game name. You can change a slug later via `putGame`.
+
+### The `shouldPublish` flag
+
+When `shouldPublish` is `true`, the game is immediately visible in feeds and search. When `false` or omitted, the record is still publically available in your atproto, repo but the Pentaract won't surface it in public queries. This lets you stage data before making it visible.
+
+## Update via the Pentaract
+
+Use `putGame` to update an existing game. Unlike raw `putRecord`, `putGame` accepts partial updates — only include the fields you want to change:
+
+<Tabs groupId="lang" items={['TypeScript', 'JavaScript']} persist>
+<Tab value="TypeScript">
+```ts
+await client.call(games.gamesgamesgamesgames.putGame, {
+  uri: "at://did:plc:.../games.gamesgamesgamesgames.game/3mghktn5e5m2d",
+  genres: ["platform", "puzzle", "rpg"],
+  slug: "crescent-hollow-remastered",
+});
+```
+</Tab>
+<Tab value="JavaScript">
+```js
+await client.call(games.gamesgamesgamesgames.putGame, {
+  uri: "at://did:plc:.../games.gamesgamesgamesgames.game/3mghktn5e5m2d",
+  genres: ["platform", "puzzle", "rpg"],
+  slug: "crescent-hollow-remastered",
+});
+```
+</Tab>
+</Tabs>
+
+`putGame` also accepts `shouldPublish`, `name`, `summary`, `releases`, and every other field `createGame` supports.
+
+## Direct repo writes (advanced)
+
+For back-office tools and scripts, you can write game records directly to a repo using `@atproto/api` and a PDS app password (see [Authentication: Password authentication](/docs/guides/authentication#password-authentication-direct-repo-writes-only)). Direct writes skip slug generation, the `shouldPublish` gate, and any server-side enrichment that `createGame`/`putGame` provide. The Pentaract will still index the record, but you're responsible for setting `createdAt` and managing the record key yourself.
+
+Creating games this way means they will also be subject to more intense scrutiny doring moderation.
+
+## Indexing
+
+The Pentaract indexes game records as soon as they're written to a repo. Once the record exists, it'll appear in queries like `getRecentlyUpdatedFeed`, `search`, and `listGames`.
+
+## What NOT to write directly
+
+Don't write `contribution`, `claim`, or `contributionReview` records with raw `putRecord`. Those are mediated by the Pentaract via XRPC procedures; see [the contributions guide](/docs/guides/contributions). Writing them directly is technically possible but the Pentaract will ignore or reject them outright.
+
+## See also
+
+- [Guide: Authentication](/docs/guides/authentication)
+- [Guide: Contributions](/docs/guides/contributions)
+- [Reference: games.gamesgamesgamesgames.game](/docs/reference/records/games.gamesgamesgamesgames.game)
+- [Reference: createGame](/docs/reference/procedures/games.gamesgamesgamesgames.createGame)
+- [Reference: putGame](/docs/reference/procedures/games.gamesgamesgamesgames.putGame)

@@ -1,0 +1,30 @@
+{
+  "lexicon": 1,
+  "id": "games.gamesgamesgamesgames.createGame",
+  "defs": {
+    "main": {
+      "type": "procedure",
+      "description": "Create a new game record.",
+      "input": {
+        "encoding": "application/json",
+        "schema": {
+          "type": "object",
+          "required": ["name"],
+          "properties": {
+            "name": { "type": "string" }
+          }
+        }
+      },
+      "output": {
+        "encoding": "application/json",
+        "schema": {
+          "type": "object",
+          "required": ["uri"],
+          "properties": {
+            "uri": { "type": "string", "format": "at-uri" }
+          }
+        }
+      }
+    }
+  }
+}

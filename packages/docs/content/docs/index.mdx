@@ -1,0 +1,36 @@
+---
+title: Introduction
+description: What the games.gamesgamesgamesgames.* lexicons are and why they exist.
+---
+
+`games.gamesgamesgamesgames.*` is a set of lexicons that describe how to store and query video game data on [atproto](https://atproto.com/). Instead of a central database owned by one company, every game, review, and contribution lives on the protocol, belonging to the user that created it.
+
+## The problem
+
+Game databases today are closed gardens. A studio's marketing page, a reviewer's rating, a speedrunner's personal bests, and a fan wiki all live in separate silos that don't know about each other. If you want to build a new game-tracking app, you either scrape, license, or rebuild the dataset from scratch.
+
+[atproto](https://atproto.com/) gives us a way out by allowing us to freely distribute that data across the protocol. What it doesn't give us is a lingua franca for games. That's where the Pentaract comes in.
+
+## What's in the namespace
+
+These lexicons cover four concerns:
+
+- **Records**: Games, user and org profiles, likes, follow, achievements... Every games-related entity that has an author lives here.
+- **Queries**: Read-side XRPC methods like `getGame`, `getReviews`, `searchProfilesTypeahead`, as well as a family of feeds (`getHotGamesFeed`, `getRecentlyReleasedFeed`, `getOrgDevelopedFeed`, and more).
+- **Procedures**: write-side XRPC methods for flows that the Pentaract needs to mediate: `createGame`, `createContribution`, `acceptContribution`, `reviewClaim`, `toggleLike`, and friends.
+- **Shared definitions**: enums and composite types that don't need their own records live under `games.gamesgamesgamesgames.defs`: genres, platforms, age ratings, media items, release entries, signatures, and the rest.
+
+## Who this is for
+
+You want to build something with video game data and you'd rather not operate your own scraper farm. You might be:
+
+- **A game discovery app** that reads feeds and renders game records from any PDS.
+- **A studio tool** that publishes official releases, media, and patch notes into a repo the studio controls.
+- **A community contributor** writing corrections and additions that the Pentaract can merge into the canonical record.
+- **A reviewer or list-maker** using game URIs as the stable identity across your posts, ratings, and curated collections.
+
+## Where to go next
+
+- [Quickstart](/docs/getting-started/quickstart): read a game record from a PDS in ten lines of code.
+- [Core Concepts](/docs/getting-started/core-concepts): records, NSIDs, feeds, contributions, and how they fit together.
+- [Reference](/docs/reference/records/games.gamesgamesgamesgames.game): every record, query, and procedure in the namespace.

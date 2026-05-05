@@ -1,0 +1,12 @@
+{
+	"title": "Guides",
+	"pages": [
+		"reading-games",
+		"search",
+		"contributions",
+		"authentication",
+		"permissions",
+		"custom-feeds",
+		"publishing-a-game-record"
+	]
+}

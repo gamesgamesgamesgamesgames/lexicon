@@ -1,0 +1,54 @@
+---
+title: Permission sets
+description: Permission sets that scope what an app can do on The Pentaract.
+---
+
+The namespace defines three permission sets that describe what an app is allowed to do with a user's repo. Picking the right one keeps your app's scope honest and gives users a clearer consent prompt.
+
+For details on how to request a permission set during authentication, see the [Authentication guide](/docs/guides/authentication#requesting-a-permission-set).
+
+## `authBasic`
+
+Read public data, manage the user's own records, and participate in the community. This is the default. Almost every user-facing app asks for `authBasic`.
+
+What it covers:
+
+- Reading any public `game`, `actor.profile`, `org.profile`, or feed.
+- Writing to the user's own `actor.profile` via `actor.putProfile`.
+- Liking/unliking games via `toggleLike`.
+- Submitting contributions via `createContribution`.
+- Submitting ownership claims via `createClaim`.
+- Creating collections, game library entries (`actor.game`), and stats (`actor.stats`).
+
+What it does NOT cover:
+
+- Writing game records directly (use contributions instead, or request `authStudio`).
+- Reviewing or moderating contributions and claims.
+- Writing to organization profiles the user doesn't own.
+
+## `authStudio`
+
+Create and manage games, organization profiles, and credits. This is for authoring tools used by studios and publishers.
+
+What it covers:
+
+- Creating and updating `game` records via `createGame` and `putGame`.
+- Creating and updating `org.profile` records via `org.createProfile` and `org.putProfile`.
+- Writing `org.credit` records (crediting an org on a game).
+- Accepting contributions and migrating claims.
+
+## `authAdmin`
+
+Moderate contributions, claims, and reported content on the Pentaract. This is for operating a moderation dashboard, not for regular users.
+
+What it covers:
+
+- `acceptContribution`, `rejectContribution`, `reviewContribution`.
+- `reviewClaim`, `migrateClaim`.
+- Writing `contributionVerification` records.
+
+Grant `authAdmin` only to trusted operators. The Pentaract restricts it to specific DIDs rather than handing it out via OAuth.
+
+## Pentaract-internal writes
+
+The Pentaract itself writes ranking and cache records via `putPopularity` and `refreshCaches`. This is intentionally not exposed as a third-party permission set. If you find yourself wanting to call these, you're probably writing something that belongs inside the Pentaract rather than as a client app.

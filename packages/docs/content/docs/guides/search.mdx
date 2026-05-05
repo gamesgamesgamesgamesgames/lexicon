@@ -1,0 +1,887 @@
+---
+title: Search
+description: Full-text and semantic search across games, profiles, platforms, collections, and engines.
+---
+
+`search` is the Pentaract's unified search across all entity types. It combines full-text matching with semantic understanding, so queries like "cozy farming games for kids" work alongside exact title lookups like "Elden Ring".
+
+Every request needs an `X-Client-Key` header (see [Quickstart: Register an API client](/docs/getting-started/quickstart#register-an-api-client)).
+
+## Basic search
+
+Pass a query string to `q`. Results come back as a union of summary views — games, profiles, platforms, collections, and engines — ranked by relevance:
+
+<Tabs groupId="lang" items={['TypeScript', 'JavaScript', 'Go', 'Rust', 'cURL']} persist>
+<Tab value="TypeScript">
+```ts
+const url = new URL(
+  '/xrpc/games.gamesgamesgamesgames.search',
+  'https://gamesgamesgamesgames.games'
+)
+url.searchParams.append('q', 'grand theft auto')
+url.searchParams.append('limit', '10')
+
+const response = await fetch(url, {
+  headers: { "X-Client-Key": "API_CLIENT_KEY" }
+});
+const { results } = (await response.json()) as {
+  results: Array<{ $type: string; name: string }>;
+};
+
+for (const result of results) {
+  console.log(result.$type, result.name);
+}
+```
+</Tab>
+
+<Tab value="JavaScript">
+```js
+const url = new URL(
+  '/xrpc/games.gamesgamesgamesgames.search',
+  'https://gamesgamesgamesgames.games'
+)
+url.searchParams.append('q', 'grand theft auto')
+url.searchParams.append('limit', '10')
+
+const response = await fetch(url, {
+  headers: { "X-Client-Key": "API_CLIENT_KEY" }
+});
+const { results } = await response.json();
+
+for (const result of results) {
+  console.log(result.$type, result.name);
+}
+```
+</Tab>
+
+<Tab value="Go">
+```go
+req, _ := http.NewRequest("GET",
+  "https://gamesgamesgamesgames.games/xrpc/games.gamesgamesgamesgames.search?q=grand+theft+auto&limit=10",
+  nil,
+)
+req.Header.Set("X-Client-Key", "API_CLIENT_KEY")
+
+res, err := http.DefaultClient.Do(req)
+if err != nil {
+  panic(err)
+}
+defer res.Body.Close()
+
+var body struct {
+  Results []struct {
+    Type string `json:"$type"`
+    Name string `json:"name"`
+  } `json:"results"`
+}
+json.NewDecoder(res.Body).Decode(&body)
+
+for _, r := range body.Results {
+  fmt.Println(r.Type, r.Name)
+}
+```
+</Tab>
+
+<Tab value="Rust">
+```rust
+#[derive(Deserialize)]
+struct SearchResponse {
+  results: Vec<SearchResult>,
+}
+
+#[derive(Deserialize)]
+struct SearchResult {
+  #[serde(rename = "$type")]
+  result_type: String,
+  name: String,
+}
+
+let res: SearchResponse = reqwest::Client::new()
+  .get("https://gamesgamesgamesgames.games/xrpc/games.gamesgamesgamesgames.search")
+  .query(&[("q", "grand theft auto"), ("limit", "10")])
+  .header("X-Client-Key", "API_CLIENT_KEY")
+  .send()
+  .await?
+  .json()
+  .await?;
+
+for result in &res.results {
+  println!("{} {}", result.result_type, result.name);
+}
+```
+</Tab>
+
+<Tab value="cURL">
+```bash
+curl -s \
+  -H "X-Client-Key: YOUR_API_CLIENT_KEY" \
+  "https://gamesgamesgamesgames.games/xrpc/games.gamesgamesgamesgames.search?q=grand+theft+auto&limit=10"
+```
+</Tab>
+</Tabs>
+
+Each result includes a `$type` field so you can distinguish between entity types and render them appropriately.
+
+## Filtering by entity type
+
+Use `types` to restrict which entity types come back:
+
+<Tabs groupId="lang" items={['TypeScript', 'JavaScript', 'Go', 'Rust', 'cURL']} persist>
+<Tab value="TypeScript">
+```ts
+const url = new URL(
+  '/xrpc/games.gamesgamesgamesgames.search',
+  'https://gamesgamesgamesgames.games'
+)
+url.searchParams.append('q', 'nintendo')
+url.searchParams.append('types', 'game')
+url.searchParams.append('types', 'platform')
+
+const response = await fetch(url, {
+  headers: { "X-Client-Key": "API_CLIENT_KEY" }
+});
+const { results } = (await response.json()) as {
+  results: Array<{ name: string }>;
+};
+```
+</Tab>
+
+<Tab value="JavaScript">
+```js
+const url = new URL(
+  '/xrpc/games.gamesgamesgamesgames.search',
+  'https://gamesgamesgamesgames.games'
+)
+url.searchParams.append('q', 'nintendo')
+url.searchParams.append('types', 'game')
+url.searchParams.append('types', 'platform')
+
+const response = await fetch(url, {
+  headers: { "X-Client-Key": "API_CLIENT_KEY" }
+});
+const { results } = await response.json();
+```
+</Tab>
+
+<Tab value="Go">
+```go
+req, _ := http.NewRequest("GET",
+  "https://gamesgamesgamesgames.games/xrpc/games.gamesgamesgamesgames.search?q=nintendo&types=game&types=platform",
+  nil,
+)
+req.Header.Set("X-Client-Key", "API_CLIENT_KEY")
+
+res, err := http.DefaultClient.Do(req)
+if err != nil {
+  panic(err)
+}
+defer res.Body.Close()
+
+var body struct {
+  Results []struct {
+    Name string `json:"name"`
+  } `json:"results"`
+}
+json.NewDecoder(res.Body).Decode(&body)
+```
+</Tab>
+
+<Tab value="Rust">
+```rust
+let res: SearchResponse = reqwest::Client::new()
+  .get("https://gamesgamesgamesgames.games/xrpc/games.gamesgamesgamesgames.search")
+  .query(&[("q", "nintendo"), ("types", "game"), ("types", "platform")])
+  .header("X-Client-Key", "API_CLIENT_KEY")
+  .send()
+  .await?
+  .json()
+  .await?;
+```
+</Tab>
+
+<Tab value="cURL">
+```bash
+curl -s \
+  -H "X-Client-Key: YOUR_API_CLIENT_KEY" \
+  "https://gamesgamesgamesgames.games/xrpc/games.gamesgamesgamesgames.search?q=nintendo&types=game&types=platform"
+```
+</Tab>
+</Tabs>
+
+Valid types: `game`, `profile`, `platform`, `collection`, `engine`.
+
+## Filtering games
+
+When searching for games, several additional filters are available. All of these only apply to results where the type is `game`.
+
+Multiple values within a filter are combined with OR (a game matching any selected genre will be included). Filters across different parameters are combined with AND (a game must match at least one genre AND at least one mode).
+
+### Application type
+
+Filter by what the game's application type — a base game, DLC, expansion, remake, etc.:
+
+<Tabs groupId="lang" items={['TypeScript', 'JavaScript', 'Go', 'Rust', 'cURL']} persist>
+<Tab value="TypeScript">
+```ts
+const url = new URL(
+  '/xrpc/games.gamesgamesgamesgames.search',
+  'https://gamesgamesgamesgames.games'
+)
+url.searchParams.append('q', 'dark souls')
+url.searchParams.append('types', 'game')
+url.searchParams.append('applicationTypes', 'dlc')
+url.searchParams.append('applicationTypes', 'expansion')
+
+const response = await fetch(url, {
+  headers: { "X-Client-Key": "API_CLIENT_KEY" }
+});
+const { results } = (await response.json()) as {
+  results: Array<{ name: string }>;
+};
+```
+</Tab>
+
+<Tab value="JavaScript">
+```js
+const url = new URL(
+  '/xrpc/games.gamesgamesgamesgames.search',
+  'https://gamesgamesgamesgames.games'
+)
+url.searchParams.append('q', 'dark souls')
+url.searchParams.append('types', 'game')
+url.searchParams.append('applicationTypes', 'dlc')
+url.searchParams.append('applicationTypes', 'expansion')
+
+const response = await fetch(url, {
+  headers: { "X-Client-Key": "API_CLIENT_KEY" }
+});
+const { results } = await response.json();
+```
+</Tab>
+
+<Tab value="Go">
+```go
+req, _ := http.NewRequest("GET",
+  "https://gamesgamesgamesgames.games/xrpc/games.gamesgamesgamesgames.search?q=dark+souls&types=game&applicationTypes=dlc&applicationTypes=expansion",
+  nil,
+)
+req.Header.Set("X-Client-Key", "API_CLIENT_KEY")
+
+res, err := http.DefaultClient.Do(req)
+if err != nil {
+  panic(err)
+}
+defer res.Body.Close()
+
+var body struct {
+  Results []struct {
+    Name string `json:"name"`
+  } `json:"results"`
+}
+json.NewDecoder(res.Body).Decode(&body)
+```
+</Tab>
+
+<Tab value="Rust">
+```rust
+let res: SearchResponse = reqwest::Client::new()
+  .get("https://gamesgamesgamesgames.games/xrpc/games.gamesgamesgamesgames.search")
+  .query(&[
+    ("q", "dark souls"),
+    ("types", "game"),
+    ("applicationTypes", "dlc"),
+    ("applicationTypes", "expansion"),
+  ])
+  .header("X-Client-Key", "API_CLIENT_KEY")
+  .send()
+  .await?
+  .json()
+  .await?;
+```
+</Tab>
+
+<Tab value="cURL">
+```bash
+curl -s \
+  -H "X-Client-Key: YOUR_API_CLIENT_KEY" \
+  "https://gamesgamesgamesgames.games/xrpc/games.gamesgamesgamesgames.search?q=dark+souls&types=game&applicationTypes=dlc&applicationTypes=expansion"
+```
+</Tab>
+</Tabs>
+
+#### Known values
+| | |
+|-|-|
+| `addon` | `bundle` |
+| `dlc` | `episode` |
+| `expandedGame` | `expansion` |
+| `fork` | `game` |
+| `mod` | `pack` |
+| `port` | `remake` |
+| `remaster` | `season` |
+| `standaloneExpansion` | `update` |
+
+### Genre, theme, mode, and perspective
+
+<Tabs groupId="lang" items={['TypeScript', 'JavaScript', 'Go', 'Rust', 'cURL']} persist>
+<Tab value="TypeScript">
+```ts
+const url = new URL(
+  '/xrpc/games.gamesgamesgamesgames.search',
+  'https://gamesgamesgamesgames.games'
+)
+url.searchParams.append('q', 'metroidvania')
+url.searchParams.append('types', 'game')
+url.searchParams.append('genres', 'platform')
+url.searchParams.append('modes', 'singlePlayer')
+url.searchParams.append('playerPerspectives', 'sideView')
+
+const response = await fetch(url, {
+  headers: { "X-Client-Key": "API_CLIENT_KEY" }
+});
+const { results } = (await response.json()) as {
+  results: Array<{ name: string }>;
+};
+```
+</Tab>
+
+<Tab value="JavaScript">
+```js
+const url = new URL(
+  '/xrpc/games.gamesgamesgamesgames.search',
+  'https://gamesgamesgamesgames.games'
+)
+url.searchParams.append('q', 'metroidvania')
+url.searchParams.append('types', 'game')
+url.searchParams.append('genres', 'platform')
+url.searchParams.append('modes', 'singlePlayer')
+url.searchParams.append('playerPerspectives', 'sideView')
+
+const response = await fetch(url, {
+  headers: { "X-Client-Key": "API_CLIENT_KEY" }
+});
+const { results } = await response.json();
+```
+</Tab>
+
+<Tab value="Go">
+```go
+req, _ := http.NewRequest("GET",
+  "https://gamesgamesgamesgames.games/xrpc/games.gamesgamesgamesgames.search?q=metroidvania&types=game&genres=platform&modes=singlePlayer&playerPerspectives=sideView",
+  nil,
+)
+req.Header.Set("X-Client-Key", "API_CLIENT_KEY")
+
+res, err := http.DefaultClient.Do(req)
+if err != nil {
+  panic(err)
+}
+defer res.Body.Close()
+
+var body struct {
+  Results []struct {
+    Name string `json:"name"`
+  } `json:"results"`
+}
+json.NewDecoder(res.Body).Decode(&body)
+```
+</Tab>
+
+<Tab value="Rust">
+```rust
+let res: SearchResponse = reqwest::Client::new()
+  .get("https://gamesgamesgamesgames.games/xrpc/games.gamesgamesgamesgames.search")
+  .query(&[
+    ("q", "metroidvania"),
+    ("types", "game"),
+    ("genres", "platform"),
+    ("modes", "singlePlayer"),
+    ("playerPerspectives", "sideView"),
+  ])
+  .header("X-Client-Key", "API_CLIENT_KEY")
+  .send()
+  .await?
+  .json()
+  .await?;
+```
+</Tab>
+
+<Tab value="cURL">
+```bash
+curl -s \
+  -H "X-Client-Key: YOUR_API_CLIENT_KEY" \
+  "https://gamesgamesgamesgames.games/xrpc/games.gamesgamesgamesgames.search?q=metroidvania&types=game&genres=platform&modes=singlePlayer&playerPerspectives=sideView"
+```
+</Tab>
+</Tabs>
+
+### Age ratings
+
+Filter by age rating using `organization:rating` format:
+
+<Tabs groupId="lang" items={['TypeScript', 'JavaScript', 'Go', 'Rust', 'cURL']} persist>
+<Tab value="TypeScript">
+```ts
+const url = new URL(
+  '/xrpc/games.gamesgamesgamesgames.search',
+  'https://gamesgamesgamesgames.games'
+)
+url.searchParams.append('q', 'platformer')
+url.searchParams.append('types', 'game')
+url.searchParams.append('ageRatings', 'esrb:E')
+url.searchParams.append('ageRatings', 'esrb:E10')
+url.searchParams.append('includeUnrated', 'true')
+
+const response = await fetch(url, {
+  headers: { "X-Client-Key": "API_CLIENT_KEY" }
+});
+const { results } = (await response.json()) as {
+  results: Array<{ name: string }>;
+};
+```
+</Tab>
+
+<Tab value="JavaScript">
+```js
+const url = new URL(
+  '/xrpc/games.gamesgamesgamesgames.search',
+  'https://gamesgamesgamesgames.games'
+)
+url.searchParams.append('q', 'platformer')
+url.searchParams.append('types', 'game')
+url.searchParams.append('ageRatings', 'esrb:E')
+url.searchParams.append('ageRatings', 'esrb:E10')
+url.searchParams.append('includeUnrated', 'true')
+
+const response = await fetch(url, {
+  headers: { "X-Client-Key": "API_CLIENT_KEY" }
+});
+const { results } = await response.json();
+```
+</Tab>
+
+<Tab value="Go">
+```go
+req, _ := http.NewRequest("GET",
+  "https://gamesgamesgamesgames.games/xrpc/games.gamesgamesgamesgames.search?q=platformer&types=game&ageRatings=esrb%3AE&ageRatings=esrb%3AE10&includeUnrated=true",
+  nil,
+)
+req.Header.Set("X-Client-Key", "API_CLIENT_KEY")
+
+res, err := http.DefaultClient.Do(req)
+if err != nil {
+  panic(err)
+}
+defer res.Body.Close()
+
+var body struct {
+  Results []struct {
+    Name string `json:"name"`
+  } `json:"results"`
+}
+json.NewDecoder(res.Body).Decode(&body)
+```
+</Tab>
+
+<Tab value="Rust">
+```rust
+let res: SearchResponse = reqwest::Client::new()
+  .get("https://gamesgamesgamesgames.games/xrpc/games.gamesgamesgamesgames.search")
+  .query(&[
+    ("q", "platformer"),
+    ("types", "game"),
+    ("ageRatings", "esrb:E"),
+    ("ageRatings", "esrb:E10"),
+    ("includeUnrated", "true"),
+  ])
+  .header("X-Client-Key", "API_CLIENT_KEY")
+  .send()
+  .await?
+  .json()
+  .await?;
+```
+</Tab>
+
+<Tab value="cURL">
+```bash
+curl -s \
+  -H "X-Client-Key: YOUR_API_CLIENT_KEY" \
+  "https://gamesgamesgamesgames.games/xrpc/games.gamesgamesgamesgames.search?q=platformer&types=game&ageRatings=esrb%3AE&ageRatings=esrb%3AE10&includeUnrated=true"
+```
+</Tab>
+</Tabs>
+
+Set `includeUnrated` to `true` to also return games that haven't been rated. By default, games without ratings are excluded when an age rating filter is active.
+
+Supported organizations and their ratings:
+
+| Organization | Region | Key | Ratings |
+|---|---|---|---|
+| [ESRB](https://www.esrb.org) | North America | `esrb` | `E`, `E10`, `T`, `M`, `AO` |
+| [PEGI](https://pegi.info) | Europe | `pegi` | `Three`, `Seven`, `Twelve`, `Sixteen`, `Eighteen` |
+| [CERO](https://cero.gr.jp) | Japan | `cero` | `A`, `B`, `C`, `D`, `Z` |
+| [USK](https://usk.de) | Germany | `usk` | `0`, `6`, `12`, `16`, `18` |
+| [GRAC](http://www.grac.or.kr) | South Korea | `grac` | `All`, `Twelve`, `Fifteen`, `Eighteen` |
+| [GCRB](https://grcb.or.kr) | South Korea | `gcrb` | `All`, `Twelve`, `Fifteen`, `Eighteen` |
+| [ClassInd](https://www.gov.br/mj/pt-br/assuntos/seus-direitos/classificacao-1) | Brazil | `classInd` | `L`, `10`, `12`, `14`, `16`, `18` |
+| [ACB](https://www.classification.gov.au) | Australia | `acb` | `G`, `PG`, `M`, `MA15`, `R18`, `X18` |
+
+### Cancelled games
+
+Cancelled games are excluded by default. To include them, set `includeCancelled=true`:
+
+<Tabs groupId="lang" items={['TypeScript', 'JavaScript', 'Go', 'Rust', 'cURL']} persist>
+<Tab value="TypeScript">
+```ts
+const url = new URL(
+  '/xrpc/games.gamesgamesgamesgames.search',
+  'https://gamesgamesgamesgames.games'
+)
+url.searchParams.append('q', 'silent hills')
+url.searchParams.append('types', 'game')
+url.searchParams.append('includeCancelled', 'true')
+
+const response = await fetch(url, {
+  headers: { "X-Client-Key": "API_CLIENT_KEY" }
+});
+const { results } = (await response.json()) as {
+  results: Array<{ name: string }>;
+};
+```
+</Tab>
+
+<Tab value="JavaScript">
+```js
+const url = new URL(
+  '/xrpc/games.gamesgamesgamesgames.search',
+  'https://gamesgamesgamesgames.games'
+)
+url.searchParams.append('q', 'silent hills')
+url.searchParams.append('types', 'game')
+url.searchParams.append('includeCancelled', 'true')
+
+const response = await fetch(url, {
+  headers: { "X-Client-Key": "API_CLIENT_KEY" }
+});
+const { results } = await response.json();
+```
+</Tab>
+
+<Tab value="Go">
+```go
+req, _ := http.NewRequest("GET",
+  "https://gamesgamesgamesgames.games/xrpc/games.gamesgamesgamesgames.search?q=silent+hills&types=game&includeCancelled=true",
+  nil,
+)
+req.Header.Set("X-Client-Key", "API_CLIENT_KEY")
+
+res, err := http.DefaultClient.Do(req)
+if err != nil {
+  panic(err)
+}
+defer res.Body.Close()
+
+var body struct {
+  Results []struct {
+    Name string `json:"name"`
+  } `json:"results"`
+}
+json.NewDecoder(res.Body).Decode(&body)
+```
+</Tab>
+
+<Tab value="Rust">
+```rust
+let res: SearchResponse = reqwest::Client::new()
+  .get("https://gamesgamesgamesgames.games/xrpc/games.gamesgamesgamesgames.search")
+  .query(&[
+    ("q", "silent hills"),
+    ("types", "game"),
+    ("includeCancelled", "true"),
+  ])
+  .header("X-Client-Key", "API_CLIENT_KEY")
+  .send()
+  .await?
+  .json()
+  .await?;
+```
+</Tab>
+
+<Tab value="cURL">
+```bash
+curl -s \
+  -H "X-Client-Key: YOUR_API_CLIENT_KEY" \
+  "https://gamesgamesgamesgames.games/xrpc/games.gamesgamesgamesgames.search?q=silent+hills&types=game&includeCancelled=true"
+```
+</Tab>
+</Tabs>
+
+## Natural language age filtering
+
+The search query itself is analyzed for age-related language. If you don't pass explicit `ageRatings` filters, we'll infer appropriate age limits from the query text:
+
+- `"platformers for kids"` — filters to ratings appropriate for age 7
+- `"14yo rpg recommendations"` — filters to ratings appropriate for age 14
+- `"family friendly co-op"` — filters to ratings appropriate for age 10
+- `"games for teens"` — filters to ratings appropriate for age 13
+- `"games for adults"` — filters to ratings appropriate for age 18
+
+This is a convenience for natural-language queries. For precise control, use the `ageRatings` parameter directly.
+
+## Sorting
+
+<Tabs groupId="lang" items={['TypeScript', 'JavaScript', 'Go', 'Rust', 'cURL']} persist>
+<Tab value="TypeScript">
+```ts
+const url = new URL(
+  '/xrpc/games.gamesgamesgamesgames.search',
+  'https://gamesgamesgamesgames.games'
+)
+url.searchParams.append('q', 'zelda')
+url.searchParams.append('types', 'game')
+url.searchParams.append('sort', 'published_desc')
+
+const response = await fetch(url, {
+  headers: { "X-Client-Key": "API_CLIENT_KEY" }
+});
+const { results } = (await response.json()) as {
+  results: Array<{ name: string }>;
+};
+```
+</Tab>
+
+<Tab value="JavaScript">
+```js
+const url = new URL(
+  '/xrpc/games.gamesgamesgamesgames.search',
+  'https://gamesgamesgamesgames.games'
+)
+url.searchParams.append('q', 'zelda')
+url.searchParams.append('types', 'game')
+url.searchParams.append('sort', 'published_desc')
+
+const response = await fetch(url, {
+  headers: { "X-Client-Key": "API_CLIENT_KEY" }
+});
+const { results } = await response.json();
+```
+</Tab>
+
+<Tab value="Go">
+```go
+req, _ := http.NewRequest("GET",
+  "https://gamesgamesgamesgames.games/xrpc/games.gamesgamesgamesgames.search?q=zelda&types=game&sort=published_desc",
+  nil,
+)
+req.Header.Set("X-Client-Key", "API_CLIENT_KEY")
+
+res, err := http.DefaultClient.Do(req)
+if err != nil {
+  panic(err)
+}
+defer res.Body.Close()
+
+var body struct {
+  Results []struct {
+    Name string `json:"name"`
+  } `json:"results"`
+}
+json.NewDecoder(res.Body).Decode(&body)
+```
+</Tab>
+
+<Tab value="Rust">
+```rust
+let res: SearchResponse = reqwest::Client::new()
+  .get("https://gamesgamesgamesgames.games/xrpc/games.gamesgamesgamesgames.search")
+  .query(&[
+    ("q", "zelda"),
+    ("types", "game"),
+    ("sort", "published_desc"),
+  ])
+  .header("X-Client-Key", "API_CLIENT_KEY")
+  .send()
+  .await?
+  .json()
+  .await?;
+```
+</Tab>
+
+<Tab value="cURL">
+```bash
+curl -s \
+  -H "X-Client-Key: YOUR_API_CLIENT_KEY" \
+  "https://gamesgamesgamesgames.games/xrpc/games.gamesgamesgamesgames.search?q=zelda&types=game&sort=published_desc"
+```
+</Tab>
+</Tabs>
+
+Sort options: `name_asc`, `name_desc`, `published_asc`, `published_desc`. When no sort is specified, results are ranked by relevance.
+
+## Pagination
+
+Search uses cursor-based pagination. The response includes `totalResults` and an optional `cursor`:
+
+<Tabs groupId="lang" items={['TypeScript', 'JavaScript', 'Go', 'Rust', 'cURL']} persist>
+<Tab value="TypeScript">
+```ts
+const url = new URL(
+  '/xrpc/games.gamesgamesgamesgames.search',
+  'https://gamesgamesgamesgames.games'
+)
+url.searchParams.append('q', 'rpg')
+url.searchParams.append('types', 'game')
+url.searchParams.append('limit', '20')
+
+const response = await fetch(url, {
+  headers: { "X-Client-Key": "API_CLIENT_KEY" }
+});
+const page1 = (await response.json()) as {
+  results: Array<{ name: string }>;
+  totalResults: number;
+  cursor?: string;
+};
+
+console.log(`${page1.totalResults} total results`);
+
+if (page1.cursor) {
+  const url2 = new URL(
+    '/xrpc/games.gamesgamesgamesgames.search',
+    'https://gamesgamesgamesgames.games'
+  )
+  url2.searchParams.append('q', 'rpg')
+  url2.searchParams.append('types', 'game')
+  url2.searchParams.append('limit', '20')
+  url2.searchParams.append('cursor', page1.cursor)
+
+  const response2 = await fetch(url2, {
+    headers: { "X-Client-Key": "API_CLIENT_KEY" }
+  });
+  const page2 = await response2.json();
+}
+```
+</Tab>
+
+<Tab value="JavaScript">
+```js
+const url = new URL(
+  '/xrpc/games.gamesgamesgamesgames.search',
+  'https://gamesgamesgamesgames.games'
+)
+url.searchParams.append('q', 'rpg')
+url.searchParams.append('types', 'game')
+url.searchParams.append('limit', '20')
+
+const response = await fetch(url, {
+  headers: { "X-Client-Key": "API_CLIENT_KEY" }
+});
+const page1 = await response.json();
+
+console.log(`${page1.totalResults} total results`);
+
+if (page1.cursor) {
+  const url2 = new URL(
+    '/xrpc/games.gamesgamesgamesgames.search',
+    'https://gamesgamesgamesgames.games'
+  )
+  url2.searchParams.append('q', 'rpg')
+  url2.searchParams.append('types', 'game')
+  url2.searchParams.append('limit', '20')
+  url2.searchParams.append('cursor', page1.cursor)
+
+  const response2 = await fetch(url2, {
+    headers: { "X-Client-Key": "API_CLIENT_KEY" }
+  });
+  const page2 = await response2.json();
+}
+```
+</Tab>
+
+<Tab value="Go">
+```go
+req, _ := http.NewRequest("GET",
+  "https://gamesgamesgamesgames.games/xrpc/games.gamesgamesgamesgames.search?q=rpg&types=game&limit=20",
+  nil,
+)
+req.Header.Set("X-Client-Key", "API_CLIENT_KEY")
+
+res, err := http.DefaultClient.Do(req)
+if err != nil {
+  panic(err)
+}
+defer res.Body.Close()
+
+var page1 struct {
+  Results []struct {
+    Name string `json:"name"`
+  } `json:"results"`
+  TotalResults int    `json:"totalResults"`
+  Cursor       string `json:"cursor"`
+}
+json.NewDecoder(res.Body).Decode(&page1)
+
+fmt.Printf("%d total results\n", page1.TotalResults)
+
+if page1.Cursor != "" {
+  req2, _ := http.NewRequest("GET",
+    fmt.Sprintf("https://gamesgamesgamesgames.games/xrpc/games.gamesgamesgamesgames.search?q=rpg&types=game&limit=20&cursor=%s", page1.Cursor),
+    nil,
+  )
+  req2.Header.Set("X-Client-Key", "API_CLIENT_KEY")
+  // ...
+}
+```
+</Tab>
+
+<Tab value="Rust">
+```rust
+#[derive(Deserialize)]
+struct PaginatedSearch {
+  results: Vec<SearchResult>,
+  #[serde(rename = "totalResults")]
+  total_results: u64,
+  cursor: Option<String>,
+}
+
+let page1: PaginatedSearch = reqwest::Client::new()
+  .get("https://gamesgamesgamesgames.games/xrpc/games.gamesgamesgamesgames.search")
+  .query(&[("q", "rpg"), ("types", "game"), ("limit", "20")])
+  .header("X-Client-Key", "API_CLIENT_KEY")
+  .send()
+  .await?
+  .json()
+  .await?;
+
+println!("{} total results", page1.total_results);
+
+if let Some(cursor) = &page1.cursor {
+  let page2: PaginatedSearch = reqwest::Client::new()
+    .get("https://gamesgamesgamesgames.games/xrpc/games.gamesgamesgamesgames.search")
+    .query(&[("q", "rpg"), ("types", "game"), ("limit", "20"), ("cursor", cursor)])
+    .header("X-Client-Key", "API_CLIENT_KEY")
+    .send()
+    .await?
+    .json()
+    .await?;
+}
+```
+</Tab>
+
+<Tab value="cURL">
+```bash
+curl -s \
+  -H "X-Client-Key: YOUR_API_CLIENT_KEY" \
+  "https://gamesgamesgamesgames.games/xrpc/games.gamesgamesgamesgames.search?q=rpg&types=game&limit=20"
+
+# Pass the cursor from the first response to get the next page:
+curl -s \
+  -H "X-Client-Key: YOUR_API_CLIENT_KEY" \
+  "https://gamesgamesgamesgames.games/xrpc/games.gamesgamesgamesgames.search?q=rpg&types=game&limit=20&cursor=CURSOR_FROM_PREVIOUS"
+```
+</Tab>
+</Tabs>
+
+## See also
+
+- [Core Concepts](/docs/getting-started/core-concepts)
+- [Cookbook: Filter games by genre](/docs/cookbook/filter-by-genre)

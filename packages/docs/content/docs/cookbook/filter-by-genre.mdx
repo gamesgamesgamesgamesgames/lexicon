@@ -1,0 +1,144 @@
+---
+title: Filter games by genre
+description: Use the search endpoint to find games matching a specific genre.
+---
+
+**Problem:** You want to find games tagged with a specific genre (say, `platform`).
+
+**Approach:** The `search` endpoint supports server-side genre filtering, so the Pentaract does the heavy lifting. Pass the `genres` parameter and get back only matching games.
+
+## Basic usage
+
+<Tabs groupId="lang" items={['TypeScript', 'JavaScript']} persist>
+<Tab value="TypeScript">
+```ts
+import { Client } from "@atproto/lex";
+import { games } from "./lexicons/index.js";
+
+const client = new Client("https://gamesgamesgamesgames.games", {
+  headers: { "X-Client-Key": process.env.PENTARACT_CLIENT_KEY! },
+});
+
+const { results } = await client.call(games.gamesgamesgamesgames.search, {
+  q: "",
+  genres: ["platform"],
+  limit: 25,
+});
+```
+</Tab>
+<Tab value="JavaScript">
+```js
+import { Client } from "@atproto/lex";
+import { games } from "./lexicons/index.js";
+
+const client = new Client("https://gamesgamesgamesgames.games", {
+  headers: { "X-Client-Key": process.env.PENTARACT_CLIENT_KEY },
+});
+
+const { results } = await client.call(games.gamesgamesgamesgames.search, {
+  q: "",
+  genres: ["platform"],
+  limit: 25,
+});
+```
+</Tab>
+</Tabs>
+
+## Combining multiple filters
+
+`search` supports several filter parameters at once. For example, to find co-op RPGs:
+
+<Tabs groupId="lang" items={['TypeScript', 'JavaScript']} persist>
+<Tab value="TypeScript">
+```ts
+const { results } = await client.call(games.gamesgamesgamesgames.search, {
+  q: "",
+  genres: ["role-playing-rpg"],
+  modes: ["co-operative"],
+  limit: 25,
+});
+```
+</Tab>
+<Tab value="JavaScript">
+```js
+const { results } = await client.call(games.gamesgamesgamesgames.search, {
+  q: "",
+  genres: ["role-playing-rpg"],
+  modes: ["co-operative"],
+  limit: 25,
+});
+```
+</Tab>
+</Tabs>
+
+Available filter parameters:
+
+| Parameter | Description |
+|-----------|-------------|
+| `genres` | Game genres (e.g. `platform`, `role-playing-rpg`, `shooter`) |
+| `themes` | Thematic tags (e.g. `science-fiction`, `horror`) |
+| `modes` | Play modes (e.g. `single-player`, `co-operative`) |
+| `playerPerspectives` | Camera perspective (e.g. `third-person`, `isometric`) |
+| `applicationTypes` | Content type (e.g. `game`, `dlc`, `expansion`) |
+| `ageRatings` | Age rating in `organization:rating` format (e.g. `esrb:M`, `pegi:Eighteen`) |
+
+## Paging through results
+
+<Tabs groupId="lang" items={['TypeScript', 'JavaScript']} persist>
+<Tab value="TypeScript">
+```ts
+async function fetchAllPlatformers() {
+  const allResults: typeof results = [];
+  let cursor: string | undefined;
+
+  do {
+    const { results: page, cursor: next } = await client.call(
+      games.gamesgamesgamesgames.search,
+      {
+        q: "",
+        genres: ["platform"],
+        limit: 100,
+        cursor,
+      },
+    );
+
+    allResults.push(...page);
+    cursor = next;
+  } while (cursor);
+
+  return allResults;
+}
+```
+</Tab>
+<Tab value="JavaScript">
+```js
+async function fetchAllPlatformers() {
+  const allResults = [];
+  let cursor;
+
+  do {
+    const { results: page, cursor: next } = await client.call(
+      games.gamesgamesgamesgames.search,
+      {
+        q: "",
+        genres: ["platform"],
+        limit: 100,
+        cursor,
+      },
+    );
+
+    allResults.push(...page);
+    cursor = next;
+  } while (cursor);
+
+  return allResults;
+}
+```
+</Tab>
+</Tabs>
+
+## See also
+
+- [Guide: Reading games](/docs/guides/reading-games)
+- [Cookbook: Build a popularity feed](/docs/cookbook/popularity-feed)
+- [Reference: search](/docs/reference/queries/games.gamesgamesgamesgames.search)

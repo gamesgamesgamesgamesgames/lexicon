@@ -1,0 +1,185 @@
+---
+title: Creating a custom feed
+description: Build a games.gamesgamesgamesgames.feed.generator service that the Pentaract can hydrate.
+---
+
+A custom feed is a service you run that returns a ranked list of game AT-URIs. The Pentaract hydrates those URIs into full `gameFeedViewItem` objects for clients. This guide walks through the three pieces you need: the generator record, the HTTP service, and the skeleton response.
+
+## How custom feeds work
+
+1. You publish a `games.gamesgamesgamesgames.feed.generator` record to your own repo. It points at your service DID and names the feed.
+2. Your service exposes `games.gamesgamesgamesgames.feed.describeFeedGenerator` (to enumerate which feeds it serves) and `games.gamesgamesgamesgames.feed.getFeedSkeleton` (to return the ranked list of game AT-URIs for a given feed).
+3. A client calls the Pentaract's [`feed.getGameFeed`](/docs/reference/queries/games.gamesgamesgamesgames.feed.getGameFeed) with your feed's AT-URI. The Pentaract forwards the request to your skeleton endpoint, hydrates the returned URIs into full game views, and returns the result to the client.
+
+Your service never touches game metadata; it only decides order and membership. Hydration and access control are the Pentaract's job.
+
+## Step 1: Publish the generator record
+
+The generator record lives in your repo and makes your feed discoverable by AT-URI. [Authenticate](http://localhost:3000/docs/guides/authentication), then publish it to your repo:
+
+<Tabs groupId="lang" items={['TypeScript', 'JavaScript']} persist>
+<Tab value="TypeScript">
+```ts
+// @atproto/lex Client
+await client.call(games.gamesgamesgamesgames.feed.putGenerator, {
+  rkey: "indie-spotlight",
+  did: "did:web:feeds.example.com",
+  displayName: "Indie Spotlight",
+  description: "Hand-picked indie games released in the last 30 days.",
+  acceptsInteractions: false,
+});
+```
+</Tab>
+<Tab value="JavaScript">
+```js
+// @atproto/lex Client
+await client.call(games.gamesgamesgamesgames.feed.putGenerator, {
+  rkey: "indie-spotlight",
+  did: "did:web:feeds.example.com",
+  displayName: "Indie Spotlight",
+  description: "Hand-picked indie games released in the last 30 days.",
+  acceptsInteractions: false,
+});
+```
+</Tab>
+</Tabs>
+
+The `did` field is your *service* DID: the identity that will respond to skeleton requests. It does not have to match the repo owner.
+
+Your feed's AT-URI is now `at://{repo-did}/games.gamesgamesgamesgames.feed.generator/indie-spotlight`. That's what clients pass to `feed.getGameFeed`.
+
+## Step 2: Implement describeFeedGenerator
+
+When the Pentaract sees a new feed URI, it resolves the generator's `did` to a service endpoint and calls `describeFeedGenerator` to check which feeds that service actually serves. Respond with the list of feed URIs your generator provides.
+
+<Tabs groupId="lang" items={['TypeScript', 'JavaScript']} persist>
+<Tab value="TypeScript">
+```ts
+app.get("/xrpc/games.gamesgamesgamesgames.feed.describeFeedGenerator", (req, res) => {
+  res.json({
+    did: "did:web:feeds.example.com",
+    feeds: [
+      {
+        uri: "at://did:plc:your-repo/games.gamesgamesgamesgames.feed.generator/indie-spotlight",
+      },
+    ],
+  });
+});
+```
+</Tab>
+<Tab value="JavaScript">
+```js
+app.get("/xrpc/games.gamesgamesgamesgames.feed.describeFeedGenerator", (req, res) => {
+  res.json({
+    did: "did:web:feeds.example.com",
+    feeds: [
+      {
+        uri: "at://did:plc:your-repo/games.gamesgamesgamesgames.feed.generator/indie-spotlight",
+      },
+    ],
+  });
+});
+```
+</Tab>
+</Tabs>
+
+If the requested feed isn't in this list, the Pentaract returns `UnknownFeed` to the client.
+
+## Step 3: Implement getFeedSkeleton
+
+This is where your ranking logic lives. The request tells you *which* feed is being asked for, a requested page size, and an optional cursor. You return a list of skeleton items (each one just a game AT-URI), plus a cursor for the next page.
+
+<Tabs groupId="lang" items={['TypeScript', 'JavaScript']} persist>
+<Tab value="TypeScript">
+```ts
+app.get("/xrpc/games.gamesgamesgamesgames.feed.getFeedSkeleton", async (req, res) => {
+  const feed = String(req.query.feed ?? "");
+  const limit = Math.min(Number(req.query.limit ?? 50), 100);
+  const cursor = req.query.cursor ? String(req.query.cursor) : undefined;
+
+  if (feed !== "at://did:plc:your-repo/games.gamesgamesgamesgames.feed.generator/indie-spotlight") {
+    return res.status(400).json({ error: "UnknownFeed" });
+  }
+
+  const page = await rankIndieGames({ limit, cursor });
+
+  res.json({
+    cursor: page.nextCursor,
+    feed: page.items.map((uri) => ({ game: uri })),
+  });
+});
+```
+</Tab>
+<Tab value="JavaScript">
+```js
+app.get("/xrpc/games.gamesgamesgamesgames.feed.getFeedSkeleton", async (req, res) => {
+  const feed = String(req.query.feed ?? "");
+  const limit = Math.min(Number(req.query.limit ?? 50), 100);
+  const cursor = req.query.cursor ? String(req.query.cursor) : undefined;
+
+  if (feed !== "at://did:plc:your-repo/games.gamesgamesgamesgames.feed.generator/indie-spotlight") {
+    return res.status(400).json({ error: "UnknownFeed" });
+  }
+
+  const page = await rankIndieGames({ limit, cursor });
+
+  res.json({
+    cursor: page.nextCursor,
+    feed: page.items.map((uri) => ({ game: uri })),
+  });
+});
+```
+</Tab>
+</Tabs>
+
+Every skeleton item is a `skeletonGameFeedItem`, effectively just `{ game: string }` where `game` is an AT-URI pointing at a `games.gamesgamesgamesgames.game` record. The Pentaract hydrates each URI and drops anything that no longer exists or the viewer can't see.
+
+## Ranking strategies
+
+A few common shapes:
+
+- **Time-windowed**: query your database for games with `publishedAt` in a window, order by likes or views. Pass a timestamp as the cursor.
+- **Personalized**: use the authed viewer DID (if present in the `Authorization` header that the Pentaract forwards) to pull a per-user ranking. Fall back to a default feed when unauthenticated.
+- **Static curation**: store a hand-picked list of AT-URIs and return them in order. Cursor is just the index.
+
+Your service is allowed to be slow the first time a feed is requested; the Pentaract caches the hydrated result. But aim for p95 under 500ms for skeleton responses so the feed stays responsive under load.
+
+## Testing end to end
+
+Once the generator record is published and the service is running, you can exercise the whole pipeline by calling the Pentaract directly:
+
+<Tabs groupId="lang" items={['TypeScript', 'JavaScript']} persist>
+<Tab value="TypeScript">
+```ts
+const { data } = await agent.games.gamesgamesgamesgames.feed.getGameFeed({
+  feed: "at://did:plc:your-repo/games.gamesgamesgamesgames.feed.generator/indie-spotlight",
+  limit: 25,
+});
+
+for (const item of data.feed) {
+  console.log(item.game.name, item.game.uri);
+}
+```
+</Tab>
+<Tab value="JavaScript">
+```js
+const { data } = await agent.games.gamesgamesgamesgames.feed.getGameFeed({
+  feed: "at://did:plc:your-repo/games.gamesgamesgamesgames.feed.generator/indie-spotlight",
+  limit: 25,
+});
+
+for (const item of data.feed) {
+  console.log(item.game.name, item.game.uri);
+}
+```
+</Tab>
+</Tabs>
+
+If you get `UnknownFeed`, your `describeFeedGenerator` isn't advertising that URI. If you get an empty list, your skeleton is returning nothing (or everything it returned has been taken down). If hydrated items disagree with your intent, check that the URIs you're returning resolve to current `game` records.
+
+## What to build next
+
+- [Guide: Reading games](/docs/guides/reading-games): how clients consume the hydrated feed your service powers.
+- [Cookbook: Build a 'most popular' feed](/docs/cookbook/popularity-feed): a concrete ranking recipe using the existing popularity data.
+- [Reference: `feed.generator`](/docs/reference/records/games.gamesgamesgamesgames.feed.generator): the full record schema.
+- [Reference: `feed.getFeedSkeleton`](/docs/reference/queries/games.gamesgamesgamesgames.feed.getFeedSkeleton) and [`feed.describeFeedGenerator`](/docs/reference/queries/games.gamesgamesgamesgames.feed.describeFeedGenerator): the query contracts your service must implement.

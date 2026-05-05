@@ -1,0 +1,27 @@
+{
+  "lexicon": 1,
+  "id": "games.gamesgamesgamesgames.getGame",
+  "defs": {
+    "main": {
+      "type": "query",
+      "description": "Fetch a single game by AT URI.",
+      "parameters": {
+        "type": "object",
+        "required": ["uri"],
+        "properties": {
+          "uri": { "type": "string", "format": "at-uri" }
+        }
+      },
+      "output": {
+        "encoding": "application/json",
+        "schema": {
+          "type": "object",
+          "required": ["game"],
+          "properties": {
+            "game": { "type": "ref", "ref": "games.gamesgamesgamesgames.game" }
+          }
+        }
+      }
+    }
+  }
+}

@@ -45,3 +45,10 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 !.yarn/releases
 !.yarn/sdks
 !.yarn/versions
+
+# Monorepo
+.next
+next-env.d.ts
+
+# Generated docs reference
+apps/docs/content/docs/reference/

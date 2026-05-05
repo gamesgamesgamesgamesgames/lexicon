@@ -1,0 +1,125 @@
+---
+title: Authentication
+description: Permission sets, DPoP auth, and how apps request access to the namespace.
+---
+
+The Pentaract uses [HappyView's](https://happyview.dev) authentication, which should work with any other atproto authentication model with minimal changes.
+
+Every XRPC request must identify itself with a registered API client key (via the `X-Client-Key` header), and procedures that write data require a DPoP-authenticated session. This guide covers the permission model and the authentication flows.
+
+## API client identification
+
+Every XRPC request — including unauthenticated `GET` queries — must include an `X-Client-Key` header. Sign in at [gamesgamesgamesgames.games/dashboard](/dashboard) and create a new client. You'll receive a client key and (for confidential clients) a client secret.
+
+A request without a client key returns `401 Unauthorized`.
+
+### Public vs Confidential API Clients
+
+Pentaract uses different client types to support both of the primary authentication interfaces: client-to-server and server-to-server.
+
+#### Public clients
+
+Public clients are for browser-based apps where the client itself can't hold a secret. Because the client is untrusted, the Pentaract uses a three-step handshake to establish trust:
+
+1. **Key provisioning**: the client requests a DPoP keypair from the Pentaract, protected by a PKCE challenge. The Pentaract generates the keypair and returns it along with a provision ID.
+2. **User authentication**: the client runs the standard atproto OAuth flow against the user's PDS to get access tokens.
+3. **Session registration**: the client sends the tokens and the PKCE verifier back to the Pentaract. The Pentaract verifies the PKCE proof, links the DPoP key to the session, and the trust relationship is established.
+
+After this, every authenticated request includes a DPoP proof that the Pentaract can verify against the provisioned key, proving the request comes from the same client that initiated the handshake.
+
+See the [full public client walkthrough](/docs/cookbook/auth-public-client) for code examples of each step.
+
+#### Confidential clients
+
+Confidential clients are for server-to-server environments where the backend can securely store a client secret. The secret authenticates the client directly, so the PKCE step isn't needed.
+
+See the [full confidential client walkthrough](/docs/cookbook/auth-confidential-client) for code examples.
+
+## Permission sets
+
+The namespace defines three permission sets — `authBasic`, `authStudio`, and `authAdmin` — that scope what an app can do. Pick the smallest set that covers your app's needs.
+
+See the [Permission sets reference](/docs/guides/permissions) for the full breakdown of what each set grants.
+
+## Requesting a permission set
+
+The easiest way to handle user authentication is with the [HappyView JavaScript SDKs](https://happyview.dev/docs/sdk/overview). If you're already using [`@atproto/oauth-client-browser`](https://npmx.dev/package/@atproto/oauth-client-browser) or [`@atproto/lex`](https://npmx.dev/package/@atproto/lex) in your client application, the HappyView SDKs are drop-in replacements that will manage the full OAuth flow for you. For more information on integrating them, see [Cookbook: Authenticate a browser app](http://localhost:3000/docs/cookbook/auth-public-client) or [Cookbook: Authenticate a server app](http://localhost:3000/docs/cookbook/auth-confidential-client).
+
+<Callout kind="warn">
+The Pentaract **will not** allow a user to be authenticated with scopes that aren't listed in the API client's config.  Make sure all scopes your application will ever request are included in the API client config in the [Pentaract dashboard](/dashboard).
+
+This means that if `include:games.gamesgamesgamesgames.authBasic` is the only scope listed in your API client, attempting to log a user in with the `include:games.gamesgamesgamesgames.authStudio` scope **will throw an error**.
+</Callout>
+
+You can pass your desired permission set(s) to the `signIn` call:
+
+<Tabs groupId="lang" items={['TypeScript', 'JavaScript']} persist>
+<Tab value="TypeScript">
+```ts
+import { Client } from "@atproto/lex";
+import { HappyViewBrowserClient } from "@happyview/oauth-client-browser";
+import { createAgent } from "@happyview/lex-agent";
+
+const oauthClient = new HappyViewBrowserClient({
+  instanceUrl: "https://gamesgamesgamesgames.games",
+  clientId: "https://example.com/client-metadata.json",
+  clientKey: "hvc_your_client_key",
+});
+
+// Sign in — redirects to the user's PDS
+await oauthClient.signIn("user.bsky.social", {
+  scope: "atproto include:games.gamesgamesgamesgames.authBasic",
+});
+
+// On page load — restore session or process OAuth callback
+const result = await oauthClient.init();
+const session = result?.session;
+
+// Create a type-safe Lex client with auth
+const agent = createAgent(session);
+const client = new Client(agent);
+```
+</Tab>
+<Tab value="JavaScript">
+```js
+import { Client } from "@atproto/lex";
+import { HappyViewBrowserClient } from "@happyview/oauth-client-browser";
+import { createAgent } from "@happyview/lex-agent";
+
+const oauthClient = new HappyViewBrowserClient({
+  instanceUrl: "https://gamesgamesgamesgames.games",
+  clientId: "https://example.com/client-metadata.json",
+  clientKey: "hvc_your_client_key",
+});
+
+// Sign in — redirects to the user's PDS
+await oauthClient.signIn("user.bsky.social", {
+  scope: "atproto include:games.gamesgamesgamesgames.authBasic",
+});
+
+// On page load — restore session or process OAuth callback
+const result = await oauthClient.init();
+const session = result?.session;
+
+// Create a type-safe Lex client with auth
+const agent = createAgent(session);
+const client = new Client(agent);
+```
+</Tab>
+</Tabs>
+
+The `scope` field in your [OAuth client metadata](https://atproto.com/specs/oauth#client-id-metadata-document) declares which permission sets your app needs. To ask for studio-level access, replace `authBasic` with `authStudio`. An app that needs both read-and-like capability AND studio authoring should request both `authBasic` and `authStudio`.
+
+For server-side apps, use `@happyview/oauth-client`. It accepts an optional `StorageAdapter` for persisting sessions (defaults to in-memory). See the [HappyView OAuth Client docs](https://happyview.dev/docs/sdk/oauth-client) for details.
+
+## Graceful degradation
+
+If a user denies the permission you asked for, your app should degrade to whatever it CAN do rather than refusing to load. A game-publishing tool that's denied `authStudio` should still let the user browse, like, and read feeds; it just can't save their work to a repo.
+
+Concretely: always check what the user actually granted before calling a privileged procedure, and surface "you're in read-only mode because X permission wasn't granted" instead of a cryptic 401.
+
+## See also
+
+- [Reference: authBasic](/docs/guides/permissions#authbasic)
+- [Reference: authStudio](/docs/guides/permissions#authstudio)
+- [Reference: authAdmin](/docs/guides/permissions#authadmin)

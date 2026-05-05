@@ -1,0 +1,355 @@
+---
+title: Quickstart
+description: Fetch a game record from the Pentaract with a single HTTP request.
+---
+
+The Pentaract is an [atproto](https://atproto.com) [AppView](https://atproto.com/guides/glossary#app-view). While the Pentaract works well with [atproto SDKs](https://atproto.com/sdks), no SDK is required.
+
+## Register an API client
+
+The Pentaract requires a registered API client to identify applications. Sign in at [gamesgamesgamesgames.games/dashboard](/dashboard) and create a new client. Create a `confidential` client for server-to-server requests, or a `public` client for browser applications.
+
+Include the client key in every request using the `X-Client-Key` header.
+
+## Fetch a game
+
+<Tabs groupId="lang" items={['TypeScript', 'JavaScript', 'Go', 'Rust', 'cURL']} persist>
+<Tab value="TypeScript">
+```ts
+const url = new URL(
+  '/xrpc/games.gamesgamesgamesgames.getGame', 
+  'https://gamesgamesgamesgames.games'
+)
+url.searchParams.append('slug', 'grand-theft-auto-v')
+
+const response = await fetch(url, {
+  headers: { "X-Client-Key": "API_CLIENT_KEY" }
+});
+const { game } = (await response.json()) as { game: { name: string } };
+
+console.log(game.name);
+```
+</Tab>
+
+<Tab value="JavaScript">
+```js
+const url = new URL(
+  '/xrpc/games.gamesgamesgamesgames.getGame', 
+  'https://gamesgamesgamesgames.games'
+)
+url.searchParams.append('slug', 'grand-theft-auto-v')
+
+const response = await fetch(url,{ 
+  headers: { "X-Client-Key": process.env.PENTARACT_CLIENT_KEY }
+});
+const { game } = await response.json();
+
+console.log(game.name);
+```
+</Tab>
+
+<Tab value="Go">
+```go
+package main
+
+import (
+  "encoding/json"
+  "fmt"
+  "net/http"
+  "os"
+)
+
+func main() {
+  req, \_ := http.NewRequest("GET",
+    "https://gamesgamesgamesgames.games/xrpc/games.gamesgamesgamesgames.getGame?slug=grand-theft-auto-v",
+    nil,
+  )
+  req.Header.Set("X-Client-Key", os.Getenv("PENTARACT_CLIENT_KEY"))
+
+  res, err := http.DefaultClient.Do(req)
+  if err != nil {
+    panic(err)
+  }
+  defer res.Body.Close()
+
+  var body struct {
+    Game struct {
+      Name string `json:"name"`
+    } `json:"game"`
+  }
+  json.NewDecoder(res.Body).Decode(&body)
+  fmt.Println(body.Game.Name)
+}
+```
+</Tab>
+
+<Tab value="Rust">
+```rust
+use serde::Deserialize;
+
+#[derive(Deserialize)]
+struct Response {
+  game: Game,
+}
+
+#[derive(Deserialize)]
+struct Game {
+  name: String,
+}
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+  let client_key = std::env::var("PENTARACT_CLIENT_KEY")?;
+  let res: Response = reqwest::Client::new()
+    .get("https://gamesgamesgamesgames.games/xrpc/games.gamesgamesgamesgames.getGame?slug=grand-theft-auto-v")
+    .header("X-Client-Key", "API_CLIENT_KEY")
+    .send()
+    .await?
+    .json()
+    .await?;
+
+  println!("{}", res.game.name);
+  Ok(())
+}
+```
+</Tab>
+
+<Tab value="cURL">
+```bash
+curl -s \
+  -H "X-Client-Key: YOUR_API_CLIENT_KEY" \
+  "https://gamesgamesgamesgames.games/xrpc/games.gamesgamesgamesgames.getGame?slug=grand-theft-auto-v"
+```
+</Tab>
+</Tabs>
+
+This calls `getGame` with a slug and prints the game name. The response is a hydrated view with org info, release dates, popularity, and more.
+
+## Going further
+
+Fetching a single game by slug is useful when you already know exactly what you're looking for, but most apps need to discover records without knowing exact slugs or DIDs.
+
+The Pentaract gives you two ways to do that. You can **list games** across the network to browse what's been published, or you can **search** the entire index to find games by name, genre, platform, or any other indexed field.
+
+### List games
+
+<Tabs groupId="lang" items={['TypeScript', 'JavaScript', 'Go', 'Rust', 'cURL']} persist>
+<Tab value="TypeScript">
+```ts
+const url = new URL(
+  '/xrpc/games.gamesgamesgamesgames.getGame', 
+  'https://gamesgamesgamesgames.listGames'
+)
+url.searchParams.append('limit', 20)
+
+const response = await fetch(url, { 
+  headers: { "X-Client-Key": "API_CLIENT_KEY" }
+});
+const { games } = (await response.json()) as { games: Array<{ name: string }> };
+
+for (const game of games) {
+  console.log(game.name);
+}
+```
+</Tab>
+
+<Tab value="JavaScript">
+```js
+const url = new URL(
+  '/xrpc/games.gamesgamesgamesgames.getGame', 
+  'https://gamesgamesgamesgames.listGames'
+)
+url.searchParams.append('limit', 20)
+
+const response = await fetch(url, { 
+  headers: { "X-Client-Key": process.env.PENTARACT_CLIENT_KEY }
+});
+const { games } = await response.json();
+
+for (const game of games) {
+  console.log(game.name);
+}
+```
+</Tab>
+
+<Tab value="Go">
+```go
+req, _ := http.NewRequest("GET",
+	"https://gamesgamesgamesgames.games/xrpc/games.gamesgamesgamesgames.listGames?limit=20",
+	nil,
+)
+req.Header.Set("X-Client-Key", os.Getenv("PENTARACT_CLIENT_KEY"))
+
+res, err := http.DefaultClient.Do(req)
+if err != nil {
+  panic(err)
+}
+defer res.Body.Close()
+
+var body struct {
+  Games []struct {
+    Name string `json:"name"`
+  } `json:"games"`
+}
+json.NewDecoder(res.Body).Decode(&body)
+
+for \_, game := range body.Games {
+  fmt.Println(game.Name)
+}
+```
+</Tab>
+
+<Tab value="Rust">
+```rust
+#[derive(Deserialize)]
+struct ListResponse {
+  games: Vec<Game>,
+}
+
+let res: ListResponse = reqwest::Client::new()
+  .get("https://gamesgamesgamesgames.games/xrpc/games.gamesgamesgamesgames.listGames?limit=20")
+  .header("X-Client-Key", "API_CLIENT_KEY")
+  .send()
+  .await?
+  .json()
+  .await?;
+
+for game in &res.games {
+  println!("{}", game.name);
+}
+```
+</Tab>
+
+<Tab value="cURL">
+```bash
+curl -s \
+  -H "X-Client-Key: YOUR_API_CLIENT_KEY" \
+  "https://gamesgamesgamesgames.games/xrpc/games.gamesgamesgamesgames.listGames?limit=20"
+```
+</Tab>
+</Tabs>
+
+### Search
+
+The Pentaract exposes a search endpoint for querying games, profiles, platforms, collections, and engines. Here's a search for "grand theft auto":
+
+<Tabs groupId="lang" items={['TypeScript', 'JavaScript', 'Go', 'Rust', 'cURL']} persist>
+<Tab value="TypeScript">
+```ts
+const url = new URL(
+  '/xrpc/games.gamesgamesgamesgames.getGame', 
+  'https://gamesgamesgamesgames.search'
+)
+url.searchParams.append('q', 'grand theft auto')
+url.searchParams.append('types', 'game')
+url.searchParams.append('limit', 10)
+
+const response = await fetch(url, { 
+  headers: { "X-Client-Key": "API_CLIENT_KEY" }
+});
+
+const { results } = (await response.json()) as {
+  results: Array<{ uri: string; name: string }>;
+};
+
+for (const result of results) {
+  console.log(result.uri, result.name);
+}
+```
+</Tab>
+
+<Tab value="JavaScript">
+```js
+const url = new URL(
+  '/xrpc/games.gamesgamesgamesgames.getGame', 
+  'https://gamesgamesgamesgames.search'
+)
+url.searchParams.append('q', 'grand theft auto')
+url.searchParams.append('types', 'game')
+url.searchParams.append('limit', 10)
+
+const response = await fetch(url, { 
+  headers: { "X-Client-Key": process.env.PENTARACT_CLIENT_KEY }
+});
+
+const { results } = await response.json();
+
+for (const result of results) {
+  console.log(result.uri, result.name);
+}
+```
+</Tab>
+
+<Tab value="Go">
+```go
+req, _ := http.NewRequest("GET",
+	"https://gamesgamesgamesgames.games/xrpc/games.gamesgamesgamesgames.search?q=grand+theft+auto&types=game&limit=10",
+	nil,
+)
+req.Header.Set("X-Client-Key", os.Getenv("PENTARACT_CLIENT_KEY"))
+
+res, err := http.DefaultClient.Do(req)
+if err != nil {
+  panic(err)
+}
+defer res.Body.Close()
+
+var body struct {
+  Results []struct {
+    URI string `json:"uri"`
+    Name string `json:"name"`
+  } `json:"results"`
+}
+json.NewDecoder(res.Body).Decode(&body)
+
+for \_, r := range body.Results {
+  fmt.Println(r.URI, r.Name)
+}
+```
+</Tab>
+
+<Tab value="Rust">
+```rust
+#[derive(Deserialize)]
+struct SearchResponse {
+  results: Vec<SearchResult>,
+}
+
+#[derive(Deserialize)]
+struct SearchResult {
+  uri: String,
+  name: String,
+}
+
+let res: SearchResponse = reqwest::Client::new()
+  .get("https://gamesgamesgamesgames.games/xrpc/games.gamesgamesgamesgames.search")
+  .query(&[("q", "grand theft auto"), ("types", "game"), ("limit", "10")])
+  .header("X-Client-Key", "API_CLIENT_KEY")
+  .send()
+  .await?
+  .json()
+  .await?;
+
+for result in &res.results {
+  println!("{} {}", result.uri, result.name);
+}
+```
+</Tab>
+
+<Tab value="cURL">
+```bash
+curl -s \
+  -H "X-Client-Key: YOUR_API_CLIENT_KEY" \
+  "https://gamesgamesgamesgames.games/xrpc/games.gamesgamesgamesgames.search?q=grand+theft+auto&types=game&limit=10"
+```
+</Tab>
+</Tabs>
+
+The search endpoint supports filtering by genre, theme, mode, age rating, application type, and more. It also understands natural language age queries like "rpgs for kids" or "platformers with blue hedgehogs". See the [Search guide](/docs/guides/search) for the full feature set.
+
+## Next steps
+
+- [Core Concepts](/docs/getting-started/core-concepts): the primitives used in Pentaract and how they relate.
+- [Guide: Reading games](/docs/guides/reading-games): in-depth read-side patterns.
+- [Guide: Search](/docs/guides/search): detailed search usage.
+- [Reference](/docs/reference/records/games.gamesgamesgamesgames.game): the full schema for every record type.

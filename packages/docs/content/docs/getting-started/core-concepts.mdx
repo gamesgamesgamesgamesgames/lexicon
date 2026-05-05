@@ -1,0 +1,120 @@
+---
+title: Core concepts
+description: Records, NSIDs, feeds, contributions, and how they fit together.
+---
+
+## Lexicons and NSIDs
+
+A [lexicon](https://atproto.com/guides/glossary#lexicon) is a typed schema. Every record type, query, and procedure in this project has its own lexicon, and each one has an [NSID](https://atproto.com/guides/glossary#nsid-namespaced-id) like `games.gamesgamesgamesgames.game` or `games.gamesgamesgamesgames.actor.getProfile`.
+
+## Records
+
+A **record** is a piece of data in a user's [repo](https://atproto.com/guides/glossary#data-repo). The records in this namespace fall into four groups.
+
+**Game data** — the records that describe the games themselves:
+
+- `game`: the core game entity.
+- `collection`: a grouping of games — franchise, series, or curated list.
+- `engine`: a game engine record (e.g., Unity, Unreal, Godot).
+- `platform`: a platform record (e.g., Windows, PlayStation, Nintendo Switch).
+- `org.profile`: an organization's profile (studio, publisher, storefront, etc).
+
+**Actor data** — records that belong to individual users:
+
+- `actor.profile`: a user's profile.
+- `actor.game`: a record indicating a user owns a game on a specific platform.
+- `actor.stats`: play statistics for a game from a specific platform (playtime, achievements).
+- `graph.like`: a like on a game.
+
+**Contributions** — how the community proposes changes to game data:
+
+- `contribution`: a proposed change to an existing record or a new game submission.
+- `contributionPatch`: an amendment to a pending contribution.
+- `contributionReview`: a moderator's review of a contribution.
+- `contributionVerification`: a verification that a contribution's data is accurate.
+
+**Claims** — how organizations assert ownership of community-created records:
+
+- `claim`: an organization's claim that a game record belongs to them.
+- `claimReview`: a moderator's review of a claim.
+
+All record NSIDs are prefixed with `games.gamesgamesgamesgames.` (omitted above for readability). Every record has an AT-URI that looks like `at://did:plc:.../games.gamesgamesgamesgames.game/3k2l4j5h6n7m8`. That URI is the stable identity for the record; use it in links, in contribution subjects, in lists, etc.
+
+## Queries and procedures
+
+The namespace also defines [XRPC](https://atproto.com/guides/glossary#xrpc) methods: HTTP endpoints with typed request and response shapes.
+
+- **Queries** (`GET`) read data. `getGame`, `getPopularGames`, `getGenreCounts`, the entire `feed.*` family.
+- **Procedures** (`POST`) write or mutate data. `createGame`, `createContribution`, `acceptContribution`, `reviewClaim`, `toggleLike`.
+
+You call an XRPC method by sending a request to `https://gamesgamesgamesgames.games/xrpc/<nsid>`.
+
+## The Pentaract
+
+**The Pentaract** is the [AppView](https://atproto.com/guides/glossary#app-view) for `https://games.gamesgamesgamesgames.*`. An AppView is a service that aggregates data from many atproto repos and serves views over it. The Pentaract is the thing that:
+
+- Serves every XRPC queries and procedures for the namespace
+- Mediates contributions
+- Verifies claims and attestations
+
+This documentation is specifically about the Pentaract. The lexicons themselves are open; nothing stops someone from running a competing AppView against the same records. But everywhere this documentation says "call `getGame`" or "fetch a feed," it means calling the Pentaract at `https://gamesgamesgamesgames.games`.
+
+Because record data is user-owned, you can also read records directly from a user's repo via `com.atproto.repo.getRecord` — but you lose feeds, ranking, hydrated views, search, and everything else the AppView provides.
+
+## Feeds
+
+Feeds in this namespace follow the same pattern as Bluesky's feed generators: a query returns a **skeleton** (a list of AT-URIs and optional reasons), and your app **hydrates** them by fetching the underlying records.
+
+This matters because:
+
+- Feed generators don't have to return fully-formed game objects. They just point at records.
+- Your app controls how much data to hydrate. Want just the cover art? Fetch only what you need.
+- The same feed skeleton can drive wildly different UIs: grids, lists, release date timelines, whatever.
+
+### Hydrated feeds
+
+The Pentaract provides a handful of fully hydrated feeds already:
+| Feed name | Feed NSID |
+|-----------|-----------|
+| Hot games | `getHotGamesFeed` |
+| Recently released games | `getRecentlyReleasedFeed` |
+| Recently updated games | `getRecentlyUpdatedFeed` |
+| Upcoming releases | `getUpcomingReleasesFeed` |
+| Games similar to a game | `getSimilarGamesFeed` |
+| Games developed by a company | `getOrgDevelopedFeed` |
+| Games published by a company | `getOrgPublishedFeed` |
+
+There are also some of feeds that require authentication:
+| Feed name | Feed NSID |
+|-----------|-----------|
+| Games liked by a user | `getLikesFeed` |
+| For you feed | `getPersonalizedFeed` |
+
+<Callout kind="warn">
+Note that these feeds are experimental and are explicitly designed for use in [Cartridge](https://cartridge.dev). They may eventually be migrated out of the Pentaract namespace to a service that properly uses the feed skeleton architecture.
+</Callout>
+
+## Contributions
+
+The Pentaract mediates community contributions for games. Once a contribution is made, it must go through the moderation pipeline. If a contribution is approved, it will automatically be applied to game data retrieved from the Pentaract.
+
+How contributions work in the Pentaract:
+
+- A contributor writes a `contribution` record whose `changes` field is a partial object matching the target record schema.
+- `contributionType` is one of `correction`, `addition`, or `newGame`.
+- The contribution carries a `subject` AT-URI (for corrections and additions) and a `message` explaining the change.
+- A Pentaract moderator calls `acceptContribution` or similar to merge the change into the canonical record. The contribution record stays around forever as provenance.
+
+If you've used Wikipedia's history tab or a GitHub PR, the mental model is the same, just with cryptographic signatures instead of account permissions.
+
+## Where to go next
+
+{/* - [Publishing a game record](/docs/guides/publishing-a-game-record): writing to a repo you control. */}
+{/* - [Collections](/docs/guides/collections): franchises, series, and curated lists. */}
+{/* - [Claims and migration](/docs/guides/claims-and-migration): studios claiming community-created records. */}
+{/* - [Profiles](/docs/guides/profiles): managing actor and organization profiles. */}
+{/* - [Game library](/docs/guides/game-library): tracking owned games and play stats. */}
+
+- [Guide: Reading games](/docs/guides/reading-games): the read-side patterns in more depth.
+- [Guide: Contributions](/docs/guides/contributions): proposing and accepting changes.
+- [Reference](/docs/reference/records/games.gamesgamesgamesgames.game): every record, query, and procedure.

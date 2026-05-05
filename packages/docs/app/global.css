@@ -1,0 +1,36 @@
+@import "@lexicon/design-system/tokens.css";
+@import "@lexicon/design-system/globals.css";
+@import "fumadocs-ui/style.css";
+
+@media (min-width: 768px) {
+  * {
+    --fd-sidebar-width: 300px !important;
+  }
+}
+
+#nd-sidebar a {
+  white-space: nowrap;
+}
+
+[data-lex-def] {
+  scroll-margin-top: 6rem;
+  border-radius: 0.5rem;
+  transition: background-color 600ms ease-out, box-shadow 600ms ease-out;
+  padding: 0 0.75rem;
+  margin: 0 -0.75rem;
+}
+
+[data-lex-def]:target {
+  background-color: color-mix(in oklab, var(--color-fg) 8%, transparent);
+  box-shadow: 0 0 0 1px color-mix(in oklab, var(--color-fg) 15%, transparent);
+  animation: lex-def-pulse 1.6s ease-out;
+}
+
+@keyframes lex-def-pulse {
+  0% {
+    background-color: color-mix(in oklab, var(--color-fg) 18%, transparent);
+  }
+  100% {
+    background-color: color-mix(in oklab, var(--color-fg) 8%, transparent);
+  }
+}

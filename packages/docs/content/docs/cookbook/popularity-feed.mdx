@@ -1,0 +1,230 @@
+---
+title: Build a 'most popular' feed
+description: Rank games by an aggregate popularity score and serve the result as a feed skeleton.
+---
+
+**Problem:** You're writing a [custom feed generator](/docs/guides/custom-feeds) and you want your skeleton to rank games by actual popularity, not "recently updated." This recipe walks through a practical popularity score and how to bake it into a feed skeleton that the Pentaract can hydrate.
+
+**Who this is for:** Custom feed authors who want to publish a ranked feed with a custom scoring model.
+
+## What "popular" means
+
+There is no universal right answer. A reasonable default combines three signals:
+
+1. **Likes per unit time**: decays so old likes don't dominate.
+2. **Unique likers**: raw like count can be gamed; unique DIDs are harder.
+3. **Recency boost**: bump recently-released games so new things have a chance.
+
+A workable formula:
+
+<Tabs groupId="lang" items={['TypeScript', 'JavaScript']} persist>
+<Tab value="TypeScript">
+```ts
+function popularityScore(game: {
+  likeCount: number;
+  uniqueLikers: number;
+  lastLikeAt: Date;
+  releasedAt: Date | null;
+  now: Date;
+}) {
+  const hoursSinceLastLike = (game.now.getTime() - game.lastLikeAt.getTime()) / 3.6e6;
+  const decay = Math.exp(-hoursSinceLastLike / 72); // ~3 day half-life
+  const uniqueBonus = Math.sqrt(game.uniqueLikers);
+  const freshness = game.releasedAt
+    ? Math.max(0, 1 - (game.now.getTime() - game.releasedAt.getTime()) / (30 * 86400_000))
+    : 0;
+  return (game.likeCount * decay) + (uniqueBonus * 2) + (freshness * 5);
+}
+```
+</Tab>
+<Tab value="JavaScript">
+```js
+function popularityScore(game) {
+  const hoursSinceLastLike = (game.now.getTime() - game.lastLikeAt.getTime()) / 3.6e6;
+  const decay = Math.exp(-hoursSinceLastLike / 72); // ~3 day half-life
+  const uniqueBonus = Math.sqrt(game.uniqueLikers);
+  const freshness = game.releasedAt
+    ? Math.max(0, 1 - (game.now.getTime() - game.releasedAt.getTime()) / (30 * 86400_000))
+    : 0;
+  return (game.likeCount * decay) + (uniqueBonus * 2) + (freshness * 5);
+}
+```
+</Tab>
+</Tabs>
+
+Tune the constants to your data. Start simple, measure what's showing up at the top, adjust.
+
+## The ingestion side
+
+Your feed generator needs a live stream of like activity. The atproto [firehose](https://atproto.com/guides/glossary#firehose) is a real-time event stream of all record writes across the network — your service subscribes to it and filters for the events it cares about.
+
+For each like event, update your local index:
+
+<Tabs groupId="lang" items={['TypeScript', 'JavaScript']} persist>
+<Tab value="TypeScript">
+```ts
+async function onLikeCreated(gameUri: string, likerDid: string, createdAt: string) {
+  await db.likes.upsert({
+    gameUri,
+    likerDid,
+    createdAt,
+  });
+
+  await db.games.update(gameUri, {
+    likeCount: { increment: 1 },
+    lastLikeAt: new Date(createdAt),
+  });
+}
+```
+</Tab>
+<Tab value="JavaScript">
+```js
+async function onLikeCreated(gameUri, likerDid, createdAt) {
+  await db.likes.upsert({
+    gameUri,
+    likerDid,
+    createdAt,
+  });
+
+  await db.games.update(gameUri, {
+    likeCount: { increment: 1 },
+    lastLikeAt: new Date(createdAt),
+  });
+}
+```
+</Tab>
+</Tabs>
+
+For unlike events (a like record being deleted), decrement. Keep the `likes` table around so you can always recompute.
+
+For details on subscribing to the firehose and filtering events by collection, see the [atproto firehose documentation](https://atproto.com/guides/event-stream).
+
+## The ranking pass
+
+Run a periodic job that recomputes scores for games that have had activity recently:
+
+<Tabs groupId="lang" items={['TypeScript', 'JavaScript']} persist>
+<Tab value="TypeScript">
+```ts
+async function rankHotGames() {
+  const now = new Date();
+  const active = await db.games.where({
+    lastLikeAt: { gt: new Date(now.getTime() - 14 * 86400_000) },
+  });
+
+  const scored = await Promise.all(
+    active.map(async (g) => {
+      const uniqueLikers = await db.likes.countDistinct("likerDid", { gameUri: g.uri });
+      return {
+        uri: g.uri,
+        score: popularityScore({
+          likeCount: g.likeCount,
+          uniqueLikers,
+          lastLikeAt: g.lastLikeAt,
+          releasedAt: g.releasedAt,
+          now,
+        }),
+      };
+    })
+  );
+
+  scored.sort((a, b) => b.score - a.score);
+
+  await db.hotCache.replaceAll(scored.slice(0, 1000));
+}
+```
+</Tab>
+<Tab value="JavaScript">
+```js
+async function rankHotGames() {
+  const now = new Date();
+  const active = await db.games.where({
+    lastLikeAt: { gt: new Date(now.getTime() - 14 * 86400_000) },
+  });
+
+  const scored = await Promise.all(
+    active.map(async (g) => {
+      const uniqueLikers = await db.likes.countDistinct("likerDid", { gameUri: g.uri });
+      return {
+        uri: g.uri,
+        score: popularityScore({
+          likeCount: g.likeCount,
+          uniqueLikers,
+          lastLikeAt: g.lastLikeAt,
+          releasedAt: g.releasedAt,
+          now,
+        }),
+      };
+    })
+  );
+
+  scored.sort((a, b) => b.score - a.score);
+
+  await db.hotCache.replaceAll(scored.slice(0, 1000));
+}
+```
+</Tab>
+</Tabs>
+
+Run this every few minutes. A thousand entries is enough to serve the feed generously without paginating past the cache.
+
+## Serving the skeleton
+
+Your feed generator implements `games.gamesgamesgamesgames.feed.getFeedSkeleton` and returns the ranked list of game AT-URIs for the feed the Pentaract is asking about:
+
+<Tabs groupId="lang" items={['TypeScript', 'JavaScript']} persist>
+<Tab value="TypeScript">
+```ts
+app.get("/xrpc/games.gamesgamesgamesgames.feed.getFeedSkeleton", async (req, res) => {
+  const feed = String(req.query.feed ?? "");
+  const limit = Math.min(Number(req.query.limit ?? 25), 100);
+  const offset = req.query.cursor ? parseInt(String(req.query.cursor), 10) : 0;
+
+  if (feed !== "at://did:web:feeds.example.com/games.gamesgamesgamesgames.feed.generator/hot") {
+    return res.status(400).json({ error: "UnknownFeed" });
+  }
+
+  const rows = await db.hotCache.range(offset, offset + limit);
+
+  res.json({
+    feed: rows.map((row) => ({ game: row.uri })),
+    cursor: rows.length === limit ? String(offset + limit) : undefined,
+  });
+});
+```
+</Tab>
+<Tab value="JavaScript">
+```js
+app.get("/xrpc/games.gamesgamesgamesgames.feed.getFeedSkeleton", async (req, res) => {
+  const feed = String(req.query.feed ?? "");
+  const limit = Math.min(Number(req.query.limit ?? 25), 100);
+  const offset = req.query.cursor ? parseInt(String(req.query.cursor), 10) : 0;
+
+  if (feed !== "at://did:web:feeds.example.com/games.gamesgamesgamesgames.feed.generator/hot") {
+    return res.status(400).json({ error: "UnknownFeed" });
+  }
+
+  const rows = await db.hotCache.range(offset, offset + limit);
+
+  res.json({
+    feed: rows.map((row) => ({ game: row.uri })),
+    cursor: rows.length === limit ? String(offset + limit) : undefined,
+  });
+});
+```
+</Tab>
+</Tabs>
+
+The skeleton points at game AT-URIs. The Pentaract hydrates each URI into a full game view before returning the feed to the client, so you never need to fetch record data on the server. See [Creating a custom feed](/docs/guides/custom-feeds) for how to publish the generator record that makes this feed addressable.
+
+## Gotchas
+
+- **Don't let one liker dominate.** Cap per-DID contribution or use `uniqueLikers`.
+- **Guard against new-record floods.** A studio publishing a batch of records shouldn't jump to the top of a hot list just from the freshness bonus. Cap the freshness term.
+- **Recompute, don't append.** Drifting scores need a full refresh periodically; they can't be updated incrementally without error accumulating.
+
+## See also
+
+- [Guide: Reading games](/docs/guides/reading-games)
+- [Cookbook: Filter games by genre](/docs/cookbook/filter-by-genre)
+- [Reference: getHotGamesFeed](/docs/reference/queries/games.gamesgamesgamesgames.feed.getHotGamesFeed)

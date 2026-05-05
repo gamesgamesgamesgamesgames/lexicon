@@ -1,0 +1,320 @@
+---
+title: Working with contributions
+description: Propose community-contributed changes to game records.
+---
+
+Most of the data in the namespace is community-contributed. A `contribution` is how a change gets proposed; the Pentaract handles moderation and merging.
+
+Every request needs an `X-Client-Key` header (see [Quickstart: Register an API client](/docs/getting-started/quickstart#register-an-api-client)).
+
+## The model
+
+A contribution is three things bundled together:
+
+- A **target**: the AT-URI of the record being changed (absent if the contribution is a brand new game).
+- A **patch**: a partial object whose shape matches the target record's schema. Only the fields being changed are present.
+- A **message**: prose explaining what's being changed and why.
+
+The `contributionType` field is one of:
+
+- `correction`: fixing existing data on an existing record.
+- `addition`: adding new data to an existing record (e.g., a missing release, a new screenshot).
+- `newGame`: proposing a whole new game record.
+
+Contributions are signed records in the contributor's own repo. Nobody else can write them. Once written, the Pentaract sees them, runs whatever review it runs, and decides whether to merge them into the canonical record.
+
+## Creating a contribution
+
+Contributions are created via the `createContribution` procedure, not by writing a record directly. This lets the Pentaract sign the contribution before it lands in the contributor's repo. Contributions that are not signed will not be sent to the review queue.
+
+Creating a contribution requires authentication (see [Guide: Authentication](/docs/guides/authentication)).
+
+<Tabs groupId="lang" items={['TypeScript', 'JavaScript', 'Go', 'Rust', 'cURL']} persist>
+<Tab value="TypeScript">
+```ts
+const url = new URL(
+  '/xrpc/games.gamesgamesgamesgames.createContribution',
+  'https://gamesgamesgamesgames.games'
+)
+
+const response = await fetch(url, {
+  method: 'POST',
+  headers: {
+    "X-Client-Key": "API_CLIENT_KEY",
+    "Content-Type": "application/json",
+    "Authorization": `DPoP ${accessToken}`,
+    "DPoP": dpopProof,
+  },
+  body: JSON.stringify({
+    subject: "at://did:web:gamesgamesgamesgames.games/games.gamesgamesgamesgames.game/3mghktn5e5m2d",
+    contributionType: "correction",
+    changes: {
+      genres: ["platform", "rpg", "puzzle"],
+    },
+    message: "Adding missing genre tags.",
+  }),
+});
+const result = (await response.json()) as { uri: string };
+```
+</Tab>
+
+<Tab value="JavaScript">
+```js
+const url = new URL(
+  '/xrpc/games.gamesgamesgamesgames.createContribution',
+  'https://gamesgamesgamesgames.games'
+)
+
+const response = await fetch(url, {
+  method: 'POST',
+  headers: {
+    "X-Client-Key": "API_CLIENT_KEY",
+    "Content-Type": "application/json",
+    "Authorization": `DPoP ${accessToken}`,
+    "DPoP": dpopProof,
+  },
+  body: JSON.stringify({
+    subject: "at://did:web:gamesgamesgamesgames.games/games.gamesgamesgamesgames.game/3mghktn5e5m2d",
+    contributionType: "correction",
+    changes: {
+      genres: ["platform", "rpg", "puzzle"],
+    },
+    message: "Adding missing genre tags.",
+  }),
+});
+const result = await response.json();
+```
+</Tab>
+
+<Tab value="Go">
+```go
+body, _ := json.Marshal(map[string]any{
+  "subject":          "at://did:web:gamesgamesgamesgames.games/games.gamesgamesgamesgames.game/3mghktn5e5m2d",
+  "contributionType": "correction",
+  "changes": map[string]any{
+    "genres": []string{"platform", "rpg", "puzzle"},
+  },
+  "message": "Adding missing genre tags.",
+})
+
+req, _ := http.NewRequest("POST",
+  "https://gamesgamesgamesgames.games/xrpc/games.gamesgamesgamesgames.createContribution",
+  bytes.NewReader(body),
+)
+req.Header.Set("X-Client-Key", "API_CLIENT_KEY")
+req.Header.Set("Content-Type", "application/json")
+req.Header.Set("Authorization", "DPoP "+accessToken)
+req.Header.Set("DPoP", dpopProof)
+
+res, err := http.DefaultClient.Do(req)
+if err != nil {
+  panic(err)
+}
+defer res.Body.Close()
+```
+</Tab>
+
+<Tab value="Rust">
+```rust
+let res = reqwest::Client::new()
+  .post("https://gamesgamesgamesgames.games/xrpc/games.gamesgamesgamesgames.createContribution")
+  .header("X-Client-Key", "API_CLIENT_KEY")
+  .header("Authorization", format!("DPoP {access_token}"))
+  .header("DPoP", &dpop_proof)
+  .json(&serde_json::json!({
+    "subject": "at://did:web:gamesgamesgamesgames.games/games.gamesgamesgamesgames.game/3mghktn5e5m2d",
+    "contributionType": "correction",
+    "changes": {
+      "genres": ["platform", "rpg", "puzzle"]
+    },
+    "message": "Adding missing genre tags."
+  }))
+  .send()
+  .await?;
+```
+</Tab>
+
+<Tab value="cURL">
+```bash
+curl -s -X POST \
+  -H "X-Client-Key: YOUR_API_CLIENT_KEY" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: DPoP $ACCESS_TOKEN" \
+  -H "DPoP: $DPOP_PROOF" \
+  -d '{
+    "subject": "at://did:web:gamesgamesgamesgames.games/games.gamesgamesgamesgames.game/3mghktn5e5m2d",
+    "contributionType": "correction",
+    "changes": { "genres": ["platform", "rpg", "puzzle"] },
+    "message": "Adding missing genre tags."
+  }' \
+  "https://gamesgamesgamesgames.games/xrpc/games.gamesgamesgamesgames.createContribution"
+```
+</Tab>
+</Tabs>
+
+The Pentaract creates a `contribution` record in the user's repo with its signatures attached. You don't need to manage the record key or the signatures yourself.
+
+## Review process
+
+When a signed contribution is created via the Pentaract, it's added to a moderation queue. The contribution can then be reviewed by a Pentaract moderator and/or the game record's owner.
+
+### Contribution acceptance
+
+When a Pentaract moderator accepts a contribution, the patch will be applied automatically any time the associated record is requested from Pentaract. If a Cartridge moderator rejects the contribution, it should not be counted towards the user's contribution stats.
+
+The owner of a game record can also review a contribution. This can be done before a Pentaract moderator ever sees the contribution. The owner's decision overrides any decision made by Pentaract moderators. For example, a moderator could approve a contribution, but the contribution can later be rejected by the record owner, resulting in the patch no longer being applied.
+
+## Provenance
+
+Accepted contributions are not deleted. The `contribution` record stays in the contributor's repo forever; the `contributionPatch` sits next to the target record documenting exactly what changed. This gives the namespace a full audit trail. If you want to know who added a genre, when, and why, the data's right there.
+
+## Contribution stats and badges
+
+The Pentaract tracks contribution statistics per user. Use `getContributionStats` to fetch a contributor's stats and earned badges:
+
+<Tabs groupId="lang" items={['TypeScript', 'JavaScript', 'Go', 'Rust', 'cURL']} persist>
+<Tab value="TypeScript">
+```ts
+const url = new URL(
+  '/xrpc/games.gamesgamesgamesgames.getContributionStats',
+  'https://gamesgamesgamesgames.games'
+)
+url.searchParams.append('did', 'did:plc:abc123')
+
+const response = await fetch(url, {
+  headers: { "X-Client-Key": "API_CLIENT_KEY" }
+});
+const { stats, badges } = (await response.json()) as {
+  stats: {
+    totalContributions: number;
+    corrections: number;
+    additions: number;
+    newGames: number;
+    uniqueEntities: number;
+    ownerAccepted: number;
+  };
+  badges: Array<{ id: string; name: string; description: string }>;
+};
+
+console.log(`${stats.totalContributions} total contributions`);
+console.log(`${stats.corrections} corrections, ${stats.additions} additions, ${stats.newGames} new games`);
+console.log(`${stats.uniqueEntities} unique entities edited`);
+console.log(`${stats.ownerAccepted} accepted by record owners`);
+```
+</Tab>
+
+<Tab value="JavaScript">
+```js
+const url = new URL(
+  '/xrpc/games.gamesgamesgamesgames.getContributionStats',
+  'https://gamesgamesgamesgames.games'
+)
+url.searchParams.append('did', 'did:plc:abc123')
+
+const response = await fetch(url, {
+  headers: { "X-Client-Key": "API_CLIENT_KEY" }
+});
+const { stats, badges } = await response.json();
+
+console.log(`${stats.totalContributions} total contributions`);
+console.log(`${stats.corrections} corrections, ${stats.additions} additions, ${stats.newGames} new games`);
+console.log(`${stats.uniqueEntities} unique entities edited`);
+console.log(`${stats.ownerAccepted} accepted by record owners`);
+```
+</Tab>
+
+<Tab value="Go">
+```go
+req, _ := http.NewRequest("GET",
+  "https://gamesgamesgamesgames.games/xrpc/games.gamesgamesgamesgames.getContributionStats?did=did%3Aplc%3Aabc123",
+  nil,
+)
+req.Header.Set("X-Client-Key", "API_CLIENT_KEY")
+
+res, err := http.DefaultClient.Do(req)
+if err != nil {
+  panic(err)
+}
+defer res.Body.Close()
+
+var body struct {
+  Stats struct {
+    TotalContributions int `json:"totalContributions"`
+    Corrections        int `json:"corrections"`
+    Additions          int `json:"additions"`
+    NewGames           int `json:"newGames"`
+    UniqueEntities     int `json:"uniqueEntities"`
+    OwnerAccepted      int `json:"ownerAccepted"`
+  } `json:"stats"`
+  Badges []struct {
+    ID          string `json:"id"`
+    Name        string `json:"name"`
+    Description string `json:"description"`
+  } `json:"badges"`
+}
+json.NewDecoder(res.Body).Decode(&body)
+```
+</Tab>
+
+<Tab value="Rust">
+```rust
+#[derive(Deserialize)]
+struct StatsResponse {
+  stats: ContributionStats,
+  badges: Vec<Badge>,
+}
+
+#[derive(Deserialize)]
+struct ContributionStats {
+  #[serde(rename = "totalContributions")]
+  total_contributions: u64,
+  corrections: u64,
+  additions: u64,
+  #[serde(rename = "newGames")]
+  new_games: u64,
+  #[serde(rename = "uniqueEntities")]
+  unique_entities: u64,
+  #[serde(rename = "ownerAccepted")]
+  owner_accepted: u64,
+}
+
+#[derive(Deserialize)]
+struct Badge {
+  id: String,
+  name: String,
+  description: String,
+}
+
+let res: StatsResponse = reqwest::Client::new()
+  .get("https://gamesgamesgamesgames.games/xrpc/games.gamesgamesgamesgames.getContributionStats")
+  .query(&[("did", "did:plc:abc123")])
+  .header("X-Client-Key", "API_CLIENT_KEY")
+  .send()
+  .await?
+  .json()
+  .await?;
+
+println!("{} total contributions", res.stats.total_contributions);
+```
+</Tab>
+
+<Tab value="cURL">
+```bash
+curl -s \
+  -H "X-Client-Key: YOUR_API_CLIENT_KEY" \
+  --data-urlencode "did=did:plc:abc123" \
+  -G "https://gamesgamesgamesgames.games/xrpc/games.gamesgamesgamesgames.getContributionStats"
+```
+</Tab>
+</Tabs>
+
+The `stats` object breaks down contributions by type (`corrections`, `additions`, `newGames`) and tracks how many distinct records the user has contributed to (`uniqueEntities`) and how many were accepted (`ownerAccepted`).
+
+### Badges
+
+The `badges` array contains badges the user has earned based on their contribution history. Each badge has an `id`, `name`, and `description`. Use these to build contributor profiles or leaderboards.
+
+## See also
+
+- [Reference: games.gamesgamesgamesgames.contribution](/docs/reference/records/games.gamesgamesgamesgames.contribution)
+- [Reference: games.gamesgamesgamesgames.getContributionStats](/docs/reference/queries/games.gamesgamesgamesgames.getContributionStats)

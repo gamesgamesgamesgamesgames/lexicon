@@ -1,0 +1,270 @@
+---
+title: Authenticate a browser app
+description: Sign a user in from a browser and make authenticated XRPC requests.
+---
+
+**Problem:** Your browser-based app needs to make authenticated requests to the Pentaract — liking games, editing profiles, submitting contributions — but it can't securely store a client secret.
+
+**Who this is for:** Frontend developers building browser apps that interact with the Pentaract on behalf of a user.
+
+## Prerequisites
+
+- A **public** API client registered in the [Pentaract dashboard](/dashboard) with your app's domain in "Allowed Origins".
+- Your app's [OAuth client metadata](https://atproto.com/specs/oauth#client-id-metadata-document) hosted at a public URL (see [Localhost Client Development](https://atproto.com/guides/oauth-cli-tutorial#part-2-build-the-o-auth-client) for local dev caveats).
+
+Install the HappyView SDK:
+
+```bash
+npm install @happyview/oauth-client-browser
+```
+
+## Create an OAuth client
+
+The `HappyViewBrowserClient` will be the basis for all OAuth requests.
+
+<Tabs groupId="lang" items={['TypeScript', 'JavaScript']} persist>
+<Tab value="TypeScript">
+```ts
+import { HappyViewBrowserClient } from "@happyview/oauth-client-browser";
+
+const oauthClient = new HappyViewBrowserClient({
+  instanceUrl: "https://gamesgamesgamesgames.games",
+  clientId: "https://example.com/client-metadata.json",
+  clientKey: "API_CLIENT_KEY",
+});
+```
+</Tab>
+<Tab value="JavaScript">
+```js
+import { HappyViewBrowserClient } from "@happyview/oauth-client-browser";
+
+const oauthClient = new HappyViewBrowserClient({
+  instanceUrl: "https://gamesgamesgamesgames.games",
+  clientId: "https://example.com/client-metadata.json",
+  clientKey: "API_CLIENT_KEY",
+});
+```
+</Tab>
+</Tabs>
+
+## Restore an existing session
+
+If the user has already signed in, we can restore their session:
+
+<Tabs groupId="lang" items={['TypeScript', 'JavaScript']} persist>
+<Tab value="TypeScript">
+```ts
+// On page load — restore an existing session or process an OAuth callback
+const result = await oauthClient.init();
+
+if (result) {
+  const { session } = result;
+}
+```
+</Tab>
+<Tab value="JavaScript">
+```js
+// On page load — restore an existing session or process an OAuth callback
+const result = await oauthClient.init();
+
+if (result) {
+  const { session } = result;
+}
+```
+</Tab>
+</Tabs>
+
+## Trigger sign-in
+
+`signIn()` redirects the browser to the user's PDS for authorization. When it's called, the page will navigate away. `init()` will pick up the result when the user returns.
+
+<Tabs groupId="lang" items={['TypeScript', 'JavaScript']} persist>
+<Tab value="TypeScript">
+```ts
+// Full-page redirect
+await oauthClient.signIn("user.bsky.social", {
+  scope: "atproto include:games.gamesgamesgamesgames.authBasic",
+});
+
+// Or via a popup
+const session = await oauthClient.signIn("user.bsky.social", {
+  scope: "atproto include:games.gamesgamesgamesgames.authBasic",
+  display: "popup",
+});
+```
+</Tab>
+<Tab value="JavaScript">
+```js
+// Full-page redirect
+await oauthClient.signIn("user.bsky.social", {
+  scope: "atproto include:games.gamesgamesgamesgames.authBasic",
+});
+
+// Or via a popup
+const session = await oauthClient.signIn("user.bsky.social", {
+  scope: "atproto include:games.gamesgamesgamesgames.authBasic",
+  display: "popup",
+});
+```
+</Tab>
+</Tabs>
+
+## Revoking a session
+
+```ts
+await oauthClient.revoke(session.did);
+```
+
+## Using the session
+
+The session from `init()` can be used with `@atproto/lex` via `@happyview/lex-agent`, or with `@atproto/api` directly.
+
+### Usage with `@atproto/lex`
+
+First, install the HappyView and atproto SDKs:
+
+```bash
+npm install @happyview/oauth-client-browser @happyview/lex-agent @atproto/lex
+```
+
+<Tabs groupId="lang" items={['TypeScript', 'JavaScript']} persist>
+<Tab value="TypeScript">
+```ts
+import { HappyViewBrowserClient } from "@happyview/oauth-client-browser";
+import { Client } from "@atproto/lex";
+import { createAgent } from "@happyview/lex-agent";
+
+const oauthClient = new HappyViewBrowserClient({
+  instanceUrl: "https://gamesgamesgamesgames.games",
+  clientId: "https://example.com/client-metadata.json",
+  clientKey: "API_CLIENT_KEY",
+});
+
+// On page load — restore an existing session or process an OAuth callback
+const result = await oauthClient.init();
+
+if (result) {
+  const { session } = result;
+  const agent = createAgent(session);
+  const client = new Client(agent);
+
+  const uri = "at://did:web:gamesgamesgamesgames.games" // base
+    + "/games.gamesgamesgamesgames.game"                // collection
+    + "/3mghbcajpt52d"                                  // rkey
+
+  // Make an authenticated request
+  const response = await client.call("games.gamesgamesgamesgames.toggleLike", { uri });
+  console.log(response);
+}
+```
+</Tab>
+<Tab value="JavaScript">
+```js
+import { HappyViewBrowserClient } from "@happyview/oauth-client-browser";
+import { Client } from "@atproto/lex";
+import { createAgent } from "@happyview/lex-agent";
+
+const oauthClient = new HappyViewBrowserClient({
+  instanceUrl: "https://gamesgamesgamesgames.games",
+  clientId: "https://example.com/client-metadata.json",
+  clientKey: "API_CLIENT_KEY",
+});
+
+// On page load — restore an existing session or process an OAuth callback
+const result = await oauthClient.init();
+
+if (result) {
+  const { session } = result;
+  const agent = createAgent(session);
+  const client = new Client(agent);
+
+  const uri = "at://did:web:gamesgamesgamesgames.games" // base
+    + "/games.gamesgamesgamesgames.game"                // collection
+    + "/3mghbcajpt52d"                                  // rkey
+
+  // Make an authenticated request
+  const response = await client.call("games.gamesgamesgamesgames.toggleLike", { uri });
+  console.log(response);
+}
+```
+</Tab>
+</Tabs>
+
+### Usage with `@atproto/api`
+
+First, install the HappyView and atproto SDKs:
+
+```bash
+npm install @happyview/oauth-client-browser @atproto/api
+```
+
+<Tabs groupId="lang" items={['TypeScript', 'JavaScript']} persist>
+<Tab value="TypeScript">
+```ts
+import { HappyViewBrowserClient } from "@happyview/oauth-client-browser";
+import { Agent } from "@atproto/api";
+
+const oauthClient = new HappyViewBrowserClient({
+  instanceUrl: "https://gamesgamesgamesgames.games",
+  clientId: "https://example.com/client-metadata.json",
+  clientKey: "API_CLIENT_KEY",
+});
+
+// On page load — restore an existing session or process an OAuth callback
+const result = await oauthClient.init();
+
+if (result) {
+  const { session } = result;
+  const agent = new Agent(session);
+
+  const uri = "at://did:web:gamesgamesgamesgames.games" // base
+    + "/games.gamesgamesgamesgames.game"                // collection
+    + "/3mghbcajpt52d"                                  // rkey
+
+  // Make an authenticated request
+  const response = await agent.call("games.gamesgamesgamesgames.toggleLike", { uri });
+  console.log(response);
+}
+```
+</Tab>
+<Tab value="JavaScript">
+```js
+import { HappyViewBrowserClient } from "@happyview/oauth-client-browser";
+import { Agent } from "@atproto/api";
+
+const oauthClient = new HappyViewBrowserClient({
+  instanceUrl: "https://gamesgamesgamesgames.games",
+  clientId: "https://example.com/client-metadata.json",
+  clientKey: "API_CLIENT_KEY",
+});
+
+// On page load — restore an existing session or process an OAuth callback
+const result = await oauthClient.init();
+
+if (result) {
+  const { session } = result;
+  const agent = new Agent(session);
+
+  const uri = "at://did:web:gamesgamesgamesgames.games" // base
+    + "/games.gamesgamesgamesgames.game"                // collection
+    + "/3mghbcajpt52d"                                  // rkey
+
+  // Make an authenticated request
+  const response = await agent.call("games.gamesgamesgamesgames.toggleLike", { uri });
+  console.log(response);
+}
+```
+</Tab>
+</Tabs>
+
+## What happens under the hood
+
+The SDK handles the full DPoP handshake for you: PKCE challenge generation, DPoP key provisioning, the atproto OAuth flow, and session registration. Every request made through the `@atproto/lex` `Client` or `@atproto/api` `Agent` will automatically include the correct `Authorization`, `DPoP`, and `X-Client-Key` headers.
+
+For the full details on the underlying flow, see the [HappyView OAuth Client Browser docs](https://happyview.dev/docs/sdk/oauth-client-browser).
+
+## See also
+
+- [Guide: Authentication guide](/docs/guides/authentication)
+- [Guide: Permission sets](/docs/guides/permissions)
+- [Cookbook: Authenticate a server app](/docs/cookbook/auth-confidential-client)

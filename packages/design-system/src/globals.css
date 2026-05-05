@@ -1,0 +1,136 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import "./tokens.css";
+
+@layer base {
+  html {
+    font-family: var(--font-sans);
+    background: rgb(var(--color-bg));
+    color: rgb(var(--color-fg));
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    background: rgb(var(--color-bg));
+    color: rgb(var(--color-fg));
+  }
+
+  code, pre, kbd, samp {
+    font-family: var(--font-mono);
+  }
+
+  ::selection {
+    background: rgb(var(--color-fg) / 0.15);
+    color: rgb(var(--color-fg));
+  }
+
+  :root {
+    --color-fd-background: rgb(var(--color-bg));
+    --color-fd-foreground: rgb(var(--color-fg));
+    --color-fd-muted: rgb(var(--color-bg-subtle));
+    --color-fd-muted-foreground: rgb(var(--color-fg-muted));
+    --color-fd-popover: rgb(var(--color-surface));
+    --color-fd-popover-foreground: rgb(var(--color-fg));
+    --color-fd-card: rgb(var(--color-surface));
+    --color-fd-card-foreground: rgb(var(--color-fg));
+    --color-fd-border: rgb(var(--color-border));
+    --color-fd-primary: rgb(var(--color-fg));
+    --color-fd-primary-foreground: rgb(var(--color-bg));
+    --color-fd-secondary: rgb(var(--color-bg-subtle));
+    --color-fd-secondary-foreground: rgb(var(--color-fg));
+    --color-fd-accent: rgb(var(--color-bg-subtle));
+    --color-fd-accent-foreground: rgb(var(--color-fg));
+    --color-fd-ring: rgb(var(--color-fg) / 0.2);
+  }
+}
+
+@layer components {
+  .bg-grid {
+    background-image:
+      linear-gradient(to right, rgb(var(--grid-line) / var(--grid-alpha)) 1px, transparent 1px),
+      linear-gradient(to bottom, rgb(var(--grid-line) / var(--grid-alpha)) 1px, transparent 1px);
+    background-size: 48px 48px;
+  }
+
+  .bg-grid-sm {
+    background-image:
+      linear-gradient(to right, rgb(var(--grid-line) / var(--grid-alpha)) 1px, transparent 1px),
+      linear-gradient(to bottom, rgb(var(--grid-line) / var(--grid-alpha)) 1px, transparent 1px);
+    background-size: 24px 24px;
+  }
+
+  .hero-glow {
+    background:
+      radial-gradient(60% 50% at 50% 0%, rgb(var(--glow-from) / 0.18) 0%, transparent 70%),
+      radial-gradient(40% 40% at 70% 30%, rgb(var(--glow-to) / 0.12) 0%, transparent 70%);
+  }
+
+  .mask-fade-b {
+    mask-image: linear-gradient(to bottom, black 0%, black 60%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to bottom, black 0%, black 60%, transparent 100%);
+  }
+
+  .surface-card {
+    background: rgb(var(--color-surface));
+    border: 1px solid rgb(var(--color-border));
+    border-radius: var(--radius-lg);
+  }
+}
+
+@layer utilities {
+  .prose-doc {
+    color: rgb(var(--color-fg));
+    line-height: 1.7;
+  }
+  .prose-doc h1, .prose-doc h2, .prose-doc h3, .prose-doc h4 {
+    color: rgb(var(--color-fg));
+    font-weight: 600;
+    letter-spacing: -0.015em;
+  }
+  .prose-doc h2 {
+    margin-top: 2.5em;
+    margin-bottom: 0.75em;
+    font-size: 1.5rem;
+  }
+  .prose-doc h3 {
+    margin-top: 2em;
+    margin-bottom: 0.5em;
+    font-size: 1.2rem;
+  }
+  .prose-doc p {
+    margin: 1.1em 0;
+    color: rgb(var(--color-fg-muted));
+  }
+  .prose-doc a {
+    color: rgb(var(--color-fg));
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    text-decoration-color: rgb(var(--color-fg) / 0.3);
+  }
+  .prose-doc a:hover {
+    text-decoration-color: rgb(var(--color-fg));
+  }
+  .prose-doc code {
+    background: rgb(var(--color-code-bg));
+    color: rgb(var(--color-code-fg));
+    padding: 0.15em 0.4em;
+    border-radius: var(--radius-sm);
+    font-size: 0.9em;
+    border: 1px solid rgb(var(--color-border));
+  }
+  .prose-doc pre {
+    background: rgb(var(--color-code-bg));
+    border: 1px solid rgb(var(--color-border));
+    border-radius: var(--radius-md);
+    padding: 1rem 1.25rem;
+    overflow-x: auto;
+  }
+  .prose-doc pre code {
+    background: transparent;
+    border: 0;
+    padding: 0;
+  }
+}

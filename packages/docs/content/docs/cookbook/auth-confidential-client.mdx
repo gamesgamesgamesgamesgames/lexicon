@@ -1,0 +1,163 @@
+---
+title: Authenticate a server app
+description: Sign a user in from a server-side app and make authenticated XRPC requests.
+---
+
+**Problem:** Your server-side app needs to make authenticated requests to the Pentaract on behalf of a user. Since your backend can securely store a client secret, the flow is simpler than browser auth and no PKCE flow is needed.
+
+**Who this is for:** Backend developers building server-to-server integrations, game authoring tools, bots, and automation.
+
+## Prerequisites
+
+- A **confidential** API client registered in the [Pentaract dashboard](/dashboard) — save the client secret immediately, it's only shown once.
+- Your app's [OAuth client metadata](https://atproto.com/specs/oauth#client-id-metadata-document) hosted at a public URL (see [Localhost Client Development](https://atproto.com/guides/oauth-cli-tutorial#part-2-build-the-o-auth-client) for local dev caveats).
+
+Install the HappyView SDK:
+
+```bash
+npm install @happyview/oauth-client
+```
+
+## Set up the client
+
+<Tabs groupId="lang" items={['TypeScript', 'JavaScript']} persist>
+<Tab value="TypeScript">
+```ts
+import { HappyViewOAuthClient } from "@happyview/oauth-client";
+
+const oauthClient = new HappyViewOAuthClient({
+  instanceUrl: "https://gamesgamesgamesgames.games",
+  clientKey: process.env.PENTARACT_CLIENT_KEY!,
+  clientSecret: process.env.PENTARACT_CLIENT_SECRET!,
+});
+```
+</Tab>
+<Tab value="JavaScript">
+```js
+import { HappyViewOAuthClient } from "@happyview/oauth-client";
+
+const oauthClient = new HappyViewOAuthClient({
+  instanceUrl: "https://gamesgamesgamesgames.games",
+  clientKey: process.env.PENTARACT_CLIENT_KEY,
+  clientSecret: process.env.PENTARACT_CLIENT_SECRET,
+});
+```
+</Tab>
+</Tabs>
+
+By default sessions are stored in memory. Pass a `StorageAdapter` if you need persistence across restarts — see the [HappyView OAuth Client docs](https://happyview.dev/docs/sdk/oauth-client) for details.
+
+## Register a session and make a request
+
+After your app has completed the atproto OAuth flow and received tokens for a user, register the session and use it to make authenticated requests:
+
+<Tabs groupId="lang" items={['TypeScript', 'JavaScript']} persist>
+<Tab value="TypeScript">
+```ts
+import { Client } from "@atproto/lex";
+import { createAgent } from "@happyview/lex-agent";
+
+// 1. Provision a DPoP key (no PKCE needed for confidential clients)
+const { provisionId, rawJwk } = await oauthClient.provisionDpopKey();
+
+// 2. After completing the atproto OAuth flow, register the session
+const session = await oauthClient.registerSession({
+  provisionId,
+  did: userDid,
+  accessToken,
+  refreshToken,
+  scopes: "atproto include:games.gamesgamesgamesgames.authStudio",
+  dpopKey: rawJwk,
+});
+
+// 3. Make authenticated requests
+const agent = createAgent(session);
+const client = new Client(agent);
+
+const res = await client.call("games.gamesgamesgamesgames.createGame", {
+  name: "My Game",
+  slug: "my-game",
+});
+console.log(res);
+```
+</Tab>
+<Tab value="JavaScript">
+```js
+import { Client } from "@atproto/lex";
+import { createAgent } from "@happyview/lex-agent";
+
+// 1. Provision a DPoP key (no PKCE needed for confidential clients)
+const { provisionId, rawJwk } = await oauthClient.provisionDpopKey();
+
+// 2. After completing the atproto OAuth flow, register the session
+const session = await oauthClient.registerSession({
+  provisionId,
+  did: userDid,
+  accessToken,
+  refreshToken,
+  scopes: "atproto include:games.gamesgamesgamesgames.authStudio",
+  dpopKey: rawJwk,
+});
+
+// 3. Make authenticated requests
+const agent = createAgent(session);
+const client = new Client(agent);
+
+const res = await client.call("games.gamesgamesgamesgames.createGame", {
+  name: "My Game",
+  slug: "my-game",
+});
+console.log(res);
+```
+</Tab>
+</Tabs>
+
+## Restoring a session
+
+On subsequent requests, restore the session instead of re-registering:
+
+<Tabs groupId="lang" items={['TypeScript', 'JavaScript']} persist>
+<Tab value="TypeScript">
+```ts
+// Restore by DID
+const session = await oauthClient.restoreSession("did:plc:abc123");
+
+// Or restore the last active session
+const session = await oauthClient.restore();
+
+if (session) {
+  const agent = createAgent(session);
+  const client = new Client(agent);
+  // ready to make requests
+}
+```
+</Tab>
+<Tab value="JavaScript">
+```js
+// Restore by DID
+const session = await oauthClient.restoreSession("did:plc:abc123");
+
+// Or restore the last active session
+const session = await oauthClient.restore();
+
+if (session) {
+  const agent = createAgent(session);
+  const client = new Client(agent);
+  // ready to make requests
+}
+```
+</Tab>
+</Tabs>
+
+## Revoking a session
+
+```ts
+await oauthClient.deleteSession("did:plc:abc123");
+```
+
+## See also
+
+- [Guide: Authentication guide](/docs/guides/authentication)
+- [Guide: Permission sets](/docs/guides/permissions)
+- [Cookbook: Authenticate a browser app](/docs/cookbook/auth-public-client)
+- [HappyView OAuth Client docs](https://happyview.dev/docs/sdk/oauth-client)
