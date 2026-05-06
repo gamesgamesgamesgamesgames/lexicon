@@ -1,0 +1,34 @@
+{
+	"$type": "com.atproto.lexicon.schema",
+	"lexicon": 1,
+	"id": "games.gamesgamesgamesgames.getGameCount",
+	"defs": {
+		"main": {
+			"type": "query",
+			"description": "Get the total number of games a user has published.",
+			"parameters": {
+				"type": "params",
+				"required": ["did"],
+				"properties": {
+					"did": {
+						"type": "string",
+						"description": "The DID of the user whose game count to retrieve."
+					}
+				}
+			},
+			"output": {
+				"encoding": "application/json",
+				"schema": {
+					"type": "object",
+					"required": ["count"],
+					"properties": {
+						"count": {
+							"type": "integer",
+							"description": "Total number of games this user has published."
+						}
+					}
+				}
+			}
+		}
+	}
+}

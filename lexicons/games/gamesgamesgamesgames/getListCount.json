@@ -1,0 +1,34 @@
+{
+	"$type": "com.atproto.lexicon.schema",
+	"lexicon": 1,
+	"id": "games.gamesgamesgamesgames.getListCount",
+	"defs": {
+		"main": {
+			"type": "query",
+			"description": "Get the total number of lists a user has created.",
+			"parameters": {
+				"type": "params",
+				"required": ["did"],
+				"properties": {
+					"did": {
+						"type": "string",
+						"description": "The DID of the user whose list count to retrieve."
+					}
+				}
+			},
+			"output": {
+				"encoding": "application/json",
+				"schema": {
+					"type": "object",
+					"required": ["count"],
+					"properties": {
+						"count": {
+							"type": "integer",
+							"description": "Total number of lists this user has created."
+						}
+					}
+				}
+			}
+		}
+	}
+}
