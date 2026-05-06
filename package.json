@@ -7,9 +7,7 @@
 	],
 	"scripts": {
 		"dev": "bun run --filter='@lexicon/docs' dev",
-		"dev:landing": "bun run --filter='@lexicon/landing' dev",
 		"build": "bun run --filter='@lexicon/docs' build",
-		"build:landing": "bun run --filter='@lexicon/landing' build",
 		"generate:reference": "bun run --filter='@lexicon/docs' generate:reference",
 		"lint": "bun run --filter='*' lint",
 		"typecheck": "bun run --filter='*' typecheck",
