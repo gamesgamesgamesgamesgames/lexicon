@@ -39,7 +39,7 @@ function handle()
   local body = {
     q = "",
     limit = #uris,
-    filter = "uri IN [" .. table.concat(uris, ", ") .. "]",
+    filter = "uri IN [" .. table.concat(uris, ", ") .. "] AND publishedAt IS NOT NULL",
     attributesToRetrieve = toarray({ "uri", "name", "slug", "media" })
   }
 

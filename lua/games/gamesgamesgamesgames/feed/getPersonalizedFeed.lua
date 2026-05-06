@@ -62,7 +62,7 @@ function handle()
       id = to_doc_id(like.game_uri),
       embedder = "game-similarity",
       limit = per_like_limit,
-      filter = 'type = "game" AND applicationType = "game"',
+      filter = 'type = "game" AND applicationType = "game" AND publishedAt IS NOT NULL',
       attributesToRetrieve = toarray({ "uri", "name", "slug", "media" })
     }
 

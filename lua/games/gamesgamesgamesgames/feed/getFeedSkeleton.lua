@@ -56,7 +56,7 @@ local function algo_upcoming(limit, cursor)
   local now_int = tonumber(y .. m .. d)
 
   local rows = db.raw(
-    "SELECT uri, record FROM records WHERE collection = $1 AND record::jsonb->>'applicationType' = 'game' ORDER BY indexed_at DESC LIMIT $2 OFFSET $3",
+    "SELECT uri, record FROM records WHERE collection = $1 AND record::jsonb->>'applicationType' = 'game' AND record::jsonb->>'publishedAt' IS NOT NULL ORDER BY indexed_at DESC LIMIT $2 OFFSET $3",
     {"games.gamesgamesgamesgames.game", limit * 3, offset}
   )
 
@@ -108,7 +108,7 @@ local function algo_recently_updated(limit, cursor)
   end
 
   local rows = db.raw(
-    "SELECT uri FROM records WHERE collection = $1 AND record::jsonb->>'applicationType' = 'game' ORDER BY indexed_at DESC LIMIT $2 OFFSET $3",
+    "SELECT uri FROM records WHERE collection = $1 AND record::jsonb->>'applicationType' = 'game' AND record::jsonb->>'publishedAt' IS NOT NULL ORDER BY indexed_at DESC LIMIT $2 OFFSET $3",
     {"games.gamesgamesgamesgames.game", limit + 1, offset}
   )
 
@@ -215,7 +215,7 @@ local function algo_personalized(limit, cursor)
     q = q,
     limit = limit + #likes,
     offset = offset,
-    filter = 'type = "game" AND applicationType = "game"',
+    filter = 'type = "game" AND applicationType = "game" AND publishedAt IS NOT NULL',
     attributesToRetrieve = toarray({ "uri" })
   }
 

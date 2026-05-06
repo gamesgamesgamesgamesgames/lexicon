@@ -30,7 +30,7 @@ function handle()
   local body = {
     q = "",
     limit = 1000,
-    filter = "type = \"game\" AND cancelled != true AND firstReleaseDate > " .. current_date .. " AND firstReleaseDate <= " .. next_week,
+    filter = "type = \"game\" AND cancelled != true AND publishedAt IS NOT NULL AND firstReleaseDate > " .. current_date .. " AND firstReleaseDate <= " .. next_week,
     sort = toarray({ "firstReleaseDate:asc" }),
     attributesToRetrieve = toarray({ "uri", "name", "slug", "media", "firstReleaseDate" })
   }

@@ -208,6 +208,8 @@ function handle()
     table.insert(filter_parts, "cancelled != true")
   end
 
+  table.insert(filter_parts, "publishedAt IS NOT NULL")
+
   if types_set then
     local parts = {}
     for t, _ in pairs(types_set) do

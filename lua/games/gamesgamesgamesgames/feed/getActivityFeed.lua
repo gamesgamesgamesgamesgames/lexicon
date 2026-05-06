@@ -114,7 +114,7 @@ function handle()
     local body = {
       q = "",
       limit = #game_uris,
-      filter = "uri IN [" .. table.concat(game_uris, ", ") .. "]",
+      filter = "uri IN [" .. table.concat(game_uris, ", ") .. "] AND publishedAt IS NOT NULL",
       attributesToRetrieve = toarray({ "uri", "name", "slug", "media", "applicationType", "genres", "themes", "releases" })
     }
     local resp = http.post(SEARCH_URL, { headers = SEARCH_HEADERS, body = json.encode(body) })
@@ -132,7 +132,7 @@ function handle()
     local body = {
       q = "",
       limit = #igdb_ids,
-      filter = "externalIds.igdb IN [" .. table.concat(igdb_ids, ", ") .. "]",
+      filter = "externalIds.igdb IN [" .. table.concat(igdb_ids, ", ") .. "] AND publishedAt IS NOT NULL",
       attributesToRetrieve = toarray({ "uri", "name", "slug", "media", "applicationType", "genres", "themes", "releases", "externalIds" })
     }
     local resp = http.post(SEARCH_URL, { headers = SEARCH_HEADERS, body = json.encode(body) })

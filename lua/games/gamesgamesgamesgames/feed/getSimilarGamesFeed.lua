@@ -36,7 +36,7 @@ function handle()
     id = to_doc_id(game_uri),
     embedder = "game-similarity",
     limit = limit + 1,
-    filter = 'type = "game" AND applicationType = "game"',
+    filter = 'type = "game" AND applicationType = "game" AND publishedAt IS NOT NULL',
     attributesToRetrieve = toarray({ "uri", "name", "slug", "media" })
   }
 
