@@ -1,4 +1,6 @@
 import { createMDX } from "fumadocs-mdx/next";
+import { dirname, join } from "path";
+import { fileURLToPath } from "url";
 
 const withMDX = createMDX();
 
@@ -6,6 +8,7 @@ const withMDX = createMDX();
 const config = {
   reactStrictMode: true,
   output: "standalone",
+  outputFileTracingRoot: join(dirname(fileURLToPath(import.meta.url)), "../../"),
   transpilePackages: ["@lexicon/design-system"],
 };
 
