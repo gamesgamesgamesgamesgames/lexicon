@@ -3,7 +3,7 @@ WORKDIR /app
 COPY package.json bun.lock ./
 COPY packages/docs/package.json packages/docs/
 COPY packages/design-system/package.json packages/design-system/
-RUN bun install --frozen-lockfile --production=false
+RUN bun install --frozen-lockfile
 
 FROM oven/bun:1 AS builder
 WORKDIR /app
