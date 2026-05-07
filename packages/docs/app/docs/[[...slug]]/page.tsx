@@ -30,5 +30,21 @@ export async function generateMetadata({ params }: { params: Promise<{ slug?: st
   const { slug } = await params;
   const page = source.getPage(slug);
   if (!page) return {};
-  return { title: page.data.title, description: page.data.description };
+
+  const ogSlug = slug?.join('/') ?? '';
+  return {
+    title: page.data.title,
+    description: page.data.description,
+    openGraph: {
+      title: page.data.title,
+      description: page.data.description,
+      images: [`/api/og?slug=${encodeURIComponent(ogSlug)}`],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: page.data.title,
+      description: page.data.description,
+      images: [`/api/og?slug=${encodeURIComponent(ogSlug)}`],
+    },
+  };
 }

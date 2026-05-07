@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { RootProvider } from "fumadocs-ui/provider";
-import { geistSans, geistMono } from "@lexicon/design-system/fonts";
+import { fontVariables } from "@lexicon/design-system/fonts";
 import "./global.css";
 
 export const metadata = {
@@ -12,7 +12,7 @@ export const metadata = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en" className={`${geistSans.variable} ${geistMono.variable} dark`} suppressHydrationWarning>
+    <html lang="en" className={`${fontVariables} dark`} suppressHydrationWarning>
       <body>
         <RootProvider>{children}</RootProvider>
       </body>
