@@ -31,7 +31,7 @@ function Hero() {
 						<span className="h-1.5 w-1.5 rounded-full bg-fg/70" />
 						v1 · games.gamesgamesgamesgames.*
 					</span>
-					<h1 className="font-mono text-4xl font-medium tracking-tight text-fg sm:text-5xl md:text-6xl">
+					<h1 className="font-[family-name:var(--font-dragonsteel)] text-5xl tracking-tight text-fg sm:text-6xl md:text-7xl">
 						The Pentaract
 					</h1>
 					<p className="max-w-2xl text-lg text-fg-muted">

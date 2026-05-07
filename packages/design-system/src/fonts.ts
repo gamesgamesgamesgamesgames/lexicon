@@ -16,11 +16,11 @@ export const geistMono = Geist_Mono({
 export const dragonsteel = localFont({
 	src: [
 		{
-			path: "./fonts/Dragonsteel-Regular.woff2",
+			path: "./fonts/Dragonsteel-Rough.woff2",
 			weight: "400",
 			style: "normal",
 		},
-		{ path: "./fonts/Dragonsteel-Rough.woff2", weight: "400", style: "italic" },
+		{ path: "./fonts/Dragonsteel-Regular.woff2", weight: "400", style: "italic" },
 	],
 	variable: "--font-dragonsteel",
 	display: "swap",

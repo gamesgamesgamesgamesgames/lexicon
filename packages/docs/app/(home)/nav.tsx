@@ -18,9 +18,9 @@ export function Nav() {
   return (
     <header className="sticky top-0 z-40 border-b border-border/60 bg-bg/80 backdrop-blur-md">
       <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-6">
-        <Link href="/" className="flex items-center gap-2 font-mono text-sm tracking-tight text-fg">
+        <Link href="/" className="flex items-center gap-2 text-sm tracking-tight text-fg">
           <Image src="/pentaract-logo.png" alt="" width={24} height={24} className="h-6 w-6" />
-          The Pentaract
+          <span className="font-[family-name:var(--font-dragonsteel)] text-lg">The Pentaract</span>
         </Link>
         <nav className="flex items-center gap-1">
           <Link
