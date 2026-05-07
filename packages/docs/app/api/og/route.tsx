@@ -12,8 +12,10 @@ export async function GET(request: NextRequest) {
 	const title = page?.data.title ?? 'The Pentaract'
 	const description = page?.data.description ?? 'AT Protocol game lexicons'
 
+	const publicDir = join(process.cwd(), 'packages/docs/public')
+
 	const logoPng = await readFile(
-		join(process.cwd(), 'public/pentaract-logo.png'),
+		join(publicDir, 'pentaract-logo.png'),
 	)
 	const logoSrc = `data:image/png;base64,${logoPng.toString('base64')}`
 
@@ -24,7 +26,7 @@ export async function GET(request: NextRequest) {
 		fetch(
 			'https://fonts.gstatic.com/s/specialelite/v20/XLYgIZbkc4JPUL5CVArUVL0nhnc.ttf',
 		).then((res) => res.arrayBuffer()),
-		readFile(join(process.cwd(), 'public/Dragonsteel-Rough.otf')),
+		readFile(join(publicDir, 'Dragonsteel-Rough.otf')),
 	])
 
 	return new ImageResponse(

@@ -6,15 +6,18 @@ export const alt = 'The Pentaract — AT Protocol game lexicons'
 export const size = { width: 1200, height: 630 }
 export const contentType = 'image/png'
 
-export default async function OGImage() {
-	const logoPng = await readFile(
-		join(process.cwd(), 'public/pentaract-logo.png'),
-	)
-	const logoSrc = `data:image/png;base64,${logoPng.toString('base64')}`
+const publicDir = join(process.cwd(), 'packages/docs/public')
 
-	const geistFont = await fetch(
-		'https://cdn.jsdelivr.net/fontsource/fonts/geist-sans@latest/latin-600-normal.ttf',
-	).then((res) => res.arrayBuffer())
+export default async function OGImage() {
+	const [logoPng, specialEliteFont, dragonsteelFont] = await Promise.all([
+		readFile(join(publicDir, 'pentaract-logo.png')),
+		fetch(
+			'https://fonts.gstatic.com/s/specialelite/v20/XLYgIZbkc4JPUL5CVArUVL0nhnc.ttf',
+		).then((res) => res.arrayBuffer()),
+		readFile(join(publicDir, 'Dragonsteel-Rough.otf')),
+	])
+
+	const logoSrc = `data:image/png;base64,${logoPng.toString('base64')}`
 
 	return new ImageResponse(
 		(
@@ -23,45 +26,68 @@ export default async function OGImage() {
 					width: '100%',
 					height: '100%',
 					display: 'flex',
-					alignItems: 'center',
-					justifyContent: 'center',
+					flexDirection: 'column',
 					background: 'rgb(10, 10, 11)',
 					padding: '60px 80px',
-					gap: 60,
 				}}>
-				<img
-					src={logoSrc}
-					width={280}
-					height={280}
-				/>
+				<div
+					style={{
+						display: 'flex',
+						alignItems: 'center',
+						gap: 60,
+						flex: 1,
+					}}>
+					<img
+						src={logoSrc}
+						width={340}
+						height={340}
+					/>
+
+					<div
+						style={{
+							display: 'flex',
+							flexDirection: 'column',
+							gap: 16,
+							flex: 1,
+						}}>
+						<div
+							style={{
+								fontSize: 88,
+								fontFamily: 'Dragonsteel',
+								fontWeight: 400,
+								color: 'rgb(250, 250, 250)',
+								lineHeight: 1.1,
+							}}>
+							The Pentaract
+						</div>
+
+						<div
+							style={{
+								fontSize: 40,
+								fontFamily: 'Special Elite',
+								fontWeight: 400,
+								color: 'rgb(161, 161, 170)',
+								lineHeight: 1.4,
+							}}>
+							The AppView for the games.gamesgamesgamesgames.* AT Protocol lexicons
+						</div>
+					</div>
+				</div>
 
 				<div
 					style={{
 						display: 'flex',
-						flexDirection: 'column',
-						gap: 16,
-						flex: 1,
+						justifyContent: 'flex-end',
+						width: '100%',
 					}}>
 					<div
 						style={{
-							fontSize: 64,
-							fontFamily: 'Geist',
-							fontWeight: 600,
-							color: 'rgb(250, 250, 250)',
-							lineHeight: 1.1,
+							fontSize: 48,
+							fontFamily: 'Dragonsteel',
+							fontWeight: 400,
+							color: 'rgb(115, 115, 122)',
 						}}>
 						The Pentaract
-					</div>
-
-					<div
-						style={{
-							fontSize: 28,
-							fontFamily: 'Geist',
-							fontWeight: 600,
-							color: 'rgb(161, 161, 170)',
-							lineHeight: 1.4,
-						}}>
-						The AppView for the games.gamesgamesgamesgames.* AT Protocol lexicons
 					</div>
 				</div>
 			</div>
@@ -70,9 +96,15 @@ export default async function OGImage() {
 			...size,
 			fonts: [
 				{
-					name: 'Geist',
-					data: geistFont,
-					weight: 600,
+					name: 'Special Elite',
+					data: specialEliteFont,
+					weight: 400,
+					style: 'normal',
+				},
+				{
+					name: 'Dragonsteel',
+					data: dragonsteelFont,
+					weight: 400,
 					style: 'normal',
 				},
 			],
