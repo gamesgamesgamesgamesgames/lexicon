@@ -27,5 +27,10 @@ export const baseOptions: BaseLayoutProps = {
       url: "https://github.com/gamesgamesgamesgamesgames/lexicon",
       external: true,
     },
+    {
+      text: "Discord",
+      url: "https://discord.gg/BUPnjaBwRZ",
+      external: true,
+    },
   ],
 };

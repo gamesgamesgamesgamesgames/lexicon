@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 const GITHUB_URL = "https://github.com/gamesgamesgamesgamesgames/lexicon";
+const DISCORD_URL = "https://discord.gg/BUPnjaBwRZ";
 
 export function Footer() {
 	return (
@@ -14,6 +15,9 @@ export function Footer() {
 				</Link>
 				<a href={GITHUB_URL} className="hover:text-fg">
 					GitHub
+				</a>
+				<a href={DISCORD_URL} className="hover:text-fg">
+					Discord
 				</a>
 			</div>
 		</footer>

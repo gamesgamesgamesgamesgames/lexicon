@@ -22,6 +22,10 @@ Are you building something with this namespace? We'd love to hear about it! Open
 - [Code of Conduct](CODE_OF_CONDUCT.md)
 - [Contributing Guide](CONTRIBUTING.md)
 
+## Community
+
+Questions? Suggestions? Just need a little help? Join the [Discord](https://discord.gg/BUPnjaBwRZ)!
+
 ## Contributing
 
 This repo is open to contributions! You can find more information about making RFCs and pull requests in our [contribution guide](CONTRIBUTING.md).

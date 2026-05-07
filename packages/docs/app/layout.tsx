@@ -4,6 +4,7 @@ import { geistSans, geistMono } from "@lexicon/design-system/fonts";
 import "./global.css";
 
 export const metadata = {
+  metadataBase: new URL(`https://${process.env.VERCEL_PROJECT_PRODUCTION_URL ?? "localhost:3000"}`),
   title: "The Pentaract",
   description: "The AppView for the games.gamesgamesgamesgames.* ATProto lexicons",
   icons: { icon: "/pentaract-logo.png" },

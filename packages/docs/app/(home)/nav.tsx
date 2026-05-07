@@ -7,6 +7,7 @@ import { Button } from "@lexicon/design-system";
 import { useAuth } from "@/lib/auth";
 
 const GITHUB_URL = "https://github.com/gamesgamesgamesgamesgames/lexicon";
+const DISCORD_URL = "https://discord.gg/BUPnjaBwRZ";
 
 export function Nav() {
   const { session, loading, login, logout } = useAuth();
@@ -33,6 +34,12 @@ export function Nav() {
             className="inline-flex h-8 items-center rounded-md px-3 text-xs text-fg-muted hover:text-fg"
           >
             GitHub
+          </a>
+          <a
+            href={DISCORD_URL}
+            className="inline-flex h-8 items-center rounded-md px-3 text-xs text-fg-muted hover:text-fg"
+          >
+            Discord
           </a>
           {loading ? null : session ? (
             <>
