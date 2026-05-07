@@ -92,14 +92,15 @@ function handle()
     })
   end
 
-  -- Get listItem addition events (video games only)
+  -- Get listItem addition events (filter to video games in Lua)
   local list_item_rows = db.raw(
-    "SELECT uri, record, indexed_at FROM records WHERE collection = $1 AND did = $2 AND json_extract(record, '$.creativeWorkType') = 'video_game' ORDER BY indexed_at DESC LIMIT $3",
+    "SELECT uri, record, indexed_at FROM records WHERE collection = $1 AND did = $2 ORDER BY indexed_at DESC LIMIT $3",
     {"social.popfeed.feed.listItem", did, fetch_limit}
   )
 
   for _, row in ipairs(list_item_rows or {}) do
     local rec = json.decode(row.record)
+    if rec.creativeWorkType ~= "video_game" then goto continue_list_item end
     local ts = rec.addedAt or row.indexed_at
     local igdb_id = rec.identifiers and rec.identifiers.igdbId
     if igdb_id then
@@ -120,6 +121,7 @@ function handle()
         list_name = list_name,
       })
     end
+    ::continue_list_item::
   end
 
   -- Sort by created_at descending

@@ -51,36 +51,40 @@ function handle()
     end
   end
 
-  -- Build list views with item counts and optional hasGame
+  -- Fetch all listItem records for this user once, then process in Lua
+  local all_items = db.raw(
+    "SELECT record FROM records WHERE collection = $1 AND did = $2",
+    {"social.popfeed.feed.listItem", did}
+  )
+
+  -- Build per-list counts and hasGame lookup
+  local item_counts = {}
+  local has_game_map = {}
+  for _, item_row in ipairs(all_items or {}) do
+    local item_rec = json.decode(item_row.record)
+    if item_rec.creativeWorkType == "video_game" and item_rec.listUri then
+      item_counts[item_rec.listUri] = (item_counts[item_rec.listUri] or 0) + 1
+      if check_igdb_id and item_rec.identifiers and item_rec.identifiers.igdbId == check_igdb_id then
+        has_game_map[item_rec.listUri] = true
+      end
+    end
+  end
+
+  -- Build list views
   local lists = {}
   for _, row in ipairs(list_rows) do
     local rec = json.decode(row.record)
-
-    -- Count items in this list (video_game only)
-    local count_rows = db.raw(
-      "SELECT COUNT(*) as count FROM records WHERE collection = $1 AND did = $2 AND json_extract(record, '$.listUri') = $3 AND json_extract(record, '$.creativeWorkType') = 'video_game'",
-      {"social.popfeed.feed.listItem", did, row.uri}
-    )
-    local item_count = 0
-    if count_rows and #count_rows > 0 then
-      item_count = tonumber(count_rows[1].count) or 0
-    end
 
     local view = {
       uri = row.uri,
       name = rec.name,
       description = rec.description,
-      itemCount = item_count,
+      itemCount = item_counts[row.uri] or 0,
       createdAt = rec.createdAt or row.indexed_at
     }
 
-    -- Check if the specified game is in this list
     if check_igdb_id then
-      local has_rows = db.raw(
-        "SELECT COUNT(*) as count FROM records WHERE collection = $1 AND did = $2 AND json_extract(record, '$.listUri') = $3 AND json_extract(record, '$.identifiers.igdbId') = $4 AND json_extract(record, '$.creativeWorkType') = 'video_game'",
-        {"social.popfeed.feed.listItem", did, row.uri, check_igdb_id}
-      )
-      view.hasGame = has_rows and #has_rows > 0 and tonumber(has_rows[1].count) > 0
+      view.hasGame = has_game_map[row.uri] == true
     end
 
     table.insert(lists, view)
