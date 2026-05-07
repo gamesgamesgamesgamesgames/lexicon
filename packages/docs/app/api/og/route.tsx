@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
 	const title = page?.data.title ?? 'The Pentaract'
 	const description = page?.data.description ?? 'AT Protocol game lexicons'
 
-	const publicDir = join(process.cwd(), 'packages/docs/public')
+	const publicDir = join(process.cwd(), 'public')
 
 	const logoPng = await readFile(
 		join(publicDir, 'pentaract-logo.png'),

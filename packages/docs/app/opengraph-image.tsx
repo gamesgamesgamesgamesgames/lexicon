@@ -6,7 +6,7 @@ export const alt = 'The Pentaract — AT Protocol game lexicons'
 export const size = { width: 1200, height: 630 }
 export const contentType = 'image/png'
 
-const publicDir = join(process.cwd(), 'packages/docs/public')
+const publicDir = join(process.cwd(), 'public')
 
 export default async function OGImage() {
 	const [logoPng, specialEliteFont, dragonsteelFont] = await Promise.all([
