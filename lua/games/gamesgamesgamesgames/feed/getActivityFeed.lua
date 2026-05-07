@@ -75,6 +75,53 @@ function handle()
     end
   end
 
+  -- Get list creation events
+  local list_rows = db.raw(
+    "SELECT uri, record, indexed_at FROM records WHERE collection = $1 AND did = $2 ORDER BY indexed_at DESC LIMIT $3",
+    {"social.popfeed.feed.list", did, fetch_limit}
+  )
+
+  for _, row in ipairs(list_rows or {}) do
+    local rec = json.decode(row.record)
+    local ts = rec.createdAt or row.indexed_at
+    table.insert(activities, {
+      type = "listCreate",
+      created_at = ts,
+      list_uri = row.uri,
+      list_name = rec.name,
+    })
+  end
+
+  -- Get listItem addition events (video games only)
+  local list_item_rows = db.raw(
+    "SELECT uri, record, indexed_at FROM records WHERE collection = $1 AND did = $2 AND json_extract(record, '$.creativeWorkType') = 'video_game' ORDER BY indexed_at DESC LIMIT $3",
+    {"social.popfeed.feed.listItem", did, fetch_limit}
+  )
+
+  for _, row in ipairs(list_item_rows or {}) do
+    local rec = json.decode(row.record)
+    local ts = rec.addedAt or row.indexed_at
+    local igdb_id = rec.identifiers and rec.identifiers.igdbId
+    if igdb_id then
+      local list_name = nil
+      if rec.listUri then
+        local list_rec = db.get(rec.listUri)
+        if list_rec then
+          local list_data = json.decode(list_rec.record)
+          list_name = list_data.name
+        end
+      end
+
+      table.insert(activities, {
+        type = "listAddGame",
+        created_at = ts,
+        igdb_id = igdb_id,
+        list_uri = rec.listUri,
+        list_name = list_name,
+      })
+    end
+  end
+
   -- Sort by created_at descending
   table.sort(activities, function(a, b)
     return a.created_at > b.created_at
@@ -103,6 +150,9 @@ function handle()
       seen_uris[item.game_uri] = true
       game_uris[#game_uris + 1] = '"' .. item.game_uri .. '"'
     elseif item.type == "review" and item.igdb_id and not seen_igdb[item.igdb_id] then
+      seen_igdb[item.igdb_id] = true
+      igdb_ids[#igdb_ids + 1] = '"' .. item.igdb_id .. '"'
+    elseif item.type == "listAddGame" and item.igdb_id and not seen_igdb[item.igdb_id] then
       seen_igdb[item.igdb_id] = true
       igdb_ids[#igdb_ids + 1] = '"' .. item.igdb_id .. '"'
     end
@@ -149,44 +199,69 @@ function handle()
   -- Build feed
   local feed = {}
   for _, item in ipairs(page_items) do
-    local game_hit = nil
-
-    if item.type == "like" then
-      game_hit = hits_by_uri[item.game_uri]
-    elseif item.type == "review" then
-      game_hit = hits_by_igdb[item.igdb_id]
-    end
-
-    if game_hit then
+    if item.type == "listCreate" then
       local entry = {
         type = item.type,
         createdAt = item.created_at,
-        game = {
-          uri = game_hit.uri,
-          name = game_hit.name,
-          slug = game_hit.slug,
-          media = game_hit.media,
-          applicationType = game_hit.applicationType,
-          genres = game_hit.genres,
-          themes = game_hit.themes,
-          releases = game_hit.releases,
+        list = {
+          ["$type"] = "games.gamesgamesgamesgames.defs#activityListView",
+          uri = item.list_uri,
+          name = item.list_name or "Unnamed list",
+          createdAt = item.created_at,
         },
       }
+      feed[#feed + 1] = entry
+    else
+      local game_hit = nil
 
-      if item.type == "review" and item.review then
-        entry.review = {
-          ["$type"] = "games.gamesgamesgamesgames.defs#activityReviewView",
-          uri = item.review_uri,
-          rating = item.review.rating,
-          text = item.review.text,
-          title = item.review.title,
-          tags = item.review.tags,
-          containsSpoilers = item.review.containsSpoilers,
-          createdAt = item.review.createdAt,
-        }
+      if item.type == "like" then
+        game_hit = hits_by_uri[item.game_uri]
+      elseif item.type == "review" then
+        game_hit = hits_by_igdb[item.igdb_id]
+      elseif item.type == "listAddGame" then
+        game_hit = hits_by_igdb[item.igdb_id]
       end
 
-      feed[#feed + 1] = entry
+      if game_hit then
+        local entry = {
+          type = item.type,
+          createdAt = item.created_at,
+          game = {
+            uri = game_hit.uri,
+            name = game_hit.name,
+            slug = game_hit.slug,
+            media = game_hit.media,
+            applicationType = game_hit.applicationType,
+            genres = game_hit.genres,
+            themes = game_hit.themes,
+            releases = game_hit.releases,
+          },
+        }
+
+        if item.type == "review" and item.review then
+          entry.review = {
+            ["$type"] = "games.gamesgamesgamesgames.defs#activityReviewView",
+            uri = item.review_uri,
+            rating = item.review.rating,
+            text = item.review.text,
+            title = item.review.title,
+            tags = item.review.tags,
+            containsSpoilers = item.review.containsSpoilers,
+            createdAt = item.review.createdAt,
+          }
+        end
+
+        if item.type == "listAddGame" then
+          entry.list = {
+            ["$type"] = "games.gamesgamesgamesgames.defs#activityListView",
+            uri = item.list_uri,
+            name = item.list_name or "Unnamed list",
+            createdAt = item.created_at,
+          }
+        end
+
+        feed[#feed + 1] = entry
+      end
     end
   end
 

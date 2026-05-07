@@ -993,11 +993,11 @@
 
 		"activityFeedItem": {
 			"type": "object",
-			"required": ["type", "createdAt", "game"],
+			"required": ["type", "createdAt"],
 			"properties": {
 				"type": {
 					"type": "string",
-					"knownValues": ["like", "review"],
+					"knownValues": ["like", "review", "listCreate", "listAddGame"],
 					"description": "The type of activity."
 				},
 				"createdAt": {
@@ -1014,6 +1014,11 @@
 					"type": "ref",
 					"ref": "games.gamesgamesgamesgames.defs#activityReviewView",
 					"description": "Review data, present when type is 'review'."
+				},
+				"list": {
+					"type": "ref",
+					"ref": "games.gamesgamesgamesgames.defs#activityListView",
+					"description": "List data, present when type is 'listCreate' or 'listAddGame'."
 				}
 			}
 		},
@@ -1043,6 +1048,24 @@
 				},
 				"containsSpoilers": {
 					"type": "boolean"
+				},
+				"createdAt": {
+					"type": "string",
+					"format": "datetime"
+				}
+			}
+		},
+
+		"activityListView": {
+			"type": "object",
+			"required": ["uri", "name", "createdAt"],
+			"properties": {
+				"uri": {
+					"type": "string",
+					"format": "at-uri"
+				},
+				"name": {
+					"type": "string"
 				},
 				"createdAt": {
 					"type": "string",

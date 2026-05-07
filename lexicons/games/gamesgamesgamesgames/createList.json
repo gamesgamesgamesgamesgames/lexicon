@@ -1,0 +1,46 @@
+{
+  "$type": "com.atproto.lexicon.schema",
+  "lexicon": 1,
+  "id": "games.gamesgamesgamesgames.createList",
+  "defs": {
+    "main": {
+      "type": "procedure",
+      "description": "Create a new list for the authenticated user.",
+      "input": {
+        "encoding": "application/json",
+        "schema": {
+          "type": "object",
+          "required": ["name"],
+          "properties": {
+            "name": {
+              "type": "string",
+              "maxLength": 100,
+              "description": "The name of the list."
+            },
+            "description": {
+              "type": "string",
+              "maxLength": 500,
+              "description": "Optional description of the list."
+            }
+          }
+        }
+      },
+      "output": {
+        "encoding": "application/json",
+        "schema": {
+          "type": "object",
+          "required": ["uri", "cid"],
+          "properties": {
+            "uri": {
+              "type": "string",
+              "format": "at-uri"
+            },
+            "cid": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    }
+  }
+}
