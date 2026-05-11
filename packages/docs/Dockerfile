@@ -7,6 +7,8 @@ RUN bun install --frozen-lockfile
 
 FROM oven/bun:1 AS builder
 WORKDIR /app
+ARG NEXT_PUBLIC_CLIENT_KEY
+ARG NEXT_PUBLIC_HAPPYVIEW_URL
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=deps /app/packages/docs/node_modules ./packages/docs/node_modules
 COPY --from=deps /app/packages/design-system/node_modules ./packages/design-system/node_modules

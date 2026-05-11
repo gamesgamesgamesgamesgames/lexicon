@@ -64,6 +64,9 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha,scope=docs
           cache-to: type=gha,scope=docs,mode=max,ignore-error=true
+          build-args: |
+            NEXT_PUBLIC_CLIENT_KEY=${{ secrets.DOCS_CLIENT_KEY }}
+            NEXT_PUBLIC_HAPPYVIEW_URL=https://gamesgamesgamesgames.games
 
   deploy:
     name: Deploy docs
