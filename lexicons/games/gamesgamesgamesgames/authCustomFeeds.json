@@ -1,0 +1,28 @@
+{
+	"lexicon": 1,
+	"id": "games.gamesgamesgamesgames.authCustomFeeds",
+	"defs": {
+		"main": {
+			"type": "permission-set",
+			"title": "Custom Game Feeds",
+			"detail": "Create and manage custom feed generators.",
+			"permissions": [
+				{
+					"type": "permission",
+					"resource": "repo",
+					"collection": ["games.gamesgamesgamesgames.feed.generator"]
+				},
+				{
+					"type": "permission",
+					"resource": "rpc",
+					"inheritAud": true,
+					"lxm": [
+						"games.gamesgamesgamesgames.feed.describeFeedGenerator",
+						"games.gamesgamesgamesgames.feed.getFeedSkeleton",
+						"games.gamesgamesgamesgames.feed.getGameFeed"
+					]
+				}
+			]
+		}
+	}
+}

@@ -1,0 +1,38 @@
+{
+	"lexicon": 1,
+	"id": "games.gamesgamesgamesgames.authProfiles",
+	"defs": {
+		"main": {
+			"type": "permission-set",
+			"title": "Profiles",
+			"detail": "Manage your profile and view personalized feeds.",
+			"permissions": [
+				{
+					"type": "permission",
+					"resource": "repo",
+					"collection": [
+						"games.gamesgamesgamesgames.actor.credit",
+						"games.gamesgamesgamesgames.actor.game",
+						"games.gamesgamesgamesgames.actor.profile",
+						"games.gamesgamesgamesgames.actor.stats"
+					]
+				},
+				{
+					"type": "permission",
+					"resource": "rpc",
+					"inheritAud": true,
+					"lxm": [
+						"games.gamesgamesgamesgames.actor.createProfile",
+						"games.gamesgamesgamesgames.actor.getProfile",
+						"games.gamesgamesgamesgames.actor.putProfile",
+						"games.gamesgamesgamesgames.feed.getLikesFeed",
+						"games.gamesgamesgamesgames.feed.getPersonalizedFeed",
+						"games.gamesgamesgamesgames.getProfile",
+						"games.gamesgamesgamesgames.getStats",
+						"games.gamesgamesgamesgames.searchProfilesTypeahead"
+					]
+				}
+			]
+		}
+	}
+}

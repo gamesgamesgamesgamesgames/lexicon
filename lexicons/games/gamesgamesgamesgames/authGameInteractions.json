@@ -1,0 +1,35 @@
+{
+	"lexicon": 1,
+	"id": "games.gamesgamesgamesgames.authGameInteractions",
+	"defs": {
+		"main": {
+			"type": "permission-set",
+			"title": "Game Interactions",
+			"detail": "Like games and manage lists.",
+			"permissions": [
+				{
+					"type": "permission",
+					"resource": "repo",
+					"collection": [
+						"games.gamesgamesgamesgames.collection",
+						"games.gamesgamesgamesgames.graph.like",
+						"social.popfeed.feed.list",
+						"social.popfeed.feed.listItem"
+					]
+				},
+				{
+					"type": "permission",
+					"resource": "rpc",
+					"inheritAud": true,
+					"lxm": [
+						"games.gamesgamesgamesgames.createList",
+						"games.gamesgamesgamesgames.getUserLists",
+						"games.gamesgamesgamesgames.graph.getLikes",
+						"games.gamesgamesgamesgames.graph.toggleLike",
+						"games.gamesgamesgamesgames.toggleListItem"
+					]
+				}
+			]
+		}
+	}
+}

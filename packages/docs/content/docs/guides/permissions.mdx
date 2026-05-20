@@ -3,38 +3,71 @@ title: Permission sets
 description: Permission sets that scope what an app can do on The Pentaract.
 ---
 
-The namespace defines three permission sets that describe what an app is allowed to do with a user's repo. Picking the right one keeps your app's scope honest and gives users a clearer consent prompt.
+The namespace defines several permission sets that describe what an app is allowed to do with a user's repo. Request only the sets your app actually needs — this keeps your scope honest and gives users a clearer consent prompt.
 
 For details on how to request a permission set during authentication, see the [Authentication guide](/docs/guides/authentication#requesting-a-permission-set).
 
-## `authBasic`
+## `authProfiles`
 
-Read public data, manage the user's own records, and participate in the community. This is the default. Almost every user-facing app asks for `authBasic`.
+Manage the user's profile and view personalized feeds. Most user-facing apps will request this set.
 
 What it covers:
 
-- Reading any public `game`, `actor.profile`, `org.profile`, or feed.
-- Writing to the user's own `actor.profile` via `actor.putProfile`.
-- Liking/unliking games via `toggleLike`.
+- Reading and writing `actor.profile`, `actor.credit`, `actor.game`, and `actor.stats` records.
+- Creating and updating profiles via `actor.createProfile`, `actor.getProfile`, and `actor.putProfile`.
+- Fetching the user's likes feed (`getLikesFeed`) and personalized feed (`getPersonalizedFeed`).
+- Profile search via `searchProfilesTypeahead`.
+- Reading profile stats via `getProfile` and `getStats`.
+
+## `authGameInteractions`
+
+Like games and manage lists. Request this set for any app that lets users interact with games.
+
+What it covers:
+
+- Liking/unliking games via `graph.toggleLike` and `graph.getLikes`.
+- Creating and managing lists via `createList`, `getUserLists`, and `toggleListItem`.
+- Writing `graph.like`, `collection`, and Popfeed list records.
+
+## `authContributions`
+
+Submit and view game data contributions. Request this set if your app lets users propose changes to game records.
+
+What it covers:
+
 - Submitting contributions via `createContribution`.
-- Submitting ownership claims via `createClaim`.
-- Creating collections, game library entries (`actor.game`), and stats (`actor.stats`).
+- Viewing contributions via `getContribution`, `getContributionStats`, and `listContributions`.
 
-What it does NOT cover:
+## `authCustomFeeds`
 
-- Writing game records directly (use contributions instead, or request `authStudio`).
-- Reviewing or moderating contributions and claims.
-- Writing to organization profiles the user doesn't own.
+Create and manage custom feed generators.
+
+What it covers:
+
+- Writing `feed.generator` records.
+- Feed generator operations via `feed.describeFeedGenerator`, `feed.getFeedSkeleton`, and `feed.getGameFeed`.
+
+## `authGameBrowsing`
+
+View and search game data. Request this set for any app that displays game information.
+
+What it covers:
+
+- Fetching games via `getGame`, `getPopularGames`, and `getGenreCounts`.
+- Listing games via `listGames` and `listOrgGames`.
+- Searching via `search`.
+- Reading reviews via `getReviews`.
 
 ## `authStudio`
 
-Create and manage games, organization profiles, and credits. This is for authoring tools used by studios and publishers.
+Create and manage games, organization profiles, credits, and ownership claims. This is for authoring tools used by studios and publishers.
 
 What it covers:
 
 - Creating and updating `game` records via `createGame` and `putGame`.
 - Creating and updating `org.profile` records via `org.createProfile` and `org.putProfile`.
 - Writing `org.credit` records (crediting an org on a game).
+- Submitting and managing ownership claims via `createClaim`, `getClaim`, and `listClaims`.
 - Accepting contributions and migrating claims.
 
 ## `authAdmin`
@@ -48,6 +81,12 @@ What it covers:
 - Writing `contributionVerification` records.
 
 Grant `authAdmin` only to trusted operators. The Pentaract restricts it to specific DIDs rather than handing it out via OAuth.
+
+## `authBasic` (deprecated)
+
+<Callout kind="warn">
+`authBasic` is deprecated. Use the granular permission sets above instead: `authProfiles`, `authGameInteractions`, `authContributions`, `authCustomFeeds`, and `authGameBrowsing`. `authBasic` will continue to work as an umbrella for backwards compatibility, but new apps should request only the specific sets they need.
+</Callout>
 
 ## Pentaract-internal writes
 

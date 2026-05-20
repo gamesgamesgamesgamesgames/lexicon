@@ -1,0 +1,29 @@
+{
+	"lexicon": 1,
+	"id": "games.gamesgamesgamesgames.authContributions",
+	"defs": {
+		"main": {
+			"type": "permission-set",
+			"title": "Contributions",
+			"detail": "Submit and view game data contributions.",
+			"permissions": [
+				{
+					"type": "permission",
+					"resource": "repo",
+					"collection": ["games.gamesgamesgamesgames.contribution"]
+				},
+				{
+					"type": "permission",
+					"resource": "rpc",
+					"inheritAud": true,
+					"lxm": [
+						"games.gamesgamesgamesgames.createContribution",
+						"games.gamesgamesgamesgames.getContribution",
+						"games.gamesgamesgamesgames.getContributionStats",
+						"games.gamesgamesgamesgames.listContributions"
+					]
+				}
+			]
+		}
+	}
+}

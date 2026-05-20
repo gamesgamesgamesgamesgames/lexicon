@@ -1,0 +1,27 @@
+{
+	"lexicon": 1,
+	"id": "games.gamesgamesgamesgames.authGameBrowsing",
+	"defs": {
+		"main": {
+			"type": "permission-set",
+			"title": "Game Browsing",
+			"detail": "View and search game data.",
+			"permissions": [
+				{
+					"type": "permission",
+					"resource": "rpc",
+					"inheritAud": true,
+					"lxm": [
+						"games.gamesgamesgamesgames.getGame",
+						"games.gamesgamesgamesgames.getGenreCounts",
+						"games.gamesgamesgamesgames.getPopularGames",
+						"games.gamesgamesgamesgames.getReviews",
+						"games.gamesgamesgamesgames.listGames",
+						"games.gamesgamesgamesgames.listOrgGames",
+						"games.gamesgamesgamesgames.search"
+					]
+				}
+			]
+		}
+	}
+}

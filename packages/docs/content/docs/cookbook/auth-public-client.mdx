@@ -83,12 +83,12 @@ if (result) {
 ```ts
 // Full-page redirect
 await oauthClient.signIn("user.bsky.social", {
-  scope: "atproto include:games.gamesgamesgamesgames.authBasic",
+  scope: "atproto include:games.gamesgamesgamesgames.authGameInteractions",
 });
 
 // Or via a popup
 const session = await oauthClient.signIn("user.bsky.social", {
-  scope: "atproto include:games.gamesgamesgamesgames.authBasic",
+  scope: "atproto include:games.gamesgamesgamesgames.authGameInteractions",
   display: "popup",
 });
 ```
@@ -97,12 +97,12 @@ const session = await oauthClient.signIn("user.bsky.social", {
 ```js
 // Full-page redirect
 await oauthClient.signIn("user.bsky.social", {
-  scope: "atproto include:games.gamesgamesgamesgames.authBasic",
+  scope: "atproto include:games.gamesgamesgamesgames.authGameInteractions",
 });
 
 // Or via a popup
 const session = await oauthClient.signIn("user.bsky.social", {
-  scope: "atproto include:games.gamesgamesgamesgames.authBasic",
+  scope: "atproto include:games.gamesgamesgamesgames.authGameInteractions",
   display: "popup",
 });
 ```

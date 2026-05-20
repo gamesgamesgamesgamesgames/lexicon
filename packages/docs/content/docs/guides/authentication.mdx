@@ -37,7 +37,7 @@ See the [full confidential client walkthrough](/docs/cookbook/auth-confidential-
 
 ## Permission sets
 
-The namespace defines three permission sets — `authBasic`, `authStudio`, and `authAdmin` — that scope what an app can do. Pick the smallest set that covers your app's needs.
+The namespace defines several permission sets — `authProfiles`, `authGameInteractions`, `authContributions`, `authCustomFeeds`, `authGameBrowsing`, `authStudio`, and `authAdmin` — that scope what an app can do. Request only the sets your app actually needs.
 
 See the [Permission sets reference](/docs/guides/permissions) for the full breakdown of what each set grants.
 
@@ -48,7 +48,7 @@ The easiest way to handle user authentication is with the [HappyView JavaScript 
 <Callout kind="warn">
 The Pentaract **will not** allow a user to be authenticated with scopes that aren't listed in the API client's config.  Make sure all scopes your application will ever request are included in the API client config in the [Pentaract dashboard](/dashboard).
 
-This means that if `include:games.gamesgamesgamesgames.authBasic` is the only scope listed in your API client, attempting to log a user in with the `include:games.gamesgamesgamesgames.authStudio` scope **will throw an error**.
+This means that if `include:games.gamesgamesgamesgames.authProfiles` is the only scope listed in your API client, attempting to log a user in with the `include:games.gamesgamesgamesgames.authStudio` scope **will throw an error**.
 </Callout>
 
 You can pass your desired permission set(s) to the `signIn` call:
@@ -68,7 +68,7 @@ const oauthClient = new HappyViewBrowserClient({
 
 // Sign in — redirects to the user's PDS
 await oauthClient.signIn("user.bsky.social", {
-  scope: "atproto include:games.gamesgamesgamesgames.authBasic",
+  scope: "atproto include:games.gamesgamesgamesgames.authProfiles include:games.gamesgamesgamesgames.authGameInteractions",
 });
 
 // On page load — restore session or process OAuth callback
@@ -94,7 +94,7 @@ const oauthClient = new HappyViewBrowserClient({
 
 // Sign in — redirects to the user's PDS
 await oauthClient.signIn("user.bsky.social", {
-  scope: "atproto include:games.gamesgamesgamesgames.authBasic",
+  scope: "atproto include:games.gamesgamesgamesgames.authProfiles include:games.gamesgamesgamesgames.authGameInteractions",
 });
 
 // On page load — restore session or process OAuth callback
@@ -108,18 +108,22 @@ const client = new Client(agent);
 </Tab>
 </Tabs>
 
-The `scope` field in your [OAuth client metadata](https://atproto.com/specs/oauth#client-id-metadata-document) declares which permission sets your app needs. To ask for studio-level access, replace `authBasic` with `authStudio`. An app that needs both read-and-like capability AND studio authoring should request both `authBasic` and `authStudio`.
+The `scope` field in your [OAuth client metadata](https://atproto.com/specs/oauth#client-id-metadata-document) declares which permission sets your app needs. Request only the sets your app requires — for example, an app that only displays game data needs `authGameBrowsing`, while a studio authoring tool would also request `authStudio`.
 
 For server-side apps, use `@happyview/oauth-client`. It accepts an optional `StorageAdapter` for persisting sessions (defaults to in-memory). See the [HappyView OAuth Client docs](https://happyview.dev/docs/sdk/oauth-client) for details.
 
 ## Graceful degradation
 
-If a user denies the permission you asked for, your app should degrade to whatever it CAN do rather than refusing to load. A game-publishing tool that's denied `authStudio` should still let the user browse, like, and read feeds; it just can't save their work to a repo.
+If a user denies a permission you asked for, your app should degrade to whatever it CAN do rather than refusing to load. A game-publishing tool that's denied `authStudio` should still let the user browse, like, and read feeds; it just can't save their work to a repo.
 
 Concretely: always check what the user actually granted before calling a privileged procedure, and surface "you're in read-only mode because X permission wasn't granted" instead of a cryptic 401.
 
 ## See also
 
-- [Reference: authBasic](/docs/guides/permissions#authbasic)
+- [Reference: authProfiles](/docs/guides/permissions#authprofiles)
+- [Reference: authGameInteractions](/docs/guides/permissions#authgameinteractions)
+- [Reference: authContributions](/docs/guides/permissions#authcontributions)
+- [Reference: authCustomFeeds](/docs/guides/permissions#authcustomfeeds)
+- [Reference: authGameBrowsing](/docs/guides/permissions#authgamebrowsing)
 - [Reference: authStudio](/docs/guides/permissions#authstudio)
 - [Reference: authAdmin](/docs/guides/permissions#authadmin)
