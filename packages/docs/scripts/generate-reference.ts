@@ -126,7 +126,7 @@ function writeMeta(dir: string, meta: { title: string; pages?: string[] }): void
 if (import.meta.url === `file://${process.argv[1]}`) {
   const repoRoot = path.resolve(fileURLToPath(import.meta.url), "..", "..", "..", "..");
   const inputDir = path.join(repoRoot, "lexicons", "games", "gamesgamesgamesgames");
-  const outputDir = path.join(repoRoot, "apps", "docs", "content", "docs", "reference");
+  const outputDir = path.join(repoRoot, "packages", "docs", "content", "docs", "reference");
   generateReference({ inputDir, outputDir }).catch((err) => {
     console.error("[generate-reference] fatal:", err);
     process.exit(1);
