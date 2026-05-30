@@ -32,6 +32,61 @@
 						"description": "Sort direction.",
 						"enum": ["asc", "desc"],
 						"default": "desc"
+					},
+					"applicationTypes": {
+						"type": "array",
+						"description": "Filter by application type (e.g. game, dlc, bundle).",
+						"items": {
+							"type": "string",
+							"knownValues": [
+								"addon",
+								"bundle",
+								"dlc",
+								"episode",
+								"expandedGame",
+								"expansion",
+								"fork",
+								"game",
+								"mod",
+								"pack",
+								"port",
+								"remake",
+								"remaster",
+								"season",
+								"standaloneExpansion",
+								"update"
+							]
+						}
+					},
+					"genres": {
+						"type": "array",
+						"items": { "type": "string" }
+					},
+					"themes": {
+						"type": "array",
+						"items": { "type": "string" }
+					},
+					"modes": {
+						"type": "array",
+						"items": { "type": "string" }
+					},
+					"playerPerspectives": {
+						"type": "array",
+						"items": { "type": "string" }
+					},
+					"ageRatings": {
+						"type": "array",
+						"description": "Filter by age rating in 'organization:rating' format (e.g. esrb:M, pegi:Eighteen).",
+						"items": { "type": "string" }
+					},
+					"includeUnrated": {
+						"type": "boolean",
+						"description": "When age rating filters are active, also include games with no age ratings.",
+						"default": false
+					},
+					"includeCancelled": {
+						"type": "boolean",
+						"default": false
 					}
 				}
 			},
