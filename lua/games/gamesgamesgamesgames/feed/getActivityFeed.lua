@@ -106,8 +106,7 @@ function handle()
       if rec.listUri then
         local list_rec = db.get(rec.listUri)
         if list_rec then
-          local list_data = json.decode(list_rec.record)
-          list_name = list_data.name
+          list_name = list_rec.name
         end
       end
 
