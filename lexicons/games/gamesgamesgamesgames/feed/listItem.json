@@ -1,0 +1,28 @@
+{
+	"lexicon": 1,
+	"id": "games.gamesgamesgamesgames.feed.listItem",
+	"defs": {
+		"main": {
+			"type": "record",
+			"key": "tid",
+			"record": {
+				"type": "object",
+				"required": ["listUri", "gameUri", "addedAt"],
+				"properties": {
+					"listUri": {
+						"type": "string",
+						"format": "at-uri"
+					},
+					"gameUri": {
+						"type": "string",
+						"format": "at-uri"
+					},
+					"addedAt": {
+						"type": "string",
+						"format": "datetime"
+					}
+				}
+			}
+		}
+	}
+}

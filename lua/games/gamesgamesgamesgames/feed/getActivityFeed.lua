@@ -78,7 +78,7 @@ function handle()
   -- Get list creation events
   local list_rows = db.raw(
     "SELECT uri, record, indexed_at FROM records WHERE collection = $1 AND did = $2 ORDER BY indexed_at DESC LIMIT $3",
-    {"social.popfeed.feed.list", did, fetch_limit}
+    {"games.gamesgamesgamesgames.feed.list", did, fetch_limit}
   )
 
   for _, row in ipairs(list_rows or {}) do
@@ -92,18 +92,16 @@ function handle()
     })
   end
 
-  -- Get listItem addition events (filter to video games in Lua)
+  -- Get listItem addition events
   local list_item_rows = db.raw(
     "SELECT uri, record, indexed_at FROM records WHERE collection = $1 AND did = $2 ORDER BY indexed_at DESC LIMIT $3",
-    {"social.popfeed.feed.listItem", did, fetch_limit}
+    {"games.gamesgamesgamesgames.feed.listItem", did, fetch_limit}
   )
 
   for _, row in ipairs(list_item_rows or {}) do
     local rec = json.decode(row.record)
-    if rec.creativeWorkType ~= "video_game" then goto continue_list_item end
     local ts = rec.addedAt or row.indexed_at
-    local igdb_id = rec.identifiers and rec.identifiers.igdbId
-    if igdb_id then
+    if rec.gameUri then
       local list_name = nil
       if rec.listUri then
         local list_rec = db.get(rec.listUri)
@@ -116,12 +114,11 @@ function handle()
       table.insert(activities, {
         type = "listAddGame",
         created_at = ts,
-        igdb_id = igdb_id,
+        game_uri = rec.gameUri,
         list_uri = rec.listUri,
         list_name = list_name,
       })
     end
-    ::continue_list_item::
   end
 
   -- Sort by created_at descending
@@ -148,13 +145,10 @@ function handle()
   local seen_igdb = {}
 
   for _, item in ipairs(page_items) do
-    if item.type == "like" and item.game_uri and not seen_uris[item.game_uri] then
+    if (item.type == "like" or item.type == "listAddGame") and item.game_uri and not seen_uris[item.game_uri] then
       seen_uris[item.game_uri] = true
       game_uris[#game_uris + 1] = '"' .. item.game_uri .. '"'
     elseif item.type == "review" and item.igdb_id and not seen_igdb[item.igdb_id] then
-      seen_igdb[item.igdb_id] = true
-      igdb_ids[#igdb_ids + 1] = '"' .. item.igdb_id .. '"'
-    elseif item.type == "listAddGame" and item.igdb_id and not seen_igdb[item.igdb_id] then
       seen_igdb[item.igdb_id] = true
       igdb_ids[#igdb_ids + 1] = '"' .. item.igdb_id .. '"'
     end
@@ -216,11 +210,9 @@ function handle()
     else
       local game_hit = nil
 
-      if item.type == "like" then
+      if item.type == "like" or item.type == "listAddGame" then
         game_hit = hits_by_uri[item.game_uri]
       elseif item.type == "review" then
-        game_hit = hits_by_igdb[item.igdb_id]
-      elseif item.type == "listAddGame" then
         game_hit = hits_by_igdb[item.igdb_id]
       end
 

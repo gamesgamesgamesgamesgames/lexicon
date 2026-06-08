@@ -1,0 +1,28 @@
+{
+	"lexicon": 1,
+	"id": "games.gamesgamesgamesgames.feed.list",
+	"defs": {
+		"main": {
+			"type": "record",
+			"key": "tid",
+			"record": {
+				"type": "object",
+				"required": ["name", "createdAt"],
+				"properties": {
+					"name": {
+						"type": "string",
+						"maxLength": 100
+					},
+					"description": {
+						"type": "string",
+						"maxLength": 500
+					},
+					"createdAt": {
+						"type": "string",
+						"format": "datetime"
+					}
+				}
+			}
+		}
+	}
+}

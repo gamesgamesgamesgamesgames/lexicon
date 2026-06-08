@@ -1,5 +1,5 @@
 function handle()
-  local list = Record.new("social.popfeed.feed.list", {
+  local list = Record.new("games.gamesgamesgamesgames.feed.list", {
     name = input.name,
     description = input.description,
     createdAt = now()

@@ -16,7 +16,7 @@ function handle()
   -- Fetch list records for this user
   local list_rows = db.raw(
     "SELECT uri, record, indexed_at FROM records WHERE collection = $1 AND did = $2 ORDER BY indexed_at DESC LIMIT $3 OFFSET $4",
-    {"social.popfeed.feed.list", did, limit + 1, offset}
+    {"games.gamesgamesgamesgames.feed.list", did, limit + 1, offset}
   )
 
   local has_more = list_rows and #list_rows > limit
@@ -28,33 +28,12 @@ function handle()
     return { lists = toarray({}) }
   end
 
-  -- Resolve game URI to IGDB ID if gameUri param is provided
-  local check_igdb_id = nil
-  if params.gameUri and params.gameUri ~= "" then
-    local search_url = env.MEILISEARCH_URL .. "/indexes/records/search"
-    local search_headers = {
-      ["Authorization"] = "Bearer " .. env.MEILISEARCH_API_KEY,
-      ["content-type"] = "application/json"
-    }
-    local body = {
-      q = "",
-      limit = 1,
-      filter = "uri = \"" .. params.gameUri .. "\"",
-      attributesToRetrieve = toarray({ "externalIds" })
-    }
-    local resp = http.post(search_url, { headers = search_headers, body = json.encode(body) })
-    if resp.status == 200 then
-      local data = json.decode(resp.body)
-      if data.hits and #data.hits > 0 and data.hits[1].externalIds then
-        check_igdb_id = data.hits[1].externalIds.igdb
-      end
-    end
-  end
+  local check_game_uri = params.gameUri
 
   -- Fetch all listItem records for this user once, then process in Lua
   local all_items = db.raw(
     "SELECT record FROM records WHERE collection = $1 AND did = $2",
-    {"social.popfeed.feed.listItem", did}
+    {"games.gamesgamesgamesgames.feed.listItem", did}
   )
 
   -- Build per-list counts and hasGame lookup
@@ -62,9 +41,9 @@ function handle()
   local has_game_map = {}
   for _, item_row in ipairs(all_items or {}) do
     local item_rec = json.decode(item_row.record)
-    if item_rec.creativeWorkType == "video_game" and item_rec.listUri then
+    if item_rec.listUri then
       item_counts[item_rec.listUri] = (item_counts[item_rec.listUri] or 0) + 1
-      if check_igdb_id and item_rec.identifiers and item_rec.identifiers.igdbId == check_igdb_id then
+      if check_game_uri and item_rec.gameUri == check_game_uri then
         has_game_map[item_rec.listUri] = true
       end
     end
@@ -83,7 +62,7 @@ function handle()
       createdAt = rec.createdAt or row.indexed_at
     }
 
-    if check_igdb_id then
+    if check_game_uri then
       view.hasGame = has_game_map[row.uri] == true
     end
 

@@ -12,9 +12,9 @@
 					"resource": "repo",
 					"collection": [
 						"games.gamesgamesgamesgames.collection",
-						"games.gamesgamesgamesgames.graph.like",
-						"social.popfeed.feed.list",
-						"social.popfeed.feed.listItem"
+						"games.gamesgamesgamesgames.feed.list",
+						"games.gamesgamesgamesgames.feed.listItem",
+						"games.gamesgamesgamesgames.graph.like"
 					]
 				},
 				{
