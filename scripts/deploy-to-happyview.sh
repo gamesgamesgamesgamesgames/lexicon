@@ -92,7 +92,7 @@ while IFS= read -r json_file; do
     -H "Authorization: Bearer $HAPPYVIEW_API_KEY" \
     -H "Content-Type: application/json" \
     -d "$body" \
-    "$HAPPYVIEW_URL/admin/lexicons")
+    "$HAPPYVIEW_URL/hv/admin/lexicons")
 
   if [[ "$http_code" -ge 200 && "$http_code" -lt 300 ]]; then
     echo "OK: $nsid (${lexicon_type:-defs}) → HTTP $http_code"
@@ -110,7 +110,7 @@ done < <(find "$LEXICONS_DIR" -name '*.json' -type f | sort)
 
 remote_nsids=$(curl -s \
   -H "Authorization: Bearer $HAPPYVIEW_API_KEY" \
-  "$HAPPYVIEW_URL/admin/lexicons" \
+  "$HAPPYVIEW_URL/hv/admin/lexicons" \
   | jq -r '.[].id // empty')
 
 for remote_nsid in $remote_nsids; do
@@ -118,7 +118,7 @@ for remote_nsid in $remote_nsids; do
     del_code=$(curl -s -o /dev/null -w "%{http_code}" \
       -X DELETE \
       -H "Authorization: Bearer $HAPPYVIEW_API_KEY" \
-      "$HAPPYVIEW_URL/admin/lexicons/$remote_nsid")
+      "$HAPPYVIEW_URL/hv/admin/lexicons/$remote_nsid")
 
     if [[ "$del_code" -ge 200 && "$del_code" -lt 300 ]] || [[ "$del_code" == "404" ]]; then
       echo "DELETED: $remote_nsid → HTTP $del_code"
