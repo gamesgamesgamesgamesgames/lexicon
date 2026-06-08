@@ -73,6 +73,33 @@
         "createdAt": {
           "type": "string",
           "format": "datetime"
+        },
+        "previewItems": {
+          "type": "array",
+          "maxLength": 4,
+          "items": {
+            "type": "ref",
+            "ref": "#listPreviewItem"
+          }
+        }
+      }
+    },
+    "listPreviewItem": {
+      "type": "object",
+      "required": ["uri", "name"],
+      "properties": {
+        "uri": {
+          "type": "string",
+          "format": "at-uri"
+        },
+        "name": {
+          "type": "string"
+        },
+        "slug": {
+          "type": "string"
+        },
+        "media": {
+          "type": "unknown"
         }
       }
     }
