@@ -1072,6 +1072,63 @@
 					"format": "datetime"
 				}
 			}
+		},
+
+		"communityFeedActorView": {
+			"type": "object",
+			"required": ["did"],
+			"description": "Lightweight actor view for community feed items.",
+			"properties": {
+				"did": {
+					"type": "string",
+					"format": "did"
+				},
+				"handle": {
+					"type": "string"
+				},
+				"displayName": {
+					"type": "string",
+					"maxLength": 640
+				}
+			}
+		},
+
+		"communityFeedItem": {
+			"type": "object",
+			"required": ["type", "createdAt", "actor"],
+			"description": "A community activity item with actor information.",
+			"properties": {
+				"type": {
+					"type": "string",
+					"knownValues": ["like", "review", "listCreate", "listAddGame"],
+					"description": "The type of activity."
+				},
+				"createdAt": {
+					"type": "string",
+					"format": "datetime",
+					"description": "When the activity occurred."
+				},
+				"actor": {
+					"type": "ref",
+					"ref": "games.gamesgamesgamesgames.defs#communityFeedActorView",
+					"description": "The user who performed this activity."
+				},
+				"game": {
+					"type": "ref",
+					"ref": "games.gamesgamesgamesgames.defs#gameView",
+					"description": "The game associated with this activity."
+				},
+				"review": {
+					"type": "ref",
+					"ref": "games.gamesgamesgamesgames.defs#activityReviewView",
+					"description": "Review data, present when type is 'review'."
+				},
+				"list": {
+					"type": "ref",
+					"ref": "games.gamesgamesgamesgames.defs#activityListView",
+					"description": "List data, present when type is 'listCreate' or 'listAddGame'."
+				}
+			}
 		}
 	}
 }

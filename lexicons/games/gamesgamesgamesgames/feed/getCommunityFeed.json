@@ -1,0 +1,44 @@
+{
+	"$type": "com.atproto.lexicon.schema",
+	"lexicon": 1,
+	"id": "games.gamesgamesgamesgames.feed.getCommunityFeed",
+	"defs": {
+		"main": {
+			"type": "query",
+			"description": "Get recent community activity across all users, including likes, reviews, and list additions.",
+			"parameters": {
+				"type": "params",
+				"properties": {
+					"limit": {
+						"type": "integer",
+						"minimum": 1,
+						"maximum": 100,
+						"default": 20
+					},
+					"cursor": {
+						"type": "string"
+					}
+				}
+			},
+			"output": {
+				"encoding": "application/json",
+				"schema": {
+					"type": "object",
+					"required": ["feed"],
+					"properties": {
+						"feed": {
+							"type": "array",
+							"items": {
+								"type": "ref",
+								"ref": "games.gamesgamesgamesgames.defs#communityFeedItem"
+							}
+						},
+						"cursor": {
+							"type": "string"
+						}
+					}
+				}
+			}
+		}
+	}
+}
