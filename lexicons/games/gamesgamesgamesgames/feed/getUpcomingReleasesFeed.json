@@ -17,6 +17,15 @@
 					},
 					"cursor": {
 						"type": "string"
+					},
+					"now": {
+						"type": "string",
+						"description": "Current date as YYYYMMDD. Used to determine what counts as upcoming."
+					},
+					"shuffle": {
+						"type": "boolean",
+						"default": false,
+						"description": "When true, returns a randomized subset from the near-term window instead of stable chronological order."
 					}
 				}
 			},
