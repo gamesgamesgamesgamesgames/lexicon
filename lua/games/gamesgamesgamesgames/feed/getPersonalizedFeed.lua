@@ -63,7 +63,7 @@ function handle()
       embedder = "game-similarity",
       limit = per_like_limit,
       filter = 'type = "game" AND applicationType = "game" AND publishedAt IS NOT NULL',
-      attributesToRetrieve = toarray({ "uri", "name", "slug", "media" })
+      attributesToRetrieve = toarray({ "uri", "name", "slug", "media", "genres" })
     }
 
     local resp = http.post(SIMILAR_URL, { headers = HEADERS, body = json.encode(body) })
@@ -87,6 +87,7 @@ function handle()
                 name = hit.name,
                 slug = hit.slug,
                 media = hit.media,
+                genres = hit.genres or toarray({}),
               }
             }
           end

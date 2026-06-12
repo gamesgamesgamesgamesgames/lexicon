@@ -5,6 +5,15 @@ local SEARCH_HEADERS = {
   ["content-type"] = "application/json"
 }
 
+-- Build a SQL IN clause from game URIs: ('uri1','uri2',...)
+local function build_uri_in_clause(rows, limit)
+  local parts = {}
+  for i = 1, math.min(#rows, limit) do
+    parts[#parts + 1] = "'" .. rows[i].game_uri:gsub("'", "''") .. "'"
+  end
+  return "(" .. table.concat(parts, ",") .. ")"
+end
+
 function handle()
   local limit = tonumber(params.limit) or 50
   if limit < 1 then limit = 1 end
@@ -29,18 +38,49 @@ function handle()
 
   local has_more = #rows > limit
 
-  -- Collect URIs for batch lookup
+  -- Collect URIs and like counts
   local uris = {}
+  local likes_by_uri = {}
   for i = 1, math.min(#rows, limit) do
-    uris[#uris + 1] = '"' .. rows[i].game_uri .. '"'
+    local uri = rows[i].game_uri
+    uris[#uris + 1] = '"' .. uri .. '"'
+    likes_by_uri[uri] = tonumber(rows[i].like_count) or 0
+  end
+
+  -- Build SQL IN clause for secondary queries (db.raw doesn't support table params)
+  local uri_in = build_uri_in_clause(rows, limit)
+
+  -- Batch fetch weekly review counts
+  local reviews_by_uri = {}
+  local review_rows = db.raw(
+    "SELECT record::jsonb->>'subject' AS game_uri, COUNT(*) AS review_count FROM records WHERE collection = $1 AND indexed_at > $2 AND record::jsonb->>'subject' IN " .. uri_in .. " GROUP BY record::jsonb->>'subject'",
+    {"games.gamesgamesgamesgames.feed.review", cutoff}
+  )
+  if review_rows then
+    for _, row in ipairs(review_rows) do
+      reviews_by_uri[row.game_uri] = tonumber(row.review_count) or 0
+    end
+  end
+
+  -- Batch fetch weekly list-add counts
+  local lists_by_uri = {}
+  local list_rows = db.raw(
+    "SELECT record::jsonb->>'subject' AS game_uri, COUNT(*) AS list_count FROM records WHERE collection = $1 AND indexed_at > $2 AND record::jsonb->>'subject' IN " .. uri_in .. " GROUP BY record::jsonb->>'subject'",
+    {"games.gamesgamesgamesgames.feed.listItem", cutoff}
+  )
+  if list_rows then
+    for _, row in ipairs(list_rows) do
+      lists_by_uri[row.game_uri] = tonumber(row.list_count) or 0
+    end
   end
 
   -- Batch fetch game data from Meilisearch
+  local uri_filter = "uri IN [" .. table.concat(uris, ", ") .. "]"
   local body = {
     q = "",
     limit = #uris,
-    filter = "uri IN [" .. table.concat(uris, ", ") .. "] AND publishedAt IS NOT NULL",
-    attributesToRetrieve = toarray({ "uri", "name", "slug", "media" })
+    filter = uri_filter .. " AND publishedAt IS NOT NULL",
+    attributesToRetrieve = toarray({ "uri", "name", "slug", "media", "genres" })
   }
 
   local resp = http.post(SEARCH_URL, { headers = SEARCH_HEADERS, body = json.encode(body) })
@@ -59,7 +99,8 @@ function handle()
   -- Build feed in like-count order
   local feed = {}
   for i = 1, math.min(#rows, limit) do
-    local hit = hits_by_uri[rows[i].game_uri]
+    local uri = rows[i].game_uri
+    local hit = hits_by_uri[uri]
     if hit then
       feed[#feed + 1] = {
         game = {
@@ -67,6 +108,10 @@ function handle()
           name = hit.name,
           slug = hit.slug,
           media = hit.media,
+          genres = hit.genres or toarray({}),
+          weeklyLikes = likes_by_uri[uri] or 0,
+          weeklyReviews = reviews_by_uri[uri] or 0,
+          weeklyListAdds = lists_by_uri[uri] or 0,
         }
       }
     end

@@ -45,7 +45,7 @@ function handle()
     q = "",
     limit = #uris,
     filter = "uri IN [" .. table.concat(uris, ", ") .. "] AND publishedAt IS NOT NULL",
-    attributesToRetrieve = toarray({ "uri", "name", "slug", "media" })
+    attributesToRetrieve = toarray({ "uri", "name", "slug", "media", "genres" })
   }
 
   local resp = http.post(SEARCH_URL, { headers = SEARCH_HEADERS, body = json.encode(body) })
@@ -74,6 +74,7 @@ function handle()
           name = hit.name,
           slug = hit.slug,
           media = hit.media,
+          genres = hit.genres or toarray({}),
         }
       }
     end

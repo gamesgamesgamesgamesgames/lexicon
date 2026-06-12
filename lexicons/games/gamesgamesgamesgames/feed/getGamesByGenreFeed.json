@@ -1,0 +1,48 @@
+{
+	"$type": "com.atproto.lexicon.schema",
+	"lexicon": 1,
+	"id": "games.gamesgamesgamesgames.feed.getGamesByGenreFeed",
+	"defs": {
+		"main": {
+			"type": "query",
+			"description": "Get games filtered by genre, sorted by release date descending.",
+			"parameters": {
+				"type": "params",
+				"required": ["genre"],
+				"properties": {
+					"genre": {
+						"type": "string"
+					},
+					"limit": {
+						"type": "integer",
+						"minimum": 1,
+						"maximum": 100,
+						"default": 20
+					},
+					"cursor": {
+						"type": "string"
+					}
+				}
+			},
+			"output": {
+				"encoding": "application/json",
+				"schema": {
+					"type": "object",
+					"required": ["feed"],
+					"properties": {
+						"feed": {
+							"type": "array",
+							"items": {
+								"type": "ref",
+								"ref": "games.gamesgamesgamesgames.defs#gameFeedViewItem"
+							}
+						},
+						"cursor": {
+							"type": "string"
+						}
+					}
+				}
+			}
+		}
+	}
+}

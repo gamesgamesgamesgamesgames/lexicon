@@ -26,6 +26,14 @@
 						"type": "boolean",
 						"default": false,
 						"description": "When true, returns a randomized subset from the near-term window instead of stable chronological order."
+					},
+					"from": {
+						"type": "string",
+						"description": "Lower bound date as YYYYMMDD (exclusive). Overrides 'now' for the chronological mode filter."
+					},
+					"to": {
+						"type": "string",
+						"description": "Upper bound date as YYYYMMDD (inclusive). Limits results to releases on or before this date."
 					}
 				}
 			},

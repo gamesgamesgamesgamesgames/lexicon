@@ -111,11 +111,21 @@ function handle()
   local offset = 0
   if params.cursor then offset = tonumber(params.cursor) or 0 end
 
+  local from_date = current_date
+  if params["from"] and params["from"]:match("^%d%d%d%d%d%d%d%d$") then
+    from_date = tonumber(params["from"])
+  end
+
+  local to_clause = ""
+  if params["to"] and params["to"]:match("^%d%d%d%d%d%d%d%d$") then
+    to_clause = " AND firstReleaseDate <= " .. tonumber(params["to"])
+  end
+
   local body = {
     q = "",
     limit = limit + 1,
     offset = offset,
-    filter = "type = \"game\" AND cancelled != true AND publishedAt IS NOT NULL AND firstReleaseDate > " .. current_date .. " AND " .. app_type_filter,
+    filter = "type = \"game\" AND cancelled != true AND publishedAt IS NOT NULL AND firstReleaseDate > " .. from_date .. to_clause .. " AND " .. app_type_filter,
     sort = toarray({ "firstReleaseDate:asc" }),
     attributesToRetrieve = toarray({ "uri", "name", "slug", "media", "firstReleaseDate", "genres", "applicationType" })
   }

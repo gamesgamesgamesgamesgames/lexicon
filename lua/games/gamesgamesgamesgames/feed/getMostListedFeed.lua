@@ -6,17 +6,16 @@ local SEARCH_HEADERS = {
 }
 
 function handle()
-  local limit = tonumber(params.limit) or 50
+  local limit = tonumber(params.limit) or 20
   if limit < 1 then limit = 1 end
   if limit > 100 then limit = 100 end
 
   local offset = 0
   if params.cursor then offset = tonumber(params.cursor) or 0 end
 
-  -- Get games ordered by most recently indexed
   local rows = db.raw(
-    "SELECT uri FROM records WHERE collection = $1 AND record::jsonb->>'applicationType' = 'game' AND record::jsonb->>'publishedAt' IS NOT NULL ORDER BY indexed_at DESC LIMIT $2 OFFSET $3",
-    {"games.gamesgamesgamesgames.game", limit + 1, offset}
+    "SELECT record::jsonb->>'subject' AS game_uri, COUNT(*) AS list_count FROM records WHERE collection = $1 GROUP BY record::jsonb->>'subject' ORDER BY list_count DESC LIMIT $2 OFFSET $3",
+    {"games.gamesgamesgamesgames.feed.listItem", limit + 1, offset}
   )
 
   if not rows or #rows == 0 then
@@ -25,17 +24,19 @@ function handle()
 
   local has_more = #rows > limit
 
-  -- Collect URIs for batch lookup
   local uris = {}
+  local counts_by_uri = {}
   for i = 1, math.min(#rows, limit) do
-    uris[#uris + 1] = '"' .. rows[i].uri .. '"'
+    local uri = rows[i].game_uri
+    uris[#uris + 1] = '"' .. uri .. '"'
+    counts_by_uri[uri] = tonumber(rows[i].list_count) or 0
   end
 
-  -- Batch fetch game data from Meilisearch
+  local uri_filter = "uri IN [" .. table.concat(uris, ", ") .. "]"
   local body = {
     q = "",
     limit = #uris,
-    filter = "uri IN [" .. table.concat(uris, ", ") .. "]",
+    filter = uri_filter .. " AND publishedAt IS NOT NULL",
     attributesToRetrieve = toarray({ "uri", "name", "slug", "media", "genres" })
   }
 
@@ -46,16 +47,15 @@ function handle()
     return { error = "MeilisearchError", message = data.message or resp.body }
   end
 
-  -- Index hits by URI for ordered lookup
   local hits_by_uri = {}
   for _, hit in ipairs(data.hits or {}) do
     hits_by_uri[hit.uri] = hit
   end
 
-  -- Build feed in indexed_at order
   local feed = {}
   for i = 1, math.min(#rows, limit) do
-    local hit = hits_by_uri[rows[i].uri]
+    local uri = rows[i].game_uri
+    local hit = hits_by_uri[uri]
     if hit then
       feed[#feed + 1] = {
         game = {
@@ -64,6 +64,7 @@ function handle()
           slug = hit.slug,
           media = hit.media,
           genres = hit.genres or toarray({}),
+          listCount = counts_by_uri[uri] or 0,
         }
       }
     end
