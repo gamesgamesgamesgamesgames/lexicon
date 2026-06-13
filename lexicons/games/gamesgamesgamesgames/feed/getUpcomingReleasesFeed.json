@@ -44,6 +44,7 @@
 					"required": ["feed"],
 					"properties": {
 						"cursor": { "type": "string" },
+						"totalCount": { "type": "integer" },
 						"feed": {
 							"type": "array",
 							"items": {

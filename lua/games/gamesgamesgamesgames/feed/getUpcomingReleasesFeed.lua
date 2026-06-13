@@ -168,7 +168,7 @@ function handle()
     }
   end
 
-  local result = { feed = toarray(feed) }
+  local result = { feed = toarray(feed), totalCount = data.estimatedTotalHits or 0 }
   if has_more then
     result.cursor = tostring(offset + limit)
   end
