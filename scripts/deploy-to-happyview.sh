@@ -26,10 +26,15 @@ HAPPYVIEW_URL="${HAPPYVIEW_URL%/}"
 
 errors=0
 deployed=0
+scripts_deployed=0
 deleted=0
+scripts_deleted=0
 
 # Collect the set of NSIDs present in the repo
 declare -A repo_nsids
+
+# Track script trigger IDs deployed this run
+declare -A repo_script_ids
 
 # Process each JSON file under lexicons/
 while IFS= read -r json_file; do
@@ -44,50 +49,26 @@ while IFS= read -r json_file; do
 
   repo_nsids["$nsid"]=1
 
-  # Compute the Lua file path using the same relative structure
-  rel_path="${json_file#$LEXICONS_DIR/}"
-  lua_file="$LUA_DIR/${rel_path%.json}.lua"
-
-  # Read the Lua script if it exists (only for lexicons with a main type)
-  script=""
-  index_hook=""
-  if [[ -n "$lexicon_type" && -f "$lua_file" ]]; then
-    case "$lexicon_type" in
-      query|procedure)
-        script=$(cat "$lua_file")
-        ;;
-      record)
-        index_hook=$(cat "$lua_file")
-        ;;
-    esac
-  fi
-
-  # Look up manifest entry for target_collection and action
+  # Look up manifest entry for target_collection
   target_collection=$(jq -r --arg nsid "$nsid" '.[$nsid].target_collection // empty' "$MANIFEST")
-  action=$(jq -r --arg nsid "$nsid" '.[$nsid].action // empty' "$MANIFEST")
 
   # Read the full lexicon JSON
   lexicon_json=$(cat "$json_file")
 
-  # Build the request body
+  # Build the lexicon request body
   body=$(jq -n \
     --argjson lexicon_json "$lexicon_json" \
     --arg target_collection "$target_collection" \
-    --arg action "$action" \
-    --arg script "$script" \
-    --arg index_hook "$index_hook" \
     '{
       lexicon_json: $lexicon_json,
       backfill: true
     }
-    + (if $target_collection != "" then {target_collection: $target_collection} else {} end)
-    + (if $action != "" then {action: $action} else {} end)
-    + (if $script != "" then {script: $script} else {} end)
-    + (if $index_hook != "" then {index_hook: $index_hook} else {} end)'
+    + (if $target_collection != "" then {target_collection: $target_collection} else {} end)'
   )
 
-  # POST to HappyView
-  http_code=$(curl -s -o /dev/null -w "%{http_code}" \
+  # POST lexicon to HappyView
+  response=$(mktemp)
+  http_code=$(curl -s -o "$response" -w "%{http_code}" \
     -X POST \
     -H "Authorization: Bearer $HAPPYVIEW_API_KEY" \
     -H "Content-Type: application/json" \
@@ -99,7 +80,55 @@ while IFS= read -r json_file; do
     deployed=$((deployed + 1))
   else
     echo "FAIL: $nsid (${lexicon_type:-defs}) → HTTP $http_code" >&2
+    cat "$response" >&2; echo >&2
     errors=$((errors + 1))
+  fi
+  rm -f "$response"
+
+  # Upload the Lua script separately if it exists
+  rel_path="${json_file#$LEXICONS_DIR/}"
+  lua_file="$LUA_DIR/${rel_path%.json}.lua"
+
+  if [[ -n "$lexicon_type" && -f "$lua_file" ]]; then
+    # Determine the trigger ID based on lexicon type
+    case "$lexicon_type" in
+      query)      trigger_id="xrpc.query:$nsid" ;;
+      procedure)  trigger_id="xrpc.procedure:$nsid" ;;
+      record)     trigger_id="record.index:$nsid" ;;
+      *)          trigger_id="" ;;
+    esac
+
+    if [[ -n "$trigger_id" ]]; then
+      repo_script_ids["$trigger_id"]=1
+      lua_body=$(cat "$lua_file")
+
+      script_payload=$(jq -n \
+        --arg id "$trigger_id" \
+        --arg body "$lua_body" \
+        '{
+          id: $id,
+          script_type: "lua",
+          body: $body
+        }')
+
+      script_response=$(mktemp)
+      script_code=$(curl -s -o "$script_response" -w "%{http_code}" \
+        -X POST \
+        -H "Authorization: Bearer $HAPPYVIEW_API_KEY" \
+        -H "Content-Type: application/json" \
+        -d "$script_payload" \
+        "$HAPPYVIEW_URL/hv/admin/scripts")
+
+      if [[ "$script_code" -ge 200 && "$script_code" -lt 300 ]]; then
+        echo "  SCRIPT OK: $trigger_id → HTTP $script_code"
+        scripts_deployed=$((scripts_deployed + 1))
+      else
+        echo "  SCRIPT FAIL: $trigger_id → HTTP $script_code" >&2
+        cat "$script_response" >&2; echo >&2
+        errors=$((errors + 1))
+      fi
+      rm -f "$script_response"
+    fi
   fi
 
 done < <(find "$LEXICONS_DIR" -name '*.json' -type f | sort)
@@ -130,8 +159,38 @@ for remote_nsid in $remote_nsids; do
   fi
 done
 
+# ---------------------------------------------------------------------------
+# Remove scripts from HappyView that no longer exist in the repo
+# ---------------------------------------------------------------------------
+
+remote_scripts=$(curl -s \
+  -H "Authorization: Bearer $HAPPYVIEW_API_KEY" \
+  "$HAPPYVIEW_URL/hv/admin/scripts" \
+  | jq -r '.[].id // empty')
+
+for remote_script_id in $remote_scripts; do
+  if [[ -z "${repo_script_ids[$remote_script_id]+_}" ]]; then
+    encoded_id=$(python3 -c "import urllib.parse; print(urllib.parse.quote('$remote_script_id', safe=''))")
+
+    del_code=$(curl -s -o /dev/null -w "%{http_code}" \
+      -X DELETE \
+      -H "Authorization: Bearer $HAPPYVIEW_API_KEY" \
+      "$HAPPYVIEW_URL/hv/admin/scripts/$encoded_id")
+
+    if [[ "$del_code" -ge 200 && "$del_code" -lt 300 ]] || [[ "$del_code" == "404" ]]; then
+      echo "SCRIPT DELETED: $remote_script_id → HTTP $del_code"
+      scripts_deleted=$((scripts_deleted + 1))
+    else
+      echo "SCRIPT DELETE FAIL: $remote_script_id → HTTP $del_code" >&2
+      errors=$((errors + 1))
+    fi
+  fi
+done
+
 echo ""
-echo "Deployed: $deployed, Deleted: $deleted, Failed: $errors"
+echo "Lexicons deployed: $deployed, deleted: $deleted"
+echo "Scripts deployed: $scripts_deployed, deleted: $scripts_deleted"
+echo "Errors: $errors"
 
 if [[ $errors -gt 0 ]]; then
   exit 1

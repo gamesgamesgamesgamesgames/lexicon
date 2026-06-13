@@ -1,36 +1,34 @@
--- Ensure verification_requests table exists
-db.raw([[
-  CREATE TABLE IF NOT EXISTS verification_requests (
-    id TEXT PRIMARY KEY,
-    requester_did TEXT NOT NULL,
-    account_type TEXT NOT NULL CHECK (account_type IN ('studio', 'developer', 'publisher')),
-    message TEXT NOT NULL,
-    contact TEXT NOT NULL,
-    status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'denied')),
-    review_reason TEXT,
-    reviewed_by TEXT,
-    reviewed_at TEXT,
-    created_at TEXT NOT NULL DEFAULT (now())
-  )
-]], {})
-
-db.raw([[
-  CREATE UNIQUE INDEX IF NOT EXISTS verification_requests_one_pending
-    ON verification_requests (requester_did)
-    WHERE status = 'pending'
-]], {})
-
-db.raw([[
-  CREATE INDEX IF NOT EXISTS idx_verification_requests_requester
-    ON verification_requests (requester_did)
-]], {})
-
-db.raw([[
-  CREATE INDEX IF NOT EXISTS idx_verification_requests_status
-    ON verification_requests (status)
-]], {})
-
 function handle()
+  db.raw([[
+    CREATE TABLE IF NOT EXISTS verification_requests (
+      id TEXT PRIMARY KEY,
+      requester_did TEXT NOT NULL,
+      account_type TEXT NOT NULL CHECK (account_type IN ('studio', 'developer', 'publisher')),
+      message TEXT NOT NULL,
+      contact TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'denied')),
+      review_reason TEXT,
+      reviewed_by TEXT,
+      reviewed_at TEXT,
+      created_at TEXT NOT NULL DEFAULT (now())
+    )
+  ]], {})
+
+  db.raw([[
+    CREATE UNIQUE INDEX IF NOT EXISTS verification_requests_one_pending
+      ON verification_requests (requester_did)
+      WHERE status = 'pending'
+  ]], {})
+
+  db.raw([[
+    CREATE INDEX IF NOT EXISTS idx_verification_requests_requester
+      ON verification_requests (requester_did)
+  ]], {})
+
+  db.raw([[
+    CREATE INDEX IF NOT EXISTS idx_verification_requests_status
+      ON verification_requests (status)
+  ]], {})
   -- Validate accountType
   if not input.accountType or (input.accountType ~= "studio" and input.accountType ~= "developer" and input.accountType ~= "publisher") then
     error("accountType must be 'studio', 'developer', or 'publisher'")
@@ -45,7 +43,7 @@ function handle()
   end
 
   -- Generate a unique ID
-  local id = generate_tid()
+  local id = TID()
 
   -- Insert into verification_requests table
   -- The partial unique index (verification_requests_one_pending) enforces one pending request per account
