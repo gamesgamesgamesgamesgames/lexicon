@@ -75,6 +75,24 @@ function handle()
     game.publishedAt = now()
   end
 
+  -- Check if the caller is verified (has a dev.cartridge.graph.verification record from the trusted verifier)
+  local VERIFIER_DID = env.VERIFIER_DID
+  local PENTARACT_DID = env.PENTARACT_DID
+
+  local is_verified = false
+  if VERIFIER_DID and VERIFIER_DID ~= "" then
+    local verification_rows = db.raw(
+      "SELECT uri FROM records WHERE collection = 'dev.cartridge.graph.verification' AND did = $1 AND record::jsonb->>'subject' = $2 LIMIT 1",
+      { VERIFIER_DID, caller_did }
+    )
+    is_verified = verification_rows and #verification_rows > 0
+  end
+
+  if not is_verified and PENTARACT_DID and PENTARACT_DID ~= "" then
+    game:set_repo(PENTARACT_DID)
+  end
+  -- Verified user: game:save() defaults to caller's repo
+
   game:save()
 
   local slug_value = input.slug or generate_slug(input.name)

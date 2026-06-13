@@ -1,0 +1,42 @@
+{
+  "$type": "com.atproto.lexicon.schema",
+  "lexicon": 1,
+  "id": "dev.cartridge.createVerificationRequest",
+  "defs": {
+    "main": {
+      "type": "procedure",
+      "description": "Submit a verification request to flag your account as a studio, developer, or publisher.",
+      "input": {
+        "encoding": "application/json",
+        "schema": {
+          "type": "object",
+          "required": ["accountType", "message", "contact"],
+          "properties": {
+            "accountType": {
+              "type": "string",
+              "knownValues": ["studio", "developer", "publisher"]
+            },
+            "message": {
+              "type": "string",
+              "maxGraphemes": 3000
+            },
+            "contact": {
+              "type": "string",
+              "maxGraphemes": 500
+            }
+          }
+        }
+      },
+      "output": {
+        "encoding": "application/json",
+        "schema": {
+          "type": "object",
+          "required": ["id"],
+          "properties": {
+            "id": { "type": "string" }
+          }
+        }
+      }
+    }
+  }
+}

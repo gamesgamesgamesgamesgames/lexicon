@@ -1,0 +1,54 @@
+{
+  "$type": "com.atproto.lexicon.schema",
+  "lexicon": 1,
+  "id": "dev.cartridge.getVerificationRequest",
+  "defs": {
+    "main": {
+      "type": "query",
+      "description": "Get a verification request. Non-admins can only view their own requests.",
+      "parameters": {
+        "type": "params",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "ID of the verification request."
+          },
+          "requesterDid": {
+            "type": "string",
+            "format": "did",
+            "description": "Get the most recent request for this DID. Ignored if id is provided."
+          }
+        }
+      },
+      "output": {
+        "encoding": "application/json",
+        "schema": {
+          "type": "object",
+          "required": ["request"],
+          "properties": {
+            "request": {
+              "type": "ref",
+              "ref": "#verificationRequestView"
+            }
+          }
+        }
+      }
+    },
+    "verificationRequestView": {
+      "type": "object",
+      "required": ["id", "requesterDid", "accountType", "message", "status", "createdAt"],
+      "properties": {
+        "id": { "type": "string" },
+        "requesterDid": { "type": "string", "format": "did" },
+        "accountType": { "type": "string" },
+        "message": { "type": "string" },
+        "contact": { "type": "string" },
+        "status": { "type": "string", "knownValues": ["pending", "approved", "denied"] },
+        "reviewReason": { "type": "string" },
+        "reviewedBy": { "type": "string", "format": "did" },
+        "reviewedAt": { "type": "string", "format": "datetime" },
+        "createdAt": { "type": "string", "format": "datetime" }
+      }
+    }
+  }
+}

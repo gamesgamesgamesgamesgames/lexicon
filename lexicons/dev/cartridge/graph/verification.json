@@ -1,0 +1,41 @@
+{
+	"$type": "com.atproto.lexicon.schema",
+	"lexicon": 1,
+	"id": "dev.cartridge.graph.verification",
+	"defs": {
+		"main": {
+			"description": "A Cartridge-specific verification record for studios, developers, and publishers. Written by the Cartridge verifier account.",
+			"type": "record",
+			"key": "tid",
+			"record": {
+				"type": "object",
+				"required": ["subject", "handle", "displayName", "accountType", "createdAt"],
+				"properties": {
+					"subject": {
+						"type": "string",
+						"format": "did",
+						"description": "DID of the verified account."
+					},
+					"handle": {
+						"type": "string",
+						"format": "handle",
+						"description": "Handle of the verified account at time of verification."
+					},
+					"displayName": {
+						"type": "string",
+						"description": "Display name at time of verification."
+					},
+					"accountType": {
+						"type": "string",
+						"knownValues": ["studio", "developer", "publisher"],
+						"description": "Type of verified account."
+					},
+					"createdAt": {
+						"type": "string",
+						"format": "datetime"
+					}
+				}
+			}
+		}
+	}
+}

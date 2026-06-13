@@ -1,0 +1,44 @@
+{
+  "$type": "com.atproto.lexicon.schema",
+  "lexicon": 1,
+  "id": "dev.cartridge.reviewVerificationRequest",
+  "defs": {
+    "main": {
+      "type": "procedure",
+      "description": "Approve or deny a verification request. Admin only. On approval, writes verification records from the verifier account.",
+      "input": {
+        "encoding": "application/json",
+        "schema": {
+          "type": "object",
+          "required": ["requestId", "status"],
+          "properties": {
+            "requestId": { "type": "string" },
+            "status": {
+              "type": "string",
+              "knownValues": ["approved", "denied"]
+            },
+            "reason": {
+              "type": "string",
+              "maxGraphemes": 3000
+            }
+          }
+        }
+      },
+      "output": {
+        "encoding": "application/json",
+        "schema": {
+          "type": "object",
+          "required": ["requestId"],
+          "properties": {
+            "requestId": { "type": "string" },
+            "verificationUri": {
+              "type": "string",
+              "format": "at-uri",
+              "description": "URI of the dev.cartridge.graph.verification record, present on approval."
+            }
+          }
+        }
+      }
+    }
+  }
+}

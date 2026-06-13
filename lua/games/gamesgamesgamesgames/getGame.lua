@@ -168,5 +168,24 @@ function handle()
     end
   end
 
+  -- Verified owner lookup
+  local VERIFIER_DID = env.VERIFIER_DID
+  local PENTARACT_DID = env.PENTARACT_DID
+  local game_owner_did = record.uri:match("^at://([^/]+)/")
+
+  if VERIFIER_DID and VERIFIER_DID ~= "" and game_owner_did and game_owner_did ~= PENTARACT_DID then
+    local v_rows = db.raw(
+      "SELECT record FROM records WHERE collection = 'dev.cartridge.graph.verification' AND did = $1 AND record::jsonb->>'subject' = $2 LIMIT 1",
+      { VERIFIER_DID, game_owner_did }
+    )
+    if v_rows and #v_rows > 0 then
+      local v_record = json.decode(v_rows[1].record)
+      game.verifiedOwner = {
+        did = game_owner_did,
+        accountType = v_record.accountType,
+      }
+    end
+  end
+
   return { game = game }
 end

@@ -69,6 +69,19 @@ function handle()
       avatar = record.avatar,
       createdAt = record.createdAt
     }
+    -- Verified account lookup
+    local VERIFIER_DID = env.VERIFIER_DID
+    if VERIFIER_DID and VERIFIER_DID ~= "" then
+      local v_rows = db.raw(
+        "SELECT record FROM records WHERE collection = 'dev.cartridge.graph.verification' AND did = $1 AND record::jsonb->>'subject' = $2 LIMIT 1",
+        { VERIFIER_DID, did }
+      )
+      if v_rows and #v_rows > 0 then
+        local v_record = json.decode(v_rows[1].record)
+        profile.verifiedAccountType = v_record.accountType
+      end
+    end
+
     return { profile = profile, profileType = "actor", handle = resolved_handle }
   end
 
@@ -96,6 +109,20 @@ function handle()
       avatar = record.avatar,
       createdAt = record.createdAt
     }
+
+    -- Verified account lookup
+    local VERIFIER_DID = env.VERIFIER_DID
+    if VERIFIER_DID and VERIFIER_DID ~= "" then
+      local v_rows = db.raw(
+        "SELECT record FROM records WHERE collection = 'dev.cartridge.graph.verification' AND did = $1 AND record::jsonb->>'subject' = $2 LIMIT 1",
+        { VERIFIER_DID, did }
+      )
+      if v_rows and #v_rows > 0 then
+        local v_record = json.decode(v_rows[1].record)
+        profile.verifiedAccountType = v_record.accountType
+      end
+    end
+
     return { profile = profile, profileType = "org", handle = resolved_handle }
   end
 
