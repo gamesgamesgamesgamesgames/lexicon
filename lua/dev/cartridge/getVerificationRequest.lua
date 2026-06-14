@@ -29,7 +29,7 @@ function handle()
   end
 
   if not rows or #rows == 0 then
-    error("verification request not found")
+    return { request = nil }
   end
 
   local row = rows[1]
