@@ -73,10 +73,8 @@ jobs:
           filters: |
             g5:
               - 'lexicons/games/**'
-              - 'lua/games/**'
             cartridge:
               - 'lexicons/dev/**'
-              - 'lua/dev/**'
             happyview:
               - 'lexicons/**'
               - 'lua/**'
