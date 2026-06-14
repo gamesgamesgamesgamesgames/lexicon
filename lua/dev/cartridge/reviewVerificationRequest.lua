@@ -9,6 +9,49 @@ end
 
 local ADMIN_DIDS = parse_admin_dids()
 
+local function get_verifier_session()
+  local pds_url = env.VERIFIER_PDS_URL
+  local identifier = env.VERIFIER_DID
+  local password = env.VERIFIER_APP_PASSWORD
+  if not pds_url or not identifier or not password then
+    error("VERIFIER_PDS_URL, VERIFIER_DID, and VERIFIER_APP_PASSWORD must all be configured")
+  end
+
+  local resp = http.post(pds_url .. "/xrpc/com.atproto.server.createSession", {
+    headers = { ["content-type"] = "application/json" },
+    body = json.encode({ identifier = identifier, password = password }),
+  })
+
+  if not resp or resp.status ~= 200 then
+    local msg = resp and resp.body or "no response"
+    error("failed to create verifier session: " .. msg)
+  end
+
+  local session = json.decode(resp.body)
+  return session.accessJwt, session.did
+end
+
+local function create_record_as_verifier(pds_url, access_token, repo_did, collection, record_value)
+  local resp = http.post(pds_url .. "/xrpc/com.atproto.repo.createRecord", {
+    headers = {
+      ["content-type"] = "application/json",
+      ["authorization"] = "Bearer " .. access_token,
+    },
+    body = json.encode({
+      repo = repo_did,
+      collection = collection,
+      record = record_value,
+    }),
+  })
+
+  if not resp or resp.status ~= 200 then
+    local msg = resp and resp.body or "no response"
+    error("failed to create " .. collection .. " record: " .. msg)
+  end
+
+  return json.decode(resp.body)
+end
+
 function handle()
   if not ADMIN_DIDS[caller_did] then
     error("unauthorized: only admins can review verification requests")
@@ -80,28 +123,31 @@ function handle()
       end
     end
 
+    -- Authenticate as the verifier account via app password
+    local access_token, verifier_did = get_verifier_session()
+    local pds_url = env.VERIFIER_PDS_URL
+    local created_at = now()
+
     -- Write app.bsky.graph.verification record from verifier account
-    local bsky_verification = Record.new("app.bsky.graph.verification", {
+    create_record_as_verifier(pds_url, access_token, verifier_did, "app.bsky.graph.verification", {
+      ["$type"] = "app.bsky.graph.verification",
       subject = requester_did,
       handle = resolved_handle,
       displayName = display_name,
-      createdAt = now(),
+      createdAt = created_at,
     })
-    bsky_verification:set_repo(VERIFIER_DID)
-    bsky_verification:save()
 
     -- Write dev.cartridge.graph.verification record from verifier account
-    local cartridge_verification = Record.new("dev.cartridge.graph.verification", {
+    local cartridge_result = create_record_as_verifier(pds_url, access_token, verifier_did, "dev.cartridge.graph.verification", {
+      ["$type"] = "dev.cartridge.graph.verification",
       subject = requester_did,
       handle = resolved_handle,
       displayName = display_name,
       accountType = request.account_type,
-      createdAt = now(),
+      createdAt = created_at,
     })
-    cartridge_verification:set_repo(VERIFIER_DID)
-    cartridge_verification:save()
 
-    verification_uri = cartridge_verification._uri
+    verification_uri = cartridge_result.uri
   end
 
   -- Update the request row
