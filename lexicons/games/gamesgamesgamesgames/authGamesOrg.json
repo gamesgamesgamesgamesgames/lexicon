@@ -1,0 +1,31 @@
+{
+	"lexicon": 1,
+	"id": "games.gamesgamesgamesgames.authGamesOrg",
+	"defs": {
+		"main": {
+			"type": "permission-set",
+			"title": "Organization Management",
+			"detail": "Create and edit organization profiles and manage game credits.",
+			"permissions": [
+				{
+					"type": "permission",
+					"resource": "repo",
+					"collection": [
+						"games.gamesgamesgamesgames.org.credit",
+						"games.gamesgamesgamesgames.org.profile"
+					]
+				},
+				{
+					"type": "permission",
+					"resource": "rpc",
+					"inheritAud": true,
+					"lxm": [
+						"games.gamesgamesgamesgames.org.createProfile",
+						"games.gamesgamesgamesgames.org.getProfile",
+						"games.gamesgamesgamesgames.org.putProfile"
+					]
+				}
+			]
+		}
+	}
+}
