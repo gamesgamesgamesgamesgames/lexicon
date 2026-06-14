@@ -36,6 +36,22 @@ declare -A repo_nsids
 # Track script trigger IDs deployed this run
 declare -A repo_script_ids
 
+# Parse changed files filter (optional)
+declare -A changed_filter=()
+filter_enabled=false
+if [[ -n "${CHANGED_FILES:-}" && "$CHANGED_FILES" != "[]" ]]; then
+  filter_enabled=true
+  while IFS= read -r cf; do
+    [[ -n "$cf" ]] && changed_filter["$cf"]=1
+  done < <(echo "$CHANGED_FILES" | jq -r '.[]')
+  if [[ -n "${changed_filter['happyview.json']+_}" ]]; then
+    filter_enabled=false
+    echo "happyview.json changed — deploying all"
+  else
+    echo "Filtering to ${#changed_filter[@]} changed file(s)"
+  fi
+fi
+
 # Process each JSON file under lexicons/
 while IFS= read -r json_file; do
   # Extract the NSID and type from the JSON
@@ -48,6 +64,28 @@ while IFS= read -r json_file; do
   fi
 
   repo_nsids["$nsid"]=1
+
+  # Determine corresponding Lua script path and trigger ID
+  rel_path="${json_file#$LEXICONS_DIR/}"
+  lua_file="$LUA_DIR/${rel_path%.json}.lua"
+  trigger_id=""
+  if [[ -n "$lexicon_type" && -f "$lua_file" ]]; then
+    case "$lexicon_type" in
+      query)      trigger_id="xrpc.query:$nsid" ;;
+      procedure)  trigger_id="xrpc.procedure:$nsid" ;;
+      record)     trigger_id="record.index:$nsid" ;;
+    esac
+    [[ -n "$trigger_id" ]] && repo_script_ids["$trigger_id"]=1
+  fi
+
+  # Skip unchanged files if filtering (still tracked above for cleanup)
+  if $filter_enabled; then
+    dorny_json="lexicons/$rel_path"
+    dorny_lua="lua/${rel_path%.json}.lua"
+    if [[ -z "${changed_filter[$dorny_json]+_}" ]] && [[ -z "${changed_filter[$dorny_lua]+_}" ]]; then
+      continue
+    fi
+  fi
 
   # Look up manifest entry for target_collection
   target_collection=$(jq -r --arg nsid "$nsid" '.[$nsid].target_collection // empty' "$MANIFEST")
@@ -85,50 +123,36 @@ while IFS= read -r json_file; do
   fi
   rm -f "$response"
 
-  # Upload the Lua script separately if it exists
-  rel_path="${json_file#$LEXICONS_DIR/}"
-  lua_file="$LUA_DIR/${rel_path%.json}.lua"
+  # Upload the Lua script if it exists
+  if [[ -n "$trigger_id" ]]; then
+    lua_body=$(cat "$lua_file")
 
-  if [[ -n "$lexicon_type" && -f "$lua_file" ]]; then
-    # Determine the trigger ID based on lexicon type
-    case "$lexicon_type" in
-      query)      trigger_id="xrpc.query:$nsid" ;;
-      procedure)  trigger_id="xrpc.procedure:$nsid" ;;
-      record)     trigger_id="record.index:$nsid" ;;
-      *)          trigger_id="" ;;
-    esac
+    script_payload=$(jq -n \
+      --arg id "$trigger_id" \
+      --arg body "$lua_body" \
+      '{
+        id: $id,
+        script_type: "lua",
+        body: $body
+      }')
 
-    if [[ -n "$trigger_id" ]]; then
-      repo_script_ids["$trigger_id"]=1
-      lua_body=$(cat "$lua_file")
+    script_response=$(mktemp)
+    script_code=$(curl -s -o "$script_response" -w "%{http_code}" \
+      -X POST \
+      -H "Authorization: Bearer $HAPPYVIEW_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d "$script_payload" \
+      "$HAPPYVIEW_URL/hv/admin/scripts")
 
-      script_payload=$(jq -n \
-        --arg id "$trigger_id" \
-        --arg body "$lua_body" \
-        '{
-          id: $id,
-          script_type: "lua",
-          body: $body
-        }')
-
-      script_response=$(mktemp)
-      script_code=$(curl -s -o "$script_response" -w "%{http_code}" \
-        -X POST \
-        -H "Authorization: Bearer $HAPPYVIEW_API_KEY" \
-        -H "Content-Type: application/json" \
-        -d "$script_payload" \
-        "$HAPPYVIEW_URL/hv/admin/scripts")
-
-      if [[ "$script_code" -ge 200 && "$script_code" -lt 300 ]]; then
-        echo "  SCRIPT OK: $trigger_id → HTTP $script_code"
-        scripts_deployed=$((scripts_deployed + 1))
-      else
-        echo "  SCRIPT FAIL: $trigger_id → HTTP $script_code" >&2
-        cat "$script_response" >&2; echo >&2
-        errors=$((errors + 1))
-      fi
-      rm -f "$script_response"
+    if [[ "$script_code" -ge 200 && "$script_code" -lt 300 ]]; then
+      echo "  SCRIPT OK: $trigger_id → HTTP $script_code"
+      scripts_deployed=$((scripts_deployed + 1))
+    else
+      echo "  SCRIPT FAIL: $trigger_id → HTTP $script_code" >&2
+      cat "$script_response" >&2; echo >&2
+      errors=$((errors + 1))
     fi
+    rm -f "$script_response"
   fi
 
 done < <(find "$LEXICONS_DIR" -name '*.json' -type f | sort)

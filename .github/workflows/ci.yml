@@ -2,18 +2,42 @@ name: CI/CD
 
 on:
   workflow_dispatch:
+    inputs:
+      g5:
+        description: 'Publish G5 lexicons'
+        type: boolean
+        default: false
+      cartridge:
+        description: 'Publish Cartridge lexicons'
+        type: boolean
+        default: false
+      happyview:
+        description: 'Deploy to HappyView'
+        type: boolean
+        default: false
+      docs:
+        description: 'Deploy docs'
+        type: boolean
+        default: false
   pull_request:
     paths:
-      - "lexicons/**"
-      - "lua/**"
-      - ".github/workflows/ci.yml"
+      - 'lexicons/**'
+      - 'lua/**'
+      - 'happyview.json'
+      - 'packages/docs/**'
+      - 'packages/design-system/**'
+      - 'tsconfig.base.json'
+      - '.github/workflows/ci.yml'
   push:
-    branches:
-      - main
+    branches: [main]
     paths:
-      - "lexicons/**"
-      - "lua/**"
-      - ".github/workflows/ci.yml"
+      - 'lexicons/**'
+      - 'lua/**'
+      - 'happyview.json'
+      - 'packages/docs/**'
+      - 'packages/design-system/**'
+      - 'tsconfig.base.json'
+      - '.github/workflows/ci.yml'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -23,8 +47,58 @@ permissions:
   contents: read
 
 jobs:
+  # ---------------------------------------------------------------------------
+  # Path detection — determines which job groups should run.
+  # ---------------------------------------------------------------------------
+  changes:
+    if: github.event_name == 'pull_request' || github.event_name == 'push'
+    runs-on: ubuntu-latest
+    outputs:
+      g5: ${{ steps.filter.outputs.g5 }}
+      g5_files: ${{ steps.filter.outputs.g5_files }}
+      cartridge: ${{ steps.filter.outputs.cartridge }}
+      cartridge_files: ${{ steps.filter.outputs.cartridge_files }}
+      happyview: ${{ steps.filter.outputs.happyview }}
+      happyview_files: ${{ steps.filter.outputs.happyview_files }}
+      docs: ${{ steps.filter.outputs.docs }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Detect changed paths
+        id: filter
+        uses: dorny/paths-filter@v4
+        with:
+          list-files: json
+          filters: |
+            g5:
+              - 'lexicons/games/**'
+              - 'lua/games/**'
+            cartridge:
+              - 'lexicons/dev/**'
+              - 'lua/dev/**'
+            happyview:
+              - 'lexicons/**'
+              - 'lua/**'
+              - 'happyview.json'
+            docs:
+              - 'lexicons/**'
+              - 'packages/docs/**'
+              - 'packages/design-system/**'
+              - 'tsconfig.base.json'
+
+  # ---------------------------------------------------------------------------
+  # Lint
+  # ---------------------------------------------------------------------------
   lint:
     name: Lint
+    needs: changes
+    if: >-
+      always()
+      && (
+        needs.changes.outputs.happyview == 'true'
+        || (github.event_name == 'workflow_dispatch' && (inputs.g5 || inputs.cartridge || inputs.happyview))
+      )
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -48,12 +122,18 @@ jobs:
   #       with:
   #         lexicon-path: ./lexicons
 
+  # ---------------------------------------------------------------------------
+  # Publish — push lexicon schemas to atproto repos
+  # ---------------------------------------------------------------------------
   publish-g5:
     name: Publish G5 Lexicons
+    needs: [changes, lint]
+    if: >-
+      always()
+      && github.ref == 'refs/heads/main'
+      && (needs.changes.outputs.g5 == 'true' || (github.event_name == 'workflow_dispatch' && inputs.g5))
+      && needs.lint.result == 'success'
     runs-on: ubuntu-latest
-    # needs: [lint, breaking]
-    needs: [lint]
-    if: github.ref == 'refs/heads/main'
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -63,13 +143,17 @@ jobs:
         env:
           PUBLISH_HANDLE: gamesgamesgamesgames.games
           PUBLISH_PASSWORD: ${{ secrets.GAMESGAMESGAMESGAMES_GAMES_APP_PASSWORD }}
+          CHANGED_FILES: ${{ needs.changes.outputs.g5_files }}
 
   publish-cartridge:
     name: Publish Cartridge Lexicons
+    needs: [changes, lint]
+    if: >-
+      always()
+      && github.ref == 'refs/heads/main'
+      && (needs.changes.outputs.cartridge == 'true' || (github.event_name == 'workflow_dispatch' && inputs.cartridge))
+      && needs.lint.result == 'success'
     runs-on: ubuntu-latest
-    # needs: [lint, breaking]
-    needs: [lint]
-    if: github.ref == 'refs/heads/main'
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -79,12 +163,20 @@ jobs:
         env:
           PUBLISH_HANDLE: cartridge.dev
           PUBLISH_PASSWORD: ${{ secrets.CARTRIDGE_DEV_APP_PASSWORD }}
+          CHANGED_FILES: ${{ needs.changes.outputs.cartridge_files }}
 
+  # ---------------------------------------------------------------------------
+  # Deploy — upload lexicons and scripts to HappyView
+  # ---------------------------------------------------------------------------
   deploy:
     name: Deploy to HappyView
+    needs: [changes, lint]
+    if: >-
+      always()
+      && github.ref == 'refs/heads/main'
+      && (needs.changes.outputs.happyview == 'true' || (github.event_name == 'workflow_dispatch' && inputs.happyview))
+      && needs.lint.result == 'success'
     runs-on: ubuntu-latest
-    needs: [lint]
-    if: github.ref == 'refs/heads/main'
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -94,3 +186,24 @@ jobs:
         env:
           HAPPYVIEW_URL: ${{ vars.HAPPYVIEW_URL }}
           HAPPYVIEW_API_KEY: ${{ secrets.HAPPYVIEW_API_KEY }}
+          CHANGED_FILES: ${{ needs.changes.outputs.happyview_files }}
+
+  # ---------------------------------------------------------------------------
+  # Docs — trigger cartridge-infra deploy
+  # ---------------------------------------------------------------------------
+  docs:
+    name: Deploy Docs
+    needs: changes
+    if: >-
+      always()
+      && github.ref == 'refs/heads/main'
+      && (needs.changes.outputs.docs == 'true' || (github.event_name == 'workflow_dispatch' && inputs.docs))
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger cartridge-infra deploy
+        run: |
+          curl -X POST \
+            -H "Authorization: token ${{ secrets.DISPATCH_GH_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            https://api.github.com/repos/gamesgamesgamesgamesgames/cartridge-infra/dispatches \
+            -d '{"event_type":"deploy-docs"}'

@@ -32,6 +32,20 @@ if [[ ! -d "$LEXICON_DIR" ]]; then
 fi
 
 # ---------------------------------------------------------------------------
+# Parse changed files filter (optional)
+# ---------------------------------------------------------------------------
+
+declare -A changed_filter=()
+filter_enabled=false
+if [[ -n "${CHANGED_FILES:-}" && "$CHANGED_FILES" != "[]" ]]; then
+  filter_enabled=true
+  while IFS= read -r cf; do
+    [[ -n "$cf" ]] && changed_filter["$cf"]=1
+  done < <(echo "$CHANGED_FILES" | jq -r '.[]')
+  echo "Filtering to ${#changed_filter[@]} changed file(s)"
+fi
+
+# ---------------------------------------------------------------------------
 # Resolve handle → DID → PDS
 # ---------------------------------------------------------------------------
 
@@ -138,6 +152,13 @@ while IFS= read -r json_file; do
   if [[ -z "$nsid" ]]; then
     echo "SKIP: $json_file (missing id)"
     continue
+  fi
+
+  if $filter_enabled; then
+    rel="${json_file#./}"
+    if [[ -z "${changed_filter[$rel]+_}" ]]; then
+      continue
+    fi
   fi
 
   if [[ -n "${existing_rkeys[$nsid]+_}" ]]; then

@@ -42,17 +42,49 @@ function handle()
   local verification_uri = nil
 
   if input.status == "approved" then
-    -- Resolve the requester's current handle and display name
-    local profile = resolve_identity(request.requester_did)
-    if not profile then
-      error("could not resolve identity for " .. request.requester_did)
+    -- Resolve the requester's handle from their DID doc
+    local requester_did = request.requester_did
+    local resolved_handle = requester_did
+    local did_doc_url
+    if string.find(requester_did, "^did:web:") then
+      local domain = requester_did:sub(9)
+      did_doc_url = "https://" .. domain .. "/.well-known/did.json"
+    else
+      did_doc_url = "https://plc.directory/" .. requester_did
+    end
+    local did_resp = http.get(did_doc_url)
+    if did_resp and did_resp.body and did_resp.body ~= "" then
+      local doc = json.decode(did_resp.body)
+      if doc and doc.alsoKnownAs then
+        for _, aka in ipairs(doc.alsoKnownAs) do
+          local h = aka:match("^at://(.+)")
+          if h then
+            resolved_handle = h
+            break
+          end
+        end
+      end
+    end
+
+    -- Look up display name from their actor profile record
+    local display_name = resolved_handle
+    local profile_results = db.query({
+      collection = "games.gamesgamesgamesgames.actor.profile",
+      did = requester_did,
+      limit = 1
+    })
+    if profile_results.records and #profile_results.records > 0 then
+      local pr = profile_results.records[1]
+      if pr.value and pr.value.displayName and pr.value.displayName ~= "" then
+        display_name = pr.value.displayName
+      end
     end
 
     -- Write app.bsky.graph.verification record from verifier account
     local bsky_verification = Record.new("app.bsky.graph.verification", {
-      subject = request.requester_did,
-      handle = profile.handle,
-      displayName = profile.displayName or profile.handle,
+      subject = requester_did,
+      handle = resolved_handle,
+      displayName = display_name,
       createdAt = now(),
     })
     bsky_verification:set_repo(VERIFIER_DID)
@@ -60,9 +92,9 @@ function handle()
 
     -- Write dev.cartridge.graph.verification record from verifier account
     local cartridge_verification = Record.new("dev.cartridge.graph.verification", {
-      subject = request.requester_did,
-      handle = profile.handle,
-      displayName = profile.displayName or profile.handle,
+      subject = requester_did,
+      handle = resolved_handle,
+      displayName = display_name,
       accountType = request.account_type,
       createdAt = now(),
     })
