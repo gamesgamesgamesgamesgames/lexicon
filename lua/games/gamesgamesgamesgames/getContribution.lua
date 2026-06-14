@@ -11,7 +11,7 @@ function handle()
   )
 
   if not rows or #rows == 0 then
-    error("contribution not found")
+    error("contribution not found: " .. uri)
   end
 
   local row = rows[1]
