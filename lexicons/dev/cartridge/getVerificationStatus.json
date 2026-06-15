@@ -1,0 +1,39 @@
+{
+	"$type": "com.atproto.lexicon.schema",
+	"lexicon": 1,
+	"id": "dev.cartridge.getVerificationStatus",
+	"defs": {
+		"main": {
+			"type": "query",
+			"description": "Check whether a DID or handle has been verified by the Cartridge verifier. Does not require authentication.",
+			"parameters": {
+				"type": "params",
+				"required": ["handle"],
+				"properties": {
+					"handle": {
+						"type": "string",
+						"description": "DID or handle to check."
+					}
+				}
+			},
+			"output": {
+				"encoding": "application/json",
+				"schema": {
+					"type": "object",
+					"required": ["isVerified"],
+					"properties": {
+						"isVerified": {
+							"type": "boolean",
+							"description": "Whether the account has been verified."
+						},
+						"accountType": {
+							"type": "string",
+							"knownValues": ["studio", "developer", "publisher"],
+							"description": "The verified account type. Only present when isVerified is true."
+						}
+					}
+				}
+			}
+		}
+	}
+}
