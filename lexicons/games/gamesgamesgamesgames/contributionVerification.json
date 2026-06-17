@@ -9,7 +9,7 @@
 			"key": "tid",
 			"record": {
 				"type": "object",
-				"required": ["contribution", "contributor", "subject", "contributionType", "acceptedBy", "createdAt"],
+				"required": ["contribution", "contributor", "contributionType", "acceptedBy", "createdAt"],
 				"properties": {
 					"contribution": {
 						"type": "ref",

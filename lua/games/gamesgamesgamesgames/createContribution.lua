@@ -71,19 +71,32 @@ function handle()
     end
   end
 
-  -- Rate-limit: max 20 pending contributions per user
-  local pending = db.raw(
-    "SELECT COUNT(*) as cnt FROM records c " ..
-    "WHERE c.collection = 'games.gamesgamesgamesgames.contribution' " ..
-    "AND c.did = $1 " ..
-    "AND NOT EXISTS (" ..
-      "SELECT 1 FROM records r WHERE r.collection = 'games.gamesgamesgamesgames.contributionReview' " ..
-      "AND r.record::jsonb->'contribution'->>'uri' = c.uri" ..
-    ")",
-    { caller_did }
-  )
-  if pending and #pending > 0 and tonumber(pending[1].cnt) >= 20 then
-    error("too many pending contributions (max 20)")
+  -- System identities (e.g. IGDB scraper) are exempt from rate limits
+  local is_system = false
+  if env.SYSTEM_DIDS then
+    for did in env.SYSTEM_DIDS:gmatch("[^,]+") do
+      if did:match("^%s*(.-)%s*$") == caller_did then
+        is_system = true
+        break
+      end
+    end
+  end
+
+  -- Rate-limit: max 20 pending contributions per user (system identities exempt)
+  if not is_system then
+    local pending = db.raw(
+      "SELECT COUNT(*) as cnt FROM records c " ..
+      "WHERE c.collection = 'games.gamesgamesgamesgames.contribution' " ..
+      "AND c.did = $1 " ..
+      "AND NOT EXISTS (" ..
+        "SELECT 1 FROM records r WHERE r.collection = 'games.gamesgamesgamesgames.contributionReview' " ..
+        "AND r.record::jsonb->'contribution'->>'uri' = c.uri" ..
+      ")",
+      { caller_did }
+    )
+    if pending and #pending > 0 and tonumber(pending[1].cnt) >= 20 then
+      error("too many pending contributions (max 20)")
+    end
   end
 
   -- Build contribution record

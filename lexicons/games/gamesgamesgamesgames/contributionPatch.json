@@ -9,7 +9,7 @@
 			"key": "tid",
 			"record": {
 				"type": "object",
-				"required": ["contribution", "contributionReview", "subject", "changes", "createdAt"],
+				"required": ["contribution", "contributionReview", "changes", "createdAt"],
 				"properties": {
 					"contribution": {
 						"type": "ref",
@@ -22,7 +22,7 @@
 					"subject": {
 						"type": "string",
 						"format": "at-uri",
-						"description": "The entity these changes apply to."
+						"description": "The entity these changes apply to. Absent for newGame contributions."
 					},
 					"changes": {
 						"type": "unknown",
