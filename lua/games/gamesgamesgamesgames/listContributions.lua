@@ -39,21 +39,23 @@ function handle()
     return "$" .. param_idx
   end
 
+  local ts = "COALESCE(c.indexed_at, c.created_at)::text"
+
   if status_filter == "pending" then
-    sql = "SELECT c.uri, c.cid, c.record, c.indexed_at FROM records c " ..
+    sql = "SELECT c.uri, c.cid, c.record, " .. ts .. " as indexed_at FROM records c " ..
           "WHERE c.collection = 'games.gamesgamesgamesgames.contribution' " ..
           "AND NOT EXISTS (" ..
             "SELECT 1 FROM records r WHERE r.collection = 'games.gamesgamesgamesgames.contributionReview' " ..
             "AND r.record::jsonb->'contribution'->>'uri' = c.uri" ..
           ")"
   elseif status_filter == "approved" or status_filter == "denied" or status_filter == "needsRevision" then
-    sql = "SELECT c.uri, c.cid, c.record, c.indexed_at FROM records c " ..
+    sql = "SELECT c.uri, c.cid, c.record, " .. ts .. " as indexed_at FROM records c " ..
           "INNER JOIN records r ON r.collection = 'games.gamesgamesgamesgames.contributionReview' " ..
           "AND r.record::jsonb->'contribution'->>'uri' = c.uri " ..
           "AND r.record::jsonb->>'status' = " .. next_param(status_filter) .. " " ..
           "WHERE c.collection = 'games.gamesgamesgamesgames.contribution'"
   else
-    sql = "SELECT c.uri, c.cid, c.record, c.indexed_at FROM records c " ..
+    sql = "SELECT c.uri, c.cid, c.record, " .. ts .. " as indexed_at FROM records c " ..
           "WHERE c.collection = 'games.gamesgamesgamesgames.contribution'"
   end
 
@@ -77,10 +79,10 @@ function handle()
 
   -- Cursor pagination
   if cursor_indexed_at and cursor_uri then
-    sql = sql .. " AND (c.indexed_at, c.uri) < (" .. next_param(cursor_indexed_at) .. ", " .. next_param(cursor_uri) .. ")"
+    sql = sql .. " AND (" .. ts .. ", c.uri) < (" .. next_param(cursor_indexed_at) .. ", " .. next_param(cursor_uri) .. ")"
   end
 
-  sql = sql .. " ORDER BY c.indexed_at DESC, c.uri DESC LIMIT " .. next_param(limit)
+  sql = sql .. " ORDER BY " .. ts .. " DESC, c.uri DESC LIMIT " .. next_param(limit)
 
   local rows = db.raw(sql, sql_params)
 
