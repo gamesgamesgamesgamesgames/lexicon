@@ -122,6 +122,9 @@ function handle()
 
   -- Create record in caller's repo
   local contribution = Record.new("games.gamesgamesgamesgames.contribution", contribution_data)
+  if input.rkey and input.rkey ~= "" then
+    contribution:set_rkey(input.rkey)
+  end
   contribution:save()
 
   return { uri = contribution._uri }

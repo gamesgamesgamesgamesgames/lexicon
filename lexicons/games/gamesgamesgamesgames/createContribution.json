@@ -28,6 +28,10 @@
 						"message": {
 							"type": "string",
 							"maxGraphemes": 3000
+						},
+						"rkey": {
+							"type": "string",
+							"description": "Optional record key. When provided, the contribution is created with this rkey instead of an auto-generated one."
 						}
 					}
 				}
