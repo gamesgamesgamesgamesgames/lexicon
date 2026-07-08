@@ -42,20 +42,20 @@ function handle()
   local ts = "COALESCE(c.indexed_at, c.created_at)::text"
 
   if status_filter == "pending" then
-    sql = "SELECT c.uri, c.cid, c.record, " .. ts .. " as indexed_at FROM records c " ..
+    sql = "SELECT c.uri, c.cid, c.record, " .. ts .. " as indexed_at FROM happyview_records c " ..
           "WHERE c.collection = 'games.gamesgamesgamesgames.contribution' " ..
           "AND NOT EXISTS (" ..
-            "SELECT 1 FROM records r WHERE r.collection = 'games.gamesgamesgamesgames.contributionReview' " ..
+            "SELECT 1 FROM happyview_records r WHERE r.collection = 'games.gamesgamesgamesgames.contributionReview' " ..
             "AND r.record::jsonb->'contribution'->>'uri' = c.uri" ..
           ")"
   elseif status_filter == "approved" or status_filter == "denied" or status_filter == "needsRevision" then
-    sql = "SELECT c.uri, c.cid, c.record, " .. ts .. " as indexed_at FROM records c " ..
-          "INNER JOIN records r ON r.collection = 'games.gamesgamesgamesgames.contributionReview' " ..
+    sql = "SELECT c.uri, c.cid, c.record, " .. ts .. " as indexed_at FROM happyview_records c " ..
+          "INNER JOIN happyview_records r ON r.collection = 'games.gamesgamesgamesgames.contributionReview' " ..
           "AND r.record::jsonb->'contribution'->>'uri' = c.uri " ..
           "AND r.record::jsonb->>'status' = " .. next_param(status_filter) .. " " ..
           "WHERE c.collection = 'games.gamesgamesgamesgames.contribution'"
   else
-    sql = "SELECT c.uri, c.cid, c.record, " .. ts .. " as indexed_at FROM records c " ..
+    sql = "SELECT c.uri, c.cid, c.record, " .. ts .. " as indexed_at FROM happyview_records c " ..
           "WHERE c.collection = 'games.gamesgamesgamesgames.contribution'"
   end
 
@@ -63,7 +63,7 @@ function handle()
   if not is_admin then
     sql = sql .. " AND (c.did = " .. next_param(caller_did) ..
           " OR c.record::jsonb->>'subject' IN (" ..
-            "SELECT uri FROM records WHERE collection = 'games.gamesgamesgamesgames.game' AND did = " .. next_param(caller_did) ..
+            "SELECT uri FROM happyview_records WHERE collection = 'games.gamesgamesgamesgames.game' AND did = " .. next_param(caller_did) ..
           "))"
   end
 
@@ -117,7 +117,7 @@ function handle()
 
     -- Look up associated review
     local review_rows = db.raw(
-      "SELECT uri, record FROM records WHERE collection = 'games.gamesgamesgamesgames.contributionReview' " ..
+      "SELECT uri, record FROM happyview_records WHERE collection = 'games.gamesgamesgamesgames.contributionReview' " ..
       "AND record::jsonb->'contribution'->>'uri' = $1 LIMIT 1",
       { row.uri }
     )
@@ -136,7 +136,7 @@ function handle()
 
     -- Look up associated verification
     local verification_rows = db.raw(
-      "SELECT uri, record FROM records WHERE collection = 'games.gamesgamesgamesgames.contributionVerification' " ..
+      "SELECT uri, record FROM happyview_records WHERE collection = 'games.gamesgamesgamesgames.contributionVerification' " ..
       "AND record::jsonb->'contribution'->>'uri' = $1 LIMIT 1",
       { row.uri }
     )

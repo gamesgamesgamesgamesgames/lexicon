@@ -23,7 +23,7 @@ function handle()
 
   -- Get liked game URIs from Postgres (likes aren't indexed in meilisearch)
   local likes = db.raw(
-    "SELECT record FROM records WHERE collection = $1 AND did = $2 ORDER BY indexed_at DESC LIMIT $3 OFFSET $4",
+    "SELECT record FROM happyview_records WHERE collection = $1 AND did = $2 ORDER BY indexed_at DESC LIMIT $3 OFFSET $4",
     {"games.gamesgamesgamesgames.graph.like", did, limit + 1, offset}
   )
 

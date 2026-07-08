@@ -18,7 +18,7 @@ function handle()
 
   -- Count items in this list
   local count_rows = db.raw(
-    "SELECT COUNT(*)::int AS count FROM records WHERE collection = $1 AND did = $2 AND record::jsonb->>'listUri' = $3",
+    "SELECT COUNT(*)::int AS count FROM happyview_records WHERE collection = $1 AND did = $2 AND record::jsonb->>'listUri' = $3",
     {"games.gamesgamesgamesgames.feed.listItem", creator_did, uri}
   )
   local item_count = 0

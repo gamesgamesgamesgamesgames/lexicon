@@ -27,13 +27,13 @@ function handle()
 
   -- Get likes with timestamps
   local like_rows = db.raw(
-    "SELECT record, indexed_at FROM records WHERE collection = $1 AND did = $2 ORDER BY indexed_at DESC LIMIT $3",
+    "SELECT record, indexed_at FROM happyview_records WHERE collection = $1 AND did = $2 ORDER BY indexed_at DESC LIMIT $3",
     {"games.gamesgamesgamesgames.graph.like", did, fetch_limit}
   )
 
   -- Get reviews with timestamps
   local review_rows = db.raw(
-    "SELECT uri, record, indexed_at FROM records WHERE collection = $1 AND did = $2 ORDER BY indexed_at DESC LIMIT $3",
+    "SELECT uri, record, indexed_at FROM happyview_records WHERE collection = $1 AND did = $2 ORDER BY indexed_at DESC LIMIT $3",
     {"social.popfeed.feed.review", did, fetch_limit}
   )
 
@@ -77,7 +77,7 @@ function handle()
 
   -- Get list creation events
   local list_rows = db.raw(
-    "SELECT uri, record, indexed_at FROM records WHERE collection = $1 AND did = $2 ORDER BY indexed_at DESC LIMIT $3",
+    "SELECT uri, record, indexed_at FROM happyview_records WHERE collection = $1 AND did = $2 ORDER BY indexed_at DESC LIMIT $3",
     {"games.gamesgamesgamesgames.feed.list", did, fetch_limit}
   )
 
@@ -94,7 +94,7 @@ function handle()
 
   -- Get listItem addition events
   local list_item_rows = db.raw(
-    "SELECT uri, record, indexed_at FROM records WHERE collection = $1 AND did = $2 ORDER BY indexed_at DESC LIMIT $3",
+    "SELECT uri, record, indexed_at FROM happyview_records WHERE collection = $1 AND did = $2 ORDER BY indexed_at DESC LIMIT $3",
     {"games.gamesgamesgamesgames.feed.listItem", did, fetch_limit}
   )
 

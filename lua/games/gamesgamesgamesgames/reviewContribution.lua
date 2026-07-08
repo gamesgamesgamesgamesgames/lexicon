@@ -33,7 +33,7 @@ function handle()
   -- Load the contribution record
   local contribution_uri = input.contribution.uri
   local contribution_rows = db.raw(
-    "SELECT uri, cid, record FROM records WHERE uri = $1 LIMIT 1",
+    "SELECT uri, cid, record FROM happyview_records WHERE uri = $1 LIMIT 1",
     { contribution_uri }
   )
 
@@ -45,7 +45,7 @@ function handle()
 
   -- Check no existing review exists for this contribution
   local existing_review = db.raw(
-    "SELECT uri FROM records WHERE collection = 'games.gamesgamesgamesgames.contributionReview' " ..
+    "SELECT uri FROM happyview_records WHERE collection = 'games.gamesgamesgamesgames.contributionReview' " ..
     "AND record::jsonb->'contribution'->>'uri' = $1 LIMIT 1",
     { contribution_uri }
   )

@@ -85,11 +85,11 @@ function handle()
   -- Rate-limit: max 20 pending contributions per user (system identities exempt)
   if not is_system then
     local pending = db.raw(
-      "SELECT COUNT(*) as cnt FROM records c " ..
+      "SELECT COUNT(*) as cnt FROM happyview_records c " ..
       "WHERE c.collection = 'games.gamesgamesgamesgames.contribution' " ..
       "AND c.did = $1 " ..
       "AND NOT EXISTS (" ..
-        "SELECT 1 FROM records r WHERE r.collection = 'games.gamesgamesgamesgames.contributionReview' " ..
+        "SELECT 1 FROM happyview_records r WHERE r.collection = 'games.gamesgamesgamesgames.contributionReview' " ..
         "AND r.record::jsonb->'contribution'->>'uri' = c.uri" ..
       ")",
       { caller_did }

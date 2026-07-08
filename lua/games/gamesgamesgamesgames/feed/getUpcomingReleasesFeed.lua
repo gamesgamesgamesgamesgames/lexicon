@@ -15,7 +15,7 @@ local function get_like_counts(uris)
     query_params[i + 1] = uri
   end
 
-  local query = "SELECT record::jsonb->>'subject' AS subject, COUNT(*) AS count FROM records WHERE collection = $1 AND record::jsonb->>'subject' IN (" .. table.concat(placeholders, ",") .. ") GROUP BY record::jsonb->>'subject'"
+  local query = "SELECT record::jsonb->>'subject' AS subject, COUNT(*) AS count FROM happyview_records WHERE collection = $1 AND record::jsonb->>'subject' IN (" .. table.concat(placeholders, ",") .. ") GROUP BY record::jsonb->>'subject'"
 
   local result = db.raw(query, query_params)
   local counts = {}

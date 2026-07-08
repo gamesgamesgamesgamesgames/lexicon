@@ -73,7 +73,7 @@ function handle()
     local VERIFIER_DID = env.VERIFIER_DID
     if VERIFIER_DID and VERIFIER_DID ~= "" then
       local v_rows = db.raw(
-        "SELECT record FROM records WHERE collection = 'dev.cartridge.graph.verification' AND did = $1 AND record::jsonb->>'subject' = $2 LIMIT 1",
+        "SELECT record FROM happyview_records WHERE collection = 'dev.cartridge.graph.verification' AND did = $1 AND record::jsonb->>'subject' = $2 LIMIT 1",
         { VERIFIER_DID, did }
       )
       if v_rows and #v_rows > 0 then
@@ -114,7 +114,7 @@ function handle()
     local VERIFIER_DID = env.VERIFIER_DID
     if VERIFIER_DID and VERIFIER_DID ~= "" then
       local v_rows = db.raw(
-        "SELECT record FROM records WHERE collection = 'dev.cartridge.graph.verification' AND did = $1 AND record::jsonb->>'subject' = $2 LIMIT 1",
+        "SELECT record FROM happyview_records WHERE collection = 'dev.cartridge.graph.verification' AND did = $1 AND record::jsonb->>'subject' = $2 LIMIT 1",
         { VERIFIER_DID, did }
       )
       if v_rows and #v_rows > 0 then

@@ -22,7 +22,7 @@ function handle()
     "  SUM(CASE WHEN record::jsonb->>'contributionType' = 'addition' THEN 1 ELSE 0 END) as additions, " ..
     "  SUM(CASE WHEN record::jsonb->>'contributionType' = 'newGame' THEN 1 ELSE 0 END) as new_games, " ..
     "  SUM(CASE WHEN record::jsonb->>'acceptedBy' IN ('owner', 'both') THEN 1 ELSE 0 END) as owner_accepted " ..
-    "FROM records WHERE collection = 'games.gamesgamesgamesgames.contributionVerification' " ..
+    "FROM happyview_records WHERE collection = 'games.gamesgamesgamesgames.contributionVerification' " ..
     "AND record::jsonb->>'contributor' = $1",
     { target_did }
   )

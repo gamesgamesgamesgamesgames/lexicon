@@ -120,7 +120,7 @@ function handle()
     order_dir = "ASC"
   end
 
-  local sql = "SELECT uri, record FROM records WHERE "
+  local sql = "SELECT uri, record FROM happyview_records WHERE "
     .. table.concat(where_parts, " AND ")
     .. " ORDER BY " .. order_col .. " " .. order_dir
     .. " LIMIT $" .. (#bind + 1)

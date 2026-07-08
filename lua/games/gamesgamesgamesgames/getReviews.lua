@@ -13,7 +13,7 @@ function handle()
   end
 
   local rows = db.raw(
-    "SELECT uri, did, record FROM records WHERE collection = $1 AND record::jsonb->'identifiers'->>'igdbId' = $2 ORDER BY record::jsonb->>'createdAt' DESC LIMIT $3 OFFSET $4",
+    "SELECT uri, did, record FROM happyview_records WHERE collection = $1 AND record::jsonb->'identifiers'->>'igdbId' = $2 ORDER BY record::jsonb->>'createdAt' DESC LIMIT $3 OFFSET $4",
     {"social.popfeed.feed.review", igdb_id, limit, cursor}
   )
 

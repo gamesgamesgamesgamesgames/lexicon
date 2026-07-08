@@ -16,15 +16,15 @@ function handle()
 
   -- Refresh stats_cache
   local game_count = db.raw(
-    "SELECT COUNT(*) as count FROM records WHERE collection = $1",
+    "SELECT COUNT(*) as count FROM happyview_records WHERE collection = $1",
     {"games.gamesgamesgamesgames.game"}
   )
   local studio_count = db.raw(
-    "SELECT COUNT(DISTINCT record::jsonb->'org'->>'uri') as count FROM records WHERE collection = $1",
+    "SELECT COUNT(DISTINCT record::jsonb->'org'->>'uri') as count FROM happyview_records WHERE collection = $1",
     {"games.gamesgamesgamesgames.org.credit"}
   )
   local review_count = db.raw(
-    "SELECT COUNT(*) as count FROM records WHERE collection = $1",
+    "SELECT COUNT(*) as count FROM happyview_records WHERE collection = $1",
     {"social.popfeed.feed.review"}
   )
 
@@ -38,7 +38,7 @@ function handle()
   -- Refresh genre_counts_cache
   db.raw("DELETE FROM genre_counts_cache", {})
   local genres = db.raw(
-    "SELECT je AS genre, COUNT(*) AS count FROM records, jsonb_array_elements_text(record::jsonb->'genres') AS je WHERE collection = $1 GROUP BY je ORDER BY count DESC",
+    "SELECT je AS genre, COUNT(*) AS count FROM happyview_records, jsonb_array_elements_text(record::jsonb->'genres') AS je WHERE collection = $1 GROUP BY je ORDER BY count DESC",
     {"games.gamesgamesgamesgames.game"}
   )
   if genres then

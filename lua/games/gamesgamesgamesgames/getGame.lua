@@ -65,7 +65,7 @@ function handle()
   -- Redirect resolution: check if this URI has been redirected
   local redirected_from = nil
   local redirect_rows = db.raw(
-    "SELECT record FROM records WHERE collection = 'games.gamesgamesgamesgames.redirect' AND record::jsonb->>'sourceUri' = $1 LIMIT 1",
+    "SELECT record FROM happyview_records WHERE collection = 'games.gamesgamesgamesgames.redirect' AND record::jsonb->>'sourceUri' = $1 LIMIT 1",
     { uri }
   )
   if redirect_rows and #redirect_rows > 0 then
@@ -175,7 +175,7 @@ function handle()
 
   if VERIFIER_DID and VERIFIER_DID ~= "" and game_owner_did and game_owner_did ~= PENTARACT_DID then
     local v_rows = db.raw(
-      "SELECT record FROM records WHERE collection = 'dev.cartridge.graph.verification' AND did = $1 AND record::jsonb->>'subject' = $2 LIMIT 1",
+      "SELECT record FROM happyview_records WHERE collection = 'dev.cartridge.graph.verification' AND did = $1 AND record::jsonb->>'subject' = $2 LIMIT 1",
       { VERIFIER_DID, game_owner_did }
     )
     if v_rows and #v_rows > 0 then

@@ -26,7 +26,7 @@ function handle()
 
   -- Fetch list records for this user
   local list_rows = db.raw(
-    "SELECT uri, record, indexed_at FROM records WHERE collection = $1 AND did = $2 ORDER BY indexed_at DESC LIMIT $3 OFFSET $4",
+    "SELECT uri, record, indexed_at FROM happyview_records WHERE collection = $1 AND did = $2 ORDER BY indexed_at DESC LIMIT $3 OFFSET $4",
     {"games.gamesgamesgamesgames.feed.list", did, limit + 1, offset}
   )
 
@@ -43,7 +43,7 @@ function handle()
 
   -- Fetch all listItem records for this user once, then process in Lua
   local all_items = db.raw(
-    "SELECT record, indexed_at FROM records WHERE collection = $1 AND did = $2 ORDER BY indexed_at DESC",
+    "SELECT record, indexed_at FROM happyview_records WHERE collection = $1 AND did = $2 ORDER BY indexed_at DESC",
     {"games.gamesgamesgamesgames.feed.listItem", did}
   )
 

@@ -40,7 +40,7 @@ function handle()
 
   -- Get user's liked game URIs
   local likes = db.raw(
-    "SELECT record::jsonb->>'subject' AS game_uri FROM records WHERE collection = $1 AND did = $2 LIMIT 50",
+    "SELECT record::jsonb->>'subject' AS game_uri FROM happyview_records WHERE collection = $1 AND did = $2 LIMIT 50",
     {"games.gamesgamesgamesgames.graph.like", caller_did}
   )
 

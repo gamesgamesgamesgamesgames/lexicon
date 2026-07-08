@@ -76,10 +76,10 @@ function handle()
 
   if status_filter == "pending" then
     -- Claims with no associated review
-    sql = "SELECT c.uri, c.cid, c.record, c.indexed_at FROM records c " ..
+    sql = "SELECT c.uri, c.cid, c.record, c.indexed_at FROM happyview_records c " ..
           "WHERE c.collection = 'games.gamesgamesgamesgames.claim' " ..
           "AND NOT EXISTS (" ..
-            "SELECT 1 FROM records r WHERE r.collection = 'games.gamesgamesgamesgames.claimReview' " ..
+            "SELECT 1 FROM happyview_records r WHERE r.collection = 'games.gamesgamesgamesgames.claimReview' " ..
             "AND r.record::jsonb->'claim'->>'uri' = c.uri" ..
           ")"
 
@@ -95,8 +95,8 @@ function handle()
 
   elseif status_filter == "approved" or status_filter == "denied" then
     -- Claims with a review matching the given status
-    sql = "SELECT c.uri, c.cid, c.record, c.indexed_at FROM records c " ..
-          "INNER JOIN records r ON r.collection = 'games.gamesgamesgamesgames.claimReview' " ..
+    sql = "SELECT c.uri, c.cid, c.record, c.indexed_at FROM happyview_records c " ..
+          "INNER JOIN happyview_records r ON r.collection = 'games.gamesgamesgamesgames.claimReview' " ..
           "AND r.record::jsonb->'claim'->>'uri' = c.uri " ..
           "AND r.record::jsonb->>'status' = " .. next_param(status_filter) .. " " ..
           "WHERE c.collection = 'games.gamesgamesgamesgames.claim'"
@@ -113,7 +113,7 @@ function handle()
 
   else
     -- All claims (no status filter)
-    sql = "SELECT c.uri, c.cid, c.record, c.indexed_at FROM records c " ..
+    sql = "SELECT c.uri, c.cid, c.record, c.indexed_at FROM happyview_records c " ..
           "WHERE c.collection = 'games.gamesgamesgamesgames.claim'"
 
     if not is_admin then
@@ -167,7 +167,7 @@ function handle()
 
     -- Look up associated claimReview
     local review_rows = db.raw(
-      "SELECT uri, record FROM records WHERE collection = 'games.gamesgamesgamesgames.claimReview' AND record::jsonb->'claim'->>'uri' = $1 LIMIT 1",
+      "SELECT uri, record FROM happyview_records WHERE collection = 'games.gamesgamesgamesgames.claimReview' AND record::jsonb->'claim'->>'uri' = $1 LIMIT 1",
       { row.uri }
     )
 

@@ -6,7 +6,7 @@ function handle()
 
   -- Load contribution record
   local rows = db.raw(
-    "SELECT uri, cid, record FROM records WHERE uri = $1 LIMIT 1",
+    "SELECT uri, cid, record FROM happyview_records WHERE uri = $1 LIMIT 1",
     { uri }
   )
 
@@ -45,7 +45,7 @@ function handle()
 
   -- Look up associated contributionReview
   local review_rows = db.raw(
-    "SELECT uri, record FROM records WHERE collection = 'games.gamesgamesgamesgames.contributionReview' " ..
+    "SELECT uri, record FROM happyview_records WHERE collection = 'games.gamesgamesgamesgames.contributionReview' " ..
     "AND record::jsonb->'contribution'->>'uri' = $1 LIMIT 1",
     { uri }
   )
@@ -64,7 +64,7 @@ function handle()
 
   -- Look up associated contributionPatch
   local patch_rows = db.raw(
-    "SELECT uri, record FROM records WHERE collection = 'games.gamesgamesgamesgames.contributionPatch' " ..
+    "SELECT uri, record FROM happyview_records WHERE collection = 'games.gamesgamesgamesgames.contributionPatch' " ..
     "AND record::jsonb->'contribution'->>'uri' = $1 LIMIT 1",
     { uri }
   )
@@ -82,7 +82,7 @@ function handle()
 
   -- Look up associated contributionVerification
   local verification_rows = db.raw(
-    "SELECT uri, record FROM records WHERE collection = 'games.gamesgamesgamesgames.contributionVerification' " ..
+    "SELECT uri, record FROM happyview_records WHERE collection = 'games.gamesgamesgamesgames.contributionVerification' " ..
     "AND record::jsonb->'contribution'->>'uri' = $1 LIMIT 1",
     { uri }
   )

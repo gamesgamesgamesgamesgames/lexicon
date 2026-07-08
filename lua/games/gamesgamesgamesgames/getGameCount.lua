@@ -2,7 +2,7 @@ function handle()
   local did = params.did
 
   local count_rows = db.raw(
-    "SELECT COUNT(*) as count FROM records WHERE collection = $1 AND did = $2",
+    "SELECT COUNT(*) as count FROM happyview_records WHERE collection = $1 AND did = $2",
     {"games.gamesgamesgamesgames.game", did}
   )
 

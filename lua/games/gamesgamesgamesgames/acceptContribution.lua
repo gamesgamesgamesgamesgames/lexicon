@@ -6,7 +6,7 @@ function handle()
 
   -- Load the patch record
   local patch_rows = db.raw(
-    "SELECT uri, record FROM records WHERE uri = $1 AND collection = 'games.gamesgamesgamesgames.contributionPatch' LIMIT 1",
+    "SELECT uri, record FROM happyview_records WHERE uri = $1 AND collection = 'games.gamesgamesgamesgames.contributionPatch' LIMIT 1",
     { input.contributionPatch }
   )
 
@@ -101,7 +101,7 @@ function handle()
   -- Update contributionVerification: set acceptedBy to "both"
   local contribution_uri = patch_record.contribution.uri
   local verification_rows = db.raw(
-    "SELECT uri, record FROM records WHERE collection = 'games.gamesgamesgamesgames.contributionVerification' " ..
+    "SELECT uri, record FROM happyview_records WHERE collection = 'games.gamesgamesgamesgames.contributionVerification' " ..
     "AND record::jsonb->'contribution'->>'uri' = $1 LIMIT 1",
     { contribution_uri }
   )
@@ -123,7 +123,7 @@ function handle()
     local PENTARACT_DID = env.PENTARACT_DID
     pcall(function()
       db.raw(
-        "DELETE FROM records WHERE uri = $1",
+        "DELETE FROM happyview_records WHERE uri = $1",
         { input.contributionPatch }
       )
     end)

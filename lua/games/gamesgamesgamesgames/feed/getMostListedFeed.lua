@@ -14,7 +14,7 @@ function handle()
   if params.cursor then offset = tonumber(params.cursor) or 0 end
 
   local rows = db.raw(
-    "SELECT record::jsonb->>'subject' AS game_uri, COUNT(*) AS list_count FROM records WHERE collection = $1 GROUP BY record::jsonb->>'subject' ORDER BY list_count DESC LIMIT $2 OFFSET $3",
+    "SELECT record::jsonb->>'subject' AS game_uri, COUNT(*) AS list_count FROM happyview_records WHERE collection = $1 GROUP BY record::jsonb->>'subject' ORDER BY list_count DESC LIMIT $2 OFFSET $3",
     {"games.gamesgamesgamesgames.feed.listItem", limit + 1, offset}
   )
 

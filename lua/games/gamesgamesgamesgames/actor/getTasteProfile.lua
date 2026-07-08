@@ -25,13 +25,13 @@ function handle()
 
   -- Fetch likes (up to 500 most recent)
   local like_rows = db.raw(
-    "SELECT record, indexed_at FROM records WHERE collection = $1 AND did = $2 ORDER BY indexed_at DESC LIMIT 500",
+    "SELECT record, indexed_at FROM happyview_records WHERE collection = $1 AND did = $2 ORDER BY indexed_at DESC LIMIT 500",
     {"games.gamesgamesgamesgames.graph.like", did}
   )
 
   -- Fetch reviews (up to 500 most recent)
   local review_rows = db.raw(
-    "SELECT record, indexed_at FROM records WHERE collection = $1 AND did = $2 ORDER BY indexed_at DESC LIMIT 500",
+    "SELECT record, indexed_at FROM happyview_records WHERE collection = $1 AND did = $2 ORDER BY indexed_at DESC LIMIT 500",
     {"social.popfeed.feed.review", did}
   )
 

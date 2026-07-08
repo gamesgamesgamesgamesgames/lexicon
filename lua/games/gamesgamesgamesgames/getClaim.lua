@@ -54,7 +54,7 @@ function handle()
 
   -- Use db.raw to get record + cid (db.get doesn't return cid)
   local rows = db.raw(
-    "SELECT uri, cid, record FROM records WHERE uri = $1 LIMIT 1",
+    "SELECT uri, cid, record FROM happyview_records WHERE uri = $1 LIMIT 1",
     { uri }
   )
 
@@ -141,7 +141,7 @@ function handle()
 
   -- Look up associated claimReview
   local review_rows = db.raw(
-    "SELECT uri, record FROM records WHERE collection = 'games.gamesgamesgamesgames.claimReview' AND record::jsonb->'claim'->>'uri' = $1 LIMIT 1",
+    "SELECT uri, record FROM happyview_records WHERE collection = 'games.gamesgamesgamesgames.claimReview' AND record::jsonb->'claim'->>'uri' = $1 LIMIT 1",
     { uri }
   )
 

@@ -82,7 +82,7 @@ function handle()
   local is_verified = false
   if VERIFIER_DID and VERIFIER_DID ~= "" then
     local verification_rows = db.raw(
-      "SELECT uri FROM records WHERE collection = 'dev.cartridge.graph.verification' AND did = $1 AND record::jsonb->>'subject' = $2 LIMIT 1",
+      "SELECT uri FROM happyview_records WHERE collection = 'dev.cartridge.graph.verification' AND did = $1 AND record::jsonb->>'subject' = $2 LIMIT 1",
       { VERIFIER_DID, caller_did }
     )
     is_verified = verification_rows and #verification_rows > 0

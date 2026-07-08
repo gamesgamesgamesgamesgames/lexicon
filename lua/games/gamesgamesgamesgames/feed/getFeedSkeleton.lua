@@ -22,7 +22,7 @@ local function algo_likes(limit, cursor)
   end
 
   local likes = db.raw(
-    "SELECT record, uri AS like_uri FROM records WHERE collection = $1 AND did = $2 ORDER BY indexed_at DESC LIMIT $3 OFFSET $4",
+    "SELECT record, uri AS like_uri FROM happyview_records WHERE collection = $1 AND did = $2 ORDER BY indexed_at DESC LIMIT $3 OFFSET $4",
     {"games.gamesgamesgamesgames.graph.like", caller_did, limit + 1, offset}
   )
 
@@ -56,7 +56,7 @@ local function algo_upcoming(limit, cursor)
   local now_int = tonumber(y .. m .. d)
 
   local rows = db.raw(
-    "SELECT uri, record FROM records WHERE collection = $1 AND record::jsonb->>'applicationType' = 'game' AND record::jsonb->>'publishedAt' IS NOT NULL ORDER BY indexed_at DESC LIMIT $2 OFFSET $3",
+    "SELECT uri, record FROM happyview_records WHERE collection = $1 AND record::jsonb->>'applicationType' = 'game' AND record::jsonb->>'publishedAt' IS NOT NULL ORDER BY indexed_at DESC LIMIT $2 OFFSET $3",
     {"games.gamesgamesgamesgames.game", limit * 3, offset}
   )
 
@@ -108,7 +108,7 @@ local function algo_recently_updated(limit, cursor)
   end
 
   local rows = db.raw(
-    "SELECT uri FROM records WHERE collection = $1 AND record::jsonb->>'applicationType' = 'game' AND record::jsonb->>'publishedAt' IS NOT NULL ORDER BY indexed_at DESC LIMIT $2 OFFSET $3",
+    "SELECT uri FROM happyview_records WHERE collection = $1 AND record::jsonb->>'applicationType' = 'game' AND record::jsonb->>'publishedAt' IS NOT NULL ORDER BY indexed_at DESC LIMIT $2 OFFSET $3",
     {"games.gamesgamesgamesgames.game", limit + 1, offset}
   )
 
@@ -137,7 +137,7 @@ local function algo_hot(limit, cursor)
   end
 
   local rows = db.raw(
-    "SELECT record::jsonb->>'subject' AS game_uri, COUNT(*) AS like_count FROM records WHERE collection = $1 AND indexed_at > $2 GROUP BY record::jsonb->>'subject' ORDER BY like_count DESC LIMIT $3 OFFSET $4",
+    "SELECT record::jsonb->>'subject' AS game_uri, COUNT(*) AS like_count FROM happyview_records WHERE collection = $1 AND indexed_at > $2 GROUP BY record::jsonb->>'subject' ORDER BY like_count DESC LIMIT $3 OFFSET $4",
     {"games.gamesgamesgamesgames.graph.like", os.date("!%Y-%m-%dT%H:%M:%SZ", os.time() - 7 * 24 * 3600), limit + 1, offset}
   )
 
@@ -171,7 +171,7 @@ local function algo_personalized(limit, cursor)
 
   -- Get user's liked game URIs
   local likes = db.raw(
-    "SELECT record::jsonb->>'subject' AS game_uri FROM records WHERE collection = $1 AND did = $2 LIMIT 50",
+    "SELECT record::jsonb->>'subject' AS game_uri FROM happyview_records WHERE collection = $1 AND did = $2 LIMIT 50",
     {"games.gamesgamesgamesgames.graph.like", caller_did}
   )
 

@@ -5,7 +5,7 @@
 function handle()
   -- Look up the record before HappyView removes it so we can get the subject DID
   local rows = db.raw(
-    "SELECT record FROM records WHERE uri = $1 LIMIT 1",
+    "SELECT record FROM happyview_records WHERE uri = $1 LIMIT 1",
     { uri }
   )
 

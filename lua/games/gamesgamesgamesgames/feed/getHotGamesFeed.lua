@@ -28,7 +28,7 @@ function handle()
 
   -- Get games with the most likes in the last 7 days
   local rows = db.raw(
-    "SELECT record::jsonb->>'subject' AS game_uri, COUNT(*) AS like_count FROM records WHERE collection = $1 AND indexed_at > $2 GROUP BY record::jsonb->>'subject' ORDER BY like_count DESC LIMIT $3 OFFSET $4",
+    "SELECT record::jsonb->>'subject' AS game_uri, COUNT(*) AS like_count FROM happyview_records WHERE collection = $1 AND indexed_at > $2 GROUP BY record::jsonb->>'subject' ORDER BY like_count DESC LIMIT $3 OFFSET $4",
     {"games.gamesgamesgamesgames.graph.like", cutoff, limit + 1, offset}
   )
 
@@ -53,7 +53,7 @@ function handle()
   -- Batch fetch weekly review counts
   local reviews_by_uri = {}
   local review_rows = db.raw(
-    "SELECT record::jsonb->>'subject' AS game_uri, COUNT(*) AS review_count FROM records WHERE collection = $1 AND indexed_at > $2 AND record::jsonb->>'subject' IN " .. uri_in .. " GROUP BY record::jsonb->>'subject'",
+    "SELECT record::jsonb->>'subject' AS game_uri, COUNT(*) AS review_count FROM happyview_records WHERE collection = $1 AND indexed_at > $2 AND record::jsonb->>'subject' IN " .. uri_in .. " GROUP BY record::jsonb->>'subject'",
     {"games.gamesgamesgamesgames.feed.review", cutoff}
   )
   if review_rows then
@@ -65,7 +65,7 @@ function handle()
   -- Batch fetch weekly list-add counts
   local lists_by_uri = {}
   local list_rows = db.raw(
-    "SELECT record::jsonb->>'subject' AS game_uri, COUNT(*) AS list_count FROM records WHERE collection = $1 AND indexed_at > $2 AND record::jsonb->>'subject' IN " .. uri_in .. " GROUP BY record::jsonb->>'subject'",
+    "SELECT record::jsonb->>'subject' AS game_uri, COUNT(*) AS list_count FROM happyview_records WHERE collection = $1 AND indexed_at > $2 AND record::jsonb->>'subject' IN " .. uri_in .. " GROUP BY record::jsonb->>'subject'",
     {"games.gamesgamesgamesgames.feed.listItem", cutoff}
   )
   if list_rows then

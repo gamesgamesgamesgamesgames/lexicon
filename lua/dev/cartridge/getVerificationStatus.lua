@@ -23,7 +23,7 @@ function handle()
   end
 
   local v_rows = db.raw(
-    "SELECT record FROM records WHERE collection = 'dev.cartridge.graph.verification' AND did = $1 AND record::jsonb->>'subject' = $2 LIMIT 1",
+    "SELECT record FROM happyview_records WHERE collection = 'dev.cartridge.graph.verification' AND did = $1 AND record::jsonb->>'subject' = $2 LIMIT 1",
     { VERIFIER_DID, did }
   )
 

@@ -17,19 +17,19 @@ function handle()
 
   -- Get recent likes across all users
   local like_rows = db.raw(
-    "SELECT did, record, indexed_at FROM records WHERE collection = $1 ORDER BY indexed_at DESC LIMIT $2",
+    "SELECT did, record, indexed_at FROM happyview_records WHERE collection = $1 ORDER BY indexed_at DESC LIMIT $2",
     {"games.gamesgamesgamesgames.graph.like", fetch_limit}
   )
 
   -- Get recent reviews across all users
   local review_rows = db.raw(
-    "SELECT did, uri, record, indexed_at FROM records WHERE collection = $1 ORDER BY indexed_at DESC LIMIT $2",
+    "SELECT did, uri, record, indexed_at FROM happyview_records WHERE collection = $1 ORDER BY indexed_at DESC LIMIT $2",
     {"social.popfeed.feed.review", fetch_limit}
   )
 
   -- Get recent list item additions across all users
   local list_item_rows = db.raw(
-    "SELECT did, uri, record, indexed_at FROM records WHERE collection = $1 ORDER BY indexed_at DESC LIMIT $2",
+    "SELECT did, uri, record, indexed_at FROM happyview_records WHERE collection = $1 ORDER BY indexed_at DESC LIMIT $2",
     {"games.gamesgamesgamesgames.feed.listItem", fetch_limit}
   )
 
@@ -127,7 +127,7 @@ function handle()
     for i, _ in ipairs(unique_dids) do
       placeholders[i] = "$" .. (i + 1)
     end
-    local sql = "SELECT did, record FROM records WHERE collection = $1 AND did IN (" .. table.concat(placeholders, ", ") .. ")"
+    local sql = "SELECT did, record FROM happyview_records WHERE collection = $1 AND did IN (" .. table.concat(placeholders, ", ") .. ")"
     local sql_params = {"games.gamesgamesgamesgames.actor.profile"}
     for _, d in ipairs(unique_dids) do
       sql_params[#sql_params + 1] = d

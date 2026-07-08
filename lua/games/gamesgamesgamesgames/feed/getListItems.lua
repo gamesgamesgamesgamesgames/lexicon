@@ -32,7 +32,7 @@ function handle()
 
   -- Fetch listItem records for this list
   local rows = db.raw(
-    "SELECT uri, record, indexed_at FROM records WHERE collection = $1 AND did = $2 AND record::jsonb->>'listUri' = $3 ORDER BY record::jsonb->>'addedAt' DESC LIMIT $4 OFFSET $5",
+    "SELECT uri, record, indexed_at FROM happyview_records WHERE collection = $1 AND did = $2 AND record::jsonb->>'listUri' = $3 ORDER BY record::jsonb->>'addedAt' DESC LIMIT $4 OFFSET $5",
     {"games.gamesgamesgamesgames.feed.listItem", list_did, list_uri, limit + 1, offset}
   )
 
