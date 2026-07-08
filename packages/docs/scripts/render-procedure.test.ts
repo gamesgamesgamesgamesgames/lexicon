@@ -7,7 +7,7 @@ describe("renderProcedureMdx", () => {
   it("renders input and output schemas for a procedure", () => {
     const parsed = parseLexiconFile(path.join(import.meta.dir, "__fixtures__/procedure.createGame.json"));
     if (!parsed.ok) throw new Error(parsed.error);
-    const mdx = renderProcedureMdx(parsed.doc, "lexicons/games/gamesgamesgamesgames/createGame.json");
+    const mdx = renderProcedureMdx(parsed.doc, "src/lexicons/games/gamesgamesgamesgames/createGame.json");
     expect(mdx).toContain('type="procedure"');
     expect(mdx).toContain('method="POST"');
     expect(mdx).toContain("Input");

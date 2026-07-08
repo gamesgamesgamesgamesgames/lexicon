@@ -26,7 +26,7 @@ export interface GenerateSummary {
 }
 
 export async function generateReference(opts: GenerateOptions): Promise<GenerateSummary> {
-  const { inputDir, outputDir, repoRelativePrefix = "lexicons/games/gamesgamesgamesgames" } = opts;
+  const { inputDir, outputDir, repoRelativePrefix = "src/lexicons/games/gamesgamesgamesgames" } = opts;
   const summary: GenerateSummary = { records: 0, queries: 0, procedures: 0, subscriptions: 0, sharedDefs: 0, skipped: 0 };
 
   rmSync(outputDir, { recursive: true, force: true });
@@ -125,7 +125,7 @@ function writeMeta(dir: string, meta: { title: string; pages?: string[] }): void
 
 if (import.meta.url === `file://${process.argv[1]}`) {
   const repoRoot = path.resolve(fileURLToPath(import.meta.url), "..", "..", "..", "..");
-  const inputDir = path.join(repoRoot, "lexicons", "games", "gamesgamesgamesgames");
+  const inputDir = path.join(repoRoot, "src", "lexicons", "games", "gamesgamesgamesgames");
   const outputDir = path.join(repoRoot, "packages", "docs", "content", "docs", "reference");
   generateReference({ inputDir, outputDir }).catch((err) => {
     console.error("[generate-reference] fatal:", err);

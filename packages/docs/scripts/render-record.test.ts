@@ -10,7 +10,7 @@ describe("renderRecordMdx", () => {
     const parsed = parseLexiconFile(path.join(fixtures, "record.game.json"));
     if (!parsed.ok) throw new Error(parsed.error);
 
-    const mdx = renderRecordMdx(parsed.doc, "lexicons/games/gamesgamesgamesgames/game.json");
+    const mdx = renderRecordMdx(parsed.doc, "src/lexicons/games/gamesgamesgamesgames/game.json");
 
     expect(mdx).toContain("---");
     expect(mdx).toContain('title: "games.gamesgamesgamesgames.game"');
