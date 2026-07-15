@@ -5,13 +5,12 @@
 		"main": {
 			"type": "permission-set",
 			"title": "Game Catalog",
-			"detail": "Create and edit games, submit ownership claims, and accept community contributions.",
+			"detail": "Create and edit games and accept community contributions.",
 			"permissions": [
 				{
 					"type": "permission",
 					"resource": "repo",
 					"collection": [
-						"games.gamesgamesgamesgames.claim",
 						"games.gamesgamesgamesgames.engine",
 						"games.gamesgamesgamesgames.game",
 						"games.gamesgamesgamesgames.platform",
@@ -24,11 +23,7 @@
 					"inheritAud": true,
 					"lxm": [
 						"games.gamesgamesgamesgames.acceptContribution",
-						"games.gamesgamesgamesgames.createClaim",
 						"games.gamesgamesgamesgames.createGame",
-						"games.gamesgamesgamesgames.getClaim",
-						"games.gamesgamesgamesgames.listClaims",
-						"games.gamesgamesgamesgames.migrateClaim",
 						"games.gamesgamesgamesgames.putGame"
 					]
 				}

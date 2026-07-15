@@ -14,6 +14,12 @@ export interface GenerateOptions {
   inputDir: string;
   outputDir: string;
   repoRelativePrefix?: string;
+  /**
+   * Lexicon id namespaces to exclude from the generated docs. A lexicon is
+   * excluded when its id equals a prefix or starts with `${prefix}.`.
+   * Defaults to internal namespaces that should not be published.
+   */
+  excludeNamespaces?: string[];
 }
 
 export interface GenerateSummary {
@@ -23,11 +29,16 @@ export interface GenerateSummary {
   subscriptions: number;
   sharedDefs: number;
   skipped: number;
+  excluded: number;
+}
+
+function isExcluded(id: string, prefixes: string[]): boolean {
+  return prefixes.some((prefix) => id === prefix || id.startsWith(`${prefix}.`));
 }
 
 export async function generateReference(opts: GenerateOptions): Promise<GenerateSummary> {
-  const { inputDir, outputDir, repoRelativePrefix = "src/lexicons/games/gamesgamesgamesgames" } = opts;
-  const summary: GenerateSummary = { records: 0, queries: 0, procedures: 0, subscriptions: 0, sharedDefs: 0, skipped: 0 };
+  const { inputDir, outputDir, repoRelativePrefix = "src/lexicons/games/gamesgamesgamesgames", excludeNamespaces = ["dev.cartridge"] } = opts;
+  const summary: GenerateSummary = { records: 0, queries: 0, procedures: 0, subscriptions: 0, sharedDefs: 0, skipped: 0, excluded: 0 };
 
   rmSync(outputDir, { recursive: true, force: true });
   mkdirSync(outputDir, { recursive: true });
@@ -41,6 +52,10 @@ export async function generateReference(opts: GenerateOptions): Promise<Generate
     if (!parsed.ok) {
       console.warn(`[generate-reference] skip ${file}: ${parsed.error}`);
       summary.skipped += 1;
+      continue;
+    }
+    if (isExcluded(parsed.doc.id, excludeNamespaces)) {
+      summary.excluded += 1;
       continue;
     }
     parsedDocs.push({ file, doc: parsed.doc, kind: getMainType(parsed.doc) });
@@ -93,7 +108,7 @@ export async function generateReference(opts: GenerateOptions): Promise<Generate
   writeMeta(outputDir, { title: "Reference", pages: ["records", "queries", "procedures", "shared-definitions"] });
 
   console.log(
-    `[generate-reference] records=${summary.records} queries=${summary.queries} procedures=${summary.procedures} subscriptions=${summary.subscriptions} sharedDefs=${summary.sharedDefs} skipped=${summary.skipped}`,
+    `[generate-reference] records=${summary.records} queries=${summary.queries} procedures=${summary.procedures} subscriptions=${summary.subscriptions} sharedDefs=${summary.sharedDefs} skipped=${summary.skipped} excluded=${summary.excluded}`,
   );
 
   return summary;

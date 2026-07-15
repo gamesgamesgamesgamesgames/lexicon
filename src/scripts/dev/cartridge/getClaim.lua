@@ -70,7 +70,7 @@ function handle()
 
   -- Build base claim view
   local claim_view = {
-    ["$type"] = "games.gamesgamesgamesgames.getClaim#claimView",
+    ["$type"] = "dev.cartridge.getClaim#claimView",
     uri = row.uri,
     cid = row.cid,
     type = record.type,
@@ -141,7 +141,7 @@ function handle()
 
   -- Look up associated claimReview
   local review_rows = db.raw(
-    "SELECT uri, record FROM happyview_records WHERE collection = 'games.gamesgamesgamesgames.claimReview' AND record::jsonb->'claim'->>'uri' = $1 LIMIT 1",
+    "SELECT uri, record FROM happyview_records WHERE collection = 'dev.cartridge.claimReview' AND record::jsonb->'claim'->>'uri' = $1 LIMIT 1",
     { uri }
   )
 
@@ -149,7 +149,7 @@ function handle()
     local review_row = review_rows[1]
     local review_record = json.decode(review_row.record)
     claim_view.review = {
-      ["$type"] = "games.gamesgamesgamesgames.getClaim#reviewView",
+      ["$type"] = "dev.cartridge.getClaim#reviewView",
       uri = review_row.uri,
       status = review_record.status,
       reviewedBy = review_record.reviewedBy,

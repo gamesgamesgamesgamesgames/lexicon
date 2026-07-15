@@ -30,7 +30,7 @@ function handle()
   if input.status == "approved" and input.approvedGames then
     for _, game_uri in ipairs(input.approvedGames) do
       local existing = db.raw(
-        "SELECT uri FROM happyview_records WHERE collection = 'games.gamesgamesgamesgames.claimReview' AND record::jsonb->>'status' = 'approved' AND EXISTS (SELECT 1 FROM jsonb_array_elements_text(record::jsonb->'approvedGames') AS elem WHERE elem = $1) LIMIT 1",
+        "SELECT uri FROM happyview_records WHERE collection = 'dev.cartridge.claimReview' AND record::jsonb->>'status' = 'approved' AND EXISTS (SELECT 1 FROM jsonb_array_elements_text(record::jsonb->'approvedGames') AS elem WHERE elem = $1) LIMIT 1",
         { game_uri }
       )
       if existing and #existing > 0 then
@@ -58,7 +58,7 @@ function handle()
     review_data.reason = input.reason
   end
 
-  local review = Record.new("games.gamesgamesgamesgames.claimReview", review_data)
+  local review = Record.new("dev.cartridge.claimReview", review_data)
   review:set_repo(PENTARACT_DID)
   review:save()
 

@@ -13,7 +13,8 @@ describe("renderRecordMdx", () => {
     const mdx = renderRecordMdx(parsed.doc, "src/lexicons/games/gamesgamesgamesgames/game.json");
 
     expect(mdx).toContain("---");
-    expect(mdx).toContain('title: "games.gamesgamesgamesgames.game"');
+    expect(mdx).toContain('title: "game"');
+    expect(mdx).toContain('fullTitle: "games.gamesgamesgamesgames.game"');
     expect(mdx).toContain("<LexiconHeader");
     expect(mdx).toContain('type="record"');
     expect(mdx).toContain("<SchemaTable");

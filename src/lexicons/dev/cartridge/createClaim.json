@@ -1,7 +1,7 @@
 {
 	"$type": "com.atproto.lexicon.schema",
 	"lexicon": 1,
-	"id": "games.gamesgamesgamesgames.createClaim",
+	"id": "dev.cartridge.createClaim",
 	"defs": {
 		"main": {
 			"type": "procedure",

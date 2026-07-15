@@ -9,7 +9,7 @@ describe("renderSharedDefsMdx", () => {
     if (!parsed.ok) throw new Error(parsed.error);
     const mdx = renderSharedDefsMdx([parsed.doc]);
     expect(mdx).toContain('title: "Shared definitions"');
-    expect(mdx).toContain('<a id="genre"');
+    expect(mdx).toContain('<section id="genre"');
     expect(mdx).toContain("A game genre.");
     expect(mdx).toContain("action");
   });

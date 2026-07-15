@@ -1,7 +1,7 @@
 {
 	"$type": "com.atproto.lexicon.schema",
 	"lexicon": 1,
-	"id": "games.gamesgamesgamesgames.getClaim",
+	"id": "dev.cartridge.getClaim",
 	"defs": {
 		"main": {
 			"type": "query",

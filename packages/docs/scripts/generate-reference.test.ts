@@ -31,4 +31,17 @@ describe("generateReference", () => {
     const gameMdx = readFileSync(path.join(outDir, "records", "games-gamesgamesgamesgames-game.mdx"), "utf8");
     expect(gameMdx).toContain("games.gamesgamesgamesgames.game");
   });
+
+  it("excludes internal dev.cartridge lexicons from the docs", async () => {
+    const fixtures = path.join(import.meta.dir, "__fixtures__");
+    const summary = await generateReference({
+      inputDir: fixtures,
+      outputDir: outDir,
+    });
+
+    // record.cartridge.json is a dev.cartridge.* lexicon and must not be emitted.
+    expect(summary.excluded).toBe(1);
+    expect(summary.records).toBe(1); // only the games record, not the cartridge one
+    expect(existsSync(path.join(outDir, "records", "dev-cartridge-verificationRequest.mdx"))).toBe(false);
+  });
 });

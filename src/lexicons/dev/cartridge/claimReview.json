@@ -1,7 +1,7 @@
 {
 	"$type": "com.atproto.lexicon.schema",
 	"lexicon": 1,
-	"id": "games.gamesgamesgamesgames.claimReview",
+	"id": "dev.cartridge.claimReview",
 	"defs": {
 		"main": {
 			"description": "A review of a claim for ownership of game or organization records.",

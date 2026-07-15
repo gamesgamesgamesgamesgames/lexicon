@@ -1,7 +1,7 @@
 {
 	"$type": "com.atproto.lexicon.schema",
 	"lexicon": 1,
-	"id": "games.gamesgamesgamesgames.listClaims",
+	"id": "dev.cartridge.listClaims",
 	"defs": {
 		"main": {
 			"type": "query",
@@ -34,7 +34,7 @@
 							"type": "array",
 							"items": {
 								"type": "ref",
-								"ref": "games.gamesgamesgamesgames.getClaim#claimView"
+								"ref": "dev.cartridge.getClaim#claimView"
 							}
 						},
 						"cursor": {

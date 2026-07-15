@@ -77,9 +77,9 @@ function handle()
   if status_filter == "pending" then
     -- Claims with no associated review
     sql = "SELECT c.uri, c.cid, c.record, c.indexed_at FROM happyview_records c " ..
-          "WHERE c.collection = 'games.gamesgamesgamesgames.claim' " ..
+          "WHERE c.collection = 'dev.cartridge.claim' " ..
           "AND NOT EXISTS (" ..
-            "SELECT 1 FROM happyview_records r WHERE r.collection = 'games.gamesgamesgamesgames.claimReview' " ..
+            "SELECT 1 FROM happyview_records r WHERE r.collection = 'dev.cartridge.claimReview' " ..
             "AND r.record::jsonb->'claim'->>'uri' = c.uri" ..
           ")"
 
@@ -96,10 +96,10 @@ function handle()
   elseif status_filter == "approved" or status_filter == "denied" then
     -- Claims with a review matching the given status
     sql = "SELECT c.uri, c.cid, c.record, c.indexed_at FROM happyview_records c " ..
-          "INNER JOIN happyview_records r ON r.collection = 'games.gamesgamesgamesgames.claimReview' " ..
+          "INNER JOIN happyview_records r ON r.collection = 'dev.cartridge.claimReview' " ..
           "AND r.record::jsonb->'claim'->>'uri' = c.uri " ..
           "AND r.record::jsonb->>'status' = " .. next_param(status_filter) .. " " ..
-          "WHERE c.collection = 'games.gamesgamesgamesgames.claim'"
+          "WHERE c.collection = 'dev.cartridge.claim'"
 
     if not is_admin then
       sql = sql .. " AND c.did = " .. next_param(caller_did)
@@ -114,7 +114,7 @@ function handle()
   else
     -- All claims (no status filter)
     sql = "SELECT c.uri, c.cid, c.record, c.indexed_at FROM happyview_records c " ..
-          "WHERE c.collection = 'games.gamesgamesgamesgames.claim'"
+          "WHERE c.collection = 'dev.cartridge.claim'"
 
     if not is_admin then
       sql = sql .. " AND c.did = " .. next_param(caller_did)
@@ -137,7 +137,7 @@ function handle()
     local claimant_did = row.uri:match("^at://([^/]+)/")
 
     local claim_view = {
-      ["$type"] = "games.gamesgamesgamesgames.getClaim#claimView",
+      ["$type"] = "dev.cartridge.getClaim#claimView",
       uri = row.uri,
       cid = row.cid,
       type = record.type,
@@ -167,14 +167,14 @@ function handle()
 
     -- Look up associated claimReview
     local review_rows = db.raw(
-      "SELECT uri, record FROM happyview_records WHERE collection = 'games.gamesgamesgamesgames.claimReview' AND record::jsonb->'claim'->>'uri' = $1 LIMIT 1",
+      "SELECT uri, record FROM happyview_records WHERE collection = 'dev.cartridge.claimReview' AND record::jsonb->'claim'->>'uri' = $1 LIMIT 1",
       { row.uri }
     )
 
     if review_rows and #review_rows > 0 then
       local review_record = json.decode(review_rows[1].record)
       claim_view.review = {
-        ["$type"] = "games.gamesgamesgamesgames.getClaim#reviewView",
+        ["$type"] = "dev.cartridge.getClaim#reviewView",
         uri = review_rows[1].uri,
         status = review_record.status,
         reviewedBy = review_record.reviewedBy,

@@ -5,13 +5,12 @@
 		"main": {
 			"type": "permission-set",
 			"title": "Studio",
-			"detail": "Manage studio profiles, create and edit games, and handle ownership claims and contributions.",
+			"detail": "Manage studio profiles, create and edit games, and handle contributions.",
 			"permissions": [
 				{
 					"type": "permission",
 					"resource": "repo",
 					"collection": [
-						"games.gamesgamesgamesgames.claim",
 						"games.gamesgamesgamesgames.engine",
 						"games.gamesgamesgamesgames.game",
 						"games.gamesgamesgamesgames.org.credit",
@@ -26,11 +25,7 @@
 					"inheritAud": true,
 					"lxm": [
 						"games.gamesgamesgamesgames.acceptContribution",
-						"games.gamesgamesgamesgames.createClaim",
 						"games.gamesgamesgamesgames.createGame",
-						"games.gamesgamesgamesgames.getClaim",
-						"games.gamesgamesgamesgames.listClaims",
-						"games.gamesgamesgamesgames.migrateClaim",
 						"games.gamesgamesgamesgames.org.createProfile",
 						"games.gamesgamesgamesgames.org.getProfile",
 						"games.gamesgamesgamesgames.org.putProfile",

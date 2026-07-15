@@ -1,0 +1,34 @@
+{
+	"lexicon": 1,
+	"id": "dev.cartridge.authMigration",
+	"defs": {
+		"main": {
+			"type": "permission-set",
+			"title": "Claim Migration",
+			"detail": "Submit and review ownership claims, then migrate game records from approved claims and check migration status.",
+			"permissions": [
+				{
+					"type": "permission",
+					"resource": "repo",
+					"collection": [
+						"dev.cartridge.claim",
+						"dev.cartridge.claimReview"
+					]
+				},
+				{
+					"type": "permission",
+					"resource": "rpc",
+					"inheritAud": true,
+					"lxm": [
+						"dev.cartridge.createClaim",
+						"dev.cartridge.getClaim",
+						"dev.cartridge.getMigrationJobStatus",
+						"dev.cartridge.listClaims",
+						"dev.cartridge.migrateClaim",
+						"dev.cartridge.reviewClaim"
+					]
+				}
+			]
+		}
+	}
+}

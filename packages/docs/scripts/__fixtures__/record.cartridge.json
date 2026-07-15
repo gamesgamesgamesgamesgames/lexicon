@@ -1,0 +1,18 @@
+{
+  "lexicon": 1,
+  "id": "dev.cartridge.verificationRequest",
+  "defs": {
+    "main": {
+      "type": "record",
+      "description": "An internal verification request that should not be published to the docs.",
+      "key": "any",
+      "record": {
+        "type": "object",
+        "required": ["createdAt"],
+        "properties": {
+          "createdAt": { "type": "string", "format": "datetime" }
+        }
+      }
+    }
+  }
+}

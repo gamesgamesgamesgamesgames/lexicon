@@ -41,7 +41,7 @@ function handle()
   -- Store contact directly on the record (filtered on output unless admin)
   claim_data.contact = input.contact
 
-  local claim = Record.new("games.gamesgamesgamesgames.claim", claim_data)
+  local claim = Record.new("dev.cartridge.claim", claim_data)
   claim:save()
 
   return { uri = claim._uri }
