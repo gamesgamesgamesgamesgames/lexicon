@@ -12,6 +12,7 @@
 				"properties": {
 					"did": {
 						"type": "string",
+						"format": "did",
 						"description": "The DID of the user whose activity to retrieve."
 					},
 					"limit": {
@@ -21,7 +22,8 @@
 						"default": 30
 					},
 					"cursor": {
-						"type": "string"
+						"type": "string",
+						"maxLength": 256
 					}
 				}
 			},
@@ -39,7 +41,8 @@
 							}
 						},
 						"cursor": {
-							"type": "string"
+							"type": "string",
+							"maxLength": 256
 						}
 					}
 				}

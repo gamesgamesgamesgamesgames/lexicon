@@ -25,6 +25,7 @@
 						"type": "array",
 						"items": {
 							"type": "string",
+							"maxLength": 64,
 							"knownValues": [
 								"game",
 								"profile",
@@ -39,6 +40,7 @@
 						"description": "Filter game results by application type (e.g. game, dlc, bundle). Only applies when types includes game.",
 						"items": {
 							"type": "string",
+							"maxLength": 64,
 							"knownValues": [
 								"addon",
 								"bundle",
@@ -61,28 +63,29 @@
 					},
 					"sort": {
 						"type": "string",
+						"maxLength": 64,
 						"knownValues": ["name_asc", "name_desc", "published_asc", "published_desc"]
 					},
 					"genres": {
 						"type": "array",
-						"items": { "type": "string" }
+						"items": { "type": "string", "maxLength": 64 }
 					},
 					"themes": {
 						"type": "array",
-						"items": { "type": "string" }
+						"items": { "type": "string", "maxLength": 64 }
 					},
 					"modes": {
 						"type": "array",
-						"items": { "type": "string" }
+						"items": { "type": "string", "maxLength": 64 }
 					},
 					"playerPerspectives": {
 						"type": "array",
-						"items": { "type": "string" }
+						"items": { "type": "string", "maxLength": 64 }
 					},
 					"ageRatings": {
 						"type": "array",
 						"description": "Filter game results by age rating in 'organization:rating' format (e.g. esrb:M, pegi:Eighteen).",
-						"items": { "type": "string" }
+						"items": { "type": "string", "maxLength": 64 }
 					},
 					"includeUnrated": {
 						"type": "boolean",
@@ -94,7 +97,8 @@
 						"default": false
 					},
 					"cursor": {
-						"type": "string"
+						"type": "string",
+						"maxLength": 256
 					}
 				}
 			},
@@ -104,7 +108,7 @@
 					"type": "object",
 					"required": ["results"],
 					"properties": {
-						"cursor": { "type": "string" },
+						"cursor": { "type": "string", "maxLength": 256 },
 						"totalResults": {
 							"type": "integer",
 							"description": "Total number of results matching the query above the relevance threshold."

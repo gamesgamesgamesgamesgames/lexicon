@@ -12,6 +12,7 @@
 				"properties": {
 					"did": {
 						"type": "string",
+						"format": "did",
 						"description": "The DID of the user whose taste profile to retrieve."
 					},
 					"genreLimit": {
@@ -56,7 +57,7 @@
 			"type": "object",
 			"required": ["genre", "count", "percentage"],
 			"properties": {
-				"genre": { "type": "string" },
+				"genre": { "type": "string", "maxLength": 64 },
 				"count": { "type": "integer" },
 				"percentage": { "type": "integer" }
 			}

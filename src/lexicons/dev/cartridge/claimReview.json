@@ -17,6 +17,7 @@
 					},
 					"status": {
 						"type": "string",
+						"maxLength": 64,
 						"knownValues": ["approved", "denied"]
 					},
 					"reviewedBy": {

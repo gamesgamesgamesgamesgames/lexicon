@@ -18,6 +18,7 @@
 					},
 					"platform": {
 						"type": "string",
+						"maxLength": 64,
 						"description": "The platform where ownership was verified.",
 						"knownValues": ["steam", "gog", "epic", "playstation", "xbox", "nintendo", "itchio", "humble"]
 					},
@@ -50,10 +51,12 @@
 				},
 				"platform": {
 					"type": "string",
+					"maxLength": 64,
 					"description": "External platform for ID lookup."
 				},
 				"externalId": {
 					"type": "string",
+					"maxLength": 256,
 					"description": "External platform's ID for the game."
 				}
 			}

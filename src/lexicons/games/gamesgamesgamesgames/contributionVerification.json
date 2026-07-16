@@ -25,10 +25,12 @@
 					},
 					"contributionType": {
 						"type": "string",
+						"maxLength": 64,
 						"knownValues": ["correction", "addition", "newGame"]
 					},
 					"acceptedBy": {
 						"type": "string",
+						"maxLength": 64,
 						"knownValues": ["mod", "owner", "both"]
 					},
 					"createdAt": { "type": "string", "format": "datetime" }

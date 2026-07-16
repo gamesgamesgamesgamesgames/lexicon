@@ -11,8 +11,8 @@
 				"type": "object",
 				"required": ["name", "createdAt"],
 				"properties": {
-					"name": { "type": "string" },
-					"description": { "type": "string" },
+					"name": { "type": "string", "maxLength": 640 },
+					"description": { "type": "string", "maxLength": 3000 },
 					"createdAt": { "type": "string", "format": "datetime" }
 				}
 			}

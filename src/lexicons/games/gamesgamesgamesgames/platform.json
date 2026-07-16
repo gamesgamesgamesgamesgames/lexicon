@@ -11,15 +11,15 @@
 				"type": "object",
 				"required": ["name", "createdAt"],
 				"properties": {
-					"abbreviation": { "type": "string" },
-					"alternativeName": { "type": "string" },
+					"abbreviation": { "type": "string", "maxLength": 64 },
+					"alternativeName": { "type": "string", "maxLength": 640 },
 					"category": {
 						"type": "ref",
 						"ref": "games.gamesgamesgamesgames.defs#platformCategory"
 					},
-					"description": { "type": "string" },
+					"description": { "type": "string", "maxLength": 3000 },
 					"generation": { "type": "integer" },
-					"name": { "type": "string" },
+					"name": { "type": "string", "maxLength": 640 },
 					"createdAt": { "type": "string", "format": "datetime" },
 					"media": {
 						"type": "array",

@@ -33,10 +33,12 @@
 						},
 						"cid": {
 							"type": "string",
+							"format": "cid",
 							"description": "CID of the created like record. Present when action is 'liked'."
 						},
 						"action": {
 							"type": "string",
+							"maxLength": 64,
 							"knownValues": ["liked", "unliked"],
 							"description": "Whether the game was liked or unliked."
 						}

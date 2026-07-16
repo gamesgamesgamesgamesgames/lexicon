@@ -12,7 +12,7 @@
 					"type": "object",
 					"required": ["type", "contact"],
 					"properties": {
-						"type": { "type": "string" },
+						"type": { "type": "string", "maxLength": 64 },
 						"contact": { "type": "string", "maxGraphemes": 500 },
 						"games": {
 							"type": "array",

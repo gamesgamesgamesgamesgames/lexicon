@@ -12,6 +12,7 @@
         "properties": {
           "did": {
             "type": "string",
+            "format": "did",
             "description": "The DID of the user whose lists to retrieve."
           },
           "gameUri": {
@@ -26,7 +27,8 @@
             "default": 50
           },
           "cursor": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 256
           }
         }
       },
@@ -44,7 +46,8 @@
               }
             },
             "cursor": {
-              "type": "string"
+              "type": "string",
+              "maxLength": 256
             }
           }
         }
@@ -59,10 +62,12 @@
           "format": "at-uri"
         },
         "name": {
-          "type": "string"
+          "type": "string",
+          "maxLength": 640
         },
         "description": {
-          "type": "string"
+          "type": "string",
+          "maxLength": 3000
         },
         "itemCount": {
           "type": "integer"
@@ -93,10 +98,12 @@
           "format": "at-uri"
         },
         "name": {
-          "type": "string"
+          "type": "string",
+          "maxLength": 640
         },
         "slug": {
-          "type": "string"
+          "type": "string",
+          "maxLength": 128
         },
         "media": {
           "type": "unknown"

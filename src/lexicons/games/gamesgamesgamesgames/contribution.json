@@ -18,6 +18,7 @@
 					},
 					"contributionType": {
 						"type": "string",
+						"maxLength": 64,
 						"knownValues": ["correction", "addition", "newGame"]
 					},
 					"changes": {

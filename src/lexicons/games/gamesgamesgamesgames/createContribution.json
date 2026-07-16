@@ -19,6 +19,7 @@
 						},
 						"contributionType": {
 							"type": "string",
+							"maxLength": 64,
 							"knownValues": ["correction", "addition", "newGame"]
 						},
 						"changes": {
@@ -31,6 +32,7 @@
 						},
 						"rkey": {
 							"type": "string",
+							"format": "record-key",
 							"description": "Optional record key. When provided, the contribution is created with this rkey instead of an auto-generated one."
 						}
 					}

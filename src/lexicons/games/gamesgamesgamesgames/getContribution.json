@@ -39,7 +39,8 @@
 					"format": "at-uri"
 				},
 				"cid": {
-					"type": "string"
+					"type": "string",
+					"format": "cid"
 				},
 				"contributorDid": {
 					"type": "string",
@@ -47,6 +48,7 @@
 				},
 				"contributionType": {
 					"type": "string",
+					"maxLength": 64,
 					"knownValues": ["correction", "addition", "newGame"]
 				},
 				"subject": {
@@ -55,13 +57,15 @@
 				},
 				"subjectName": {
 					"type": "string",
+					"maxLength": 640,
 					"description": "Resolved name of the subject entity for display."
 				},
 				"changes": {
 					"type": "unknown"
 				},
 				"message": {
-					"type": "string"
+					"type": "string",
+					"maxLength": 3000
 				},
 				"createdAt": { "type": "string", "format": "datetime" },
 				"review": {
@@ -88,6 +92,7 @@
 				},
 				"status": {
 					"type": "string",
+					"maxLength": 64,
 					"knownValues": ["approved", "denied", "needsRevision"]
 				},
 				"reviewedBy": {
@@ -95,7 +100,8 @@
 					"format": "did"
 				},
 				"reason": {
-					"type": "string"
+					"type": "string",
+					"maxLength": 3000
 				},
 				"createdAt": { "type": "string", "format": "datetime" }
 			}
@@ -132,6 +138,7 @@
 				},
 				"acceptedBy": {
 					"type": "string",
+					"maxLength": 64,
 					"knownValues": ["mod", "owner", "both"]
 				},
 				"createdAt": { "type": "string", "format": "datetime" }

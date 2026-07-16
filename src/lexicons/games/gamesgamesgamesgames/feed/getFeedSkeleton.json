@@ -21,7 +21,8 @@
 						"default": 50
 					},
 					"cursor": {
-						"type": "string"
+						"type": "string",
+						"maxLength": 256
 					}
 				}
 			},
@@ -31,7 +32,7 @@
 					"type": "object",
 					"required": ["feed"],
 					"properties": {
-						"cursor": { "type": "string" },
+						"cursor": { "type": "string", "maxLength": 256 },
 						"feed": {
 							"type": "array",
 							"items": {

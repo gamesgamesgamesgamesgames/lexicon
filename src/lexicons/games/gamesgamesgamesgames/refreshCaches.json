@@ -14,7 +14,7 @@
 					"properties": {
 						"refreshed": {
 							"type": "array",
-							"items": { "type": "string" }
+							"items": { "type": "string", "maxLength": 64 }
 						}
 					}
 				}

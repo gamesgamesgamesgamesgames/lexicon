@@ -16,10 +16,12 @@
 						"default": 50
 					},
 					"cursor": {
-						"type": "string"
+						"type": "string",
+						"maxLength": 256
 					},
 					"now": {
 						"type": "string",
+						"maxLength": 16,
 						"description": "Current date as YYYYMMDD. Used to determine what counts as upcoming."
 					},
 					"shuffle": {
@@ -29,10 +31,12 @@
 					},
 					"from": {
 						"type": "string",
+						"maxLength": 16,
 						"description": "Lower bound date as YYYYMMDD (exclusive). Overrides 'now' for the chronological mode filter."
 					},
 					"to": {
 						"type": "string",
+						"maxLength": 16,
 						"description": "Upper bound date as YYYYMMDD (inclusive). Limits results to releases on or before this date."
 					}
 				}
@@ -43,7 +47,7 @@
 					"type": "object",
 					"required": ["feed"],
 					"properties": {
-						"cursor": { "type": "string" },
+						"cursor": { "type": "string", "maxLength": 256 },
 						"totalCount": { "type": "integer" },
 						"feed": {
 							"type": "array",

@@ -51,7 +51,7 @@
 					"required": ["uri", "cid"],
 					"properties": {
 						"uri": { "type": "string", "format": "at-uri" },
-						"cid": { "type": "string" }
+						"cid": { "type": "string", "format": "cid" }
 					}
 				}
 			}

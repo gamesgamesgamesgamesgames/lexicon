@@ -39,7 +39,8 @@
 						}
 					},
 					"name": {
-						"type": "string"
+						"type": "string",
+						"maxLength": 640
 					},
 					"parent": {
 						"type": "string",
@@ -65,7 +66,8 @@
 						}
 					},
 					"summary": {
-						"type": "string"
+						"type": "string",
+						"maxLength": 3000
 					},
 					"themes": {
 						"type": "array",
@@ -75,11 +77,12 @@
 						}
 					},
 					"storyline": {
-						"type": "string"
+						"type": "string",
+						"maxLength": 10000
 					},
 					"keywords": {
 						"type": "array",
-						"items": { "type": "string" }
+						"items": { "type": "string", "maxLength": 64 }
 					},
 					"websites": {
 						"type": "array",
@@ -137,6 +140,7 @@
 					},
 					"description": {
 						"type": "string",
+						"maxLength": 3000,
 						"description": "Detailed game description in plain text, with formatting expressed via descriptionFacets."
 					},
 					"descriptionFacets": {

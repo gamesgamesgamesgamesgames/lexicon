@@ -11,16 +11,17 @@
 				"type": "object",
 				"required": ["name", "createdAt"],
 				"properties": {
-					"name": { "type": "string" },
+					"name": { "type": "string", "maxLength": 640 },
 					"parent": {
 						"type": "string",
 						"format": "at-uri"
 					},
 					"type": {
 						"type": "string",
+						"maxLength": 64,
 						"knownValues": ["franchise", "series", "curated"]
 					},
-					"description": { "type": "string" },
+					"description": { "type": "string", "maxLength": 3000 },
 					"games": {
 						"type": "array",
 						"items": { "type": "string", "format": "at-uri" }

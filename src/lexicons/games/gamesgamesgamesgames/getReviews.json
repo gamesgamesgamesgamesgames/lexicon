@@ -24,6 +24,7 @@
 					},
 					"cursor": {
 						"type": "string",
+						"maxLength": 256,
 						"description": "Pagination cursor (offset)."
 					}
 				}
@@ -42,7 +43,8 @@
 							}
 						},
 						"cursor": {
-							"type": "string"
+							"type": "string",
+							"maxLength": 256
 						}
 					}
 				}
@@ -66,7 +68,8 @@
 					"maximum": 10
 				},
 				"text": {
-					"type": "string"
+					"type": "string",
+					"maxLength": 3000
 				},
 				"facets": {
 					"type": "array",
@@ -76,12 +79,14 @@
 					}
 				},
 				"title": {
-					"type": "string"
+					"type": "string",
+					"maxLength": 640
 				},
 				"tags": {
 					"type": "array",
 					"items": {
-						"type": "string"
+						"type": "string",
+						"maxLength": 64
 					}
 				},
 				"createdAt": {

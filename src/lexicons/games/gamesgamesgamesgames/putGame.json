@@ -13,9 +13,9 @@
 					"required": ["uri"],
 					"properties": {
 						"uri": { "type": "string", "format": "at-uri" },
-						"slug": { "type": "string" },
-						"name": { "type": "string" },
-						"summary": { "type": "string" },
+						"slug": { "type": "string", "maxLength": 128 },
+						"name": { "type": "string", "maxLength": 640 },
+						"summary": { "type": "string", "maxLength": 3000 },
 						"applicationType": { "type": "ref", "ref": "games.gamesgamesgamesgames.defs#applicationType" },
 						"genres": { "type": "array", "items": { "type": "ref", "ref": "games.gamesgamesgamesgames.defs#genre" } },
 						"modes": { "type": "array", "items": { "type": "ref", "ref": "games.gamesgamesgamesgames.defs#mode" } },
@@ -26,8 +26,8 @@
 						"parent": { "type": "string", "format": "at-uri" },
 						"createdAt": { "type": "string", "format": "datetime" },
 						"shouldPublish": { "type": "boolean" },
-						"storyline": { "type": "string" },
-						"keywords": { "type": "array", "items": { "type": "string" } },
+						"storyline": { "type": "string", "maxLength": 10000 },
+						"keywords": { "type": "array", "items": { "type": "string", "maxLength": 64 } },
 						"websites": { "type": "array", "items": { "type": "ref", "ref": "games.gamesgamesgamesgames.defs#website" } },
 						"videos": { "type": "array", "items": { "type": "ref", "ref": "games.gamesgamesgamesgames.defs#externalVideo" } },
 						"alternativeNames": { "type": "array", "items": { "type": "ref", "ref": "games.gamesgamesgamesgames.defs#alternativeName" } },
@@ -46,7 +46,7 @@
 					"required": ["uri", "cid"],
 					"properties": {
 						"uri": { "type": "string", "format": "at-uri" },
-						"cid": { "type": "string" }
+						"cid": { "type": "string", "format": "cid" }
 					}
 				}
 			}

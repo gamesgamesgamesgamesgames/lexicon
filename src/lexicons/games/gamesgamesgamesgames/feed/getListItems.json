@@ -22,7 +22,8 @@
             "default": 30
           },
           "cursor": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 256
           }
         }
       },
@@ -40,7 +41,8 @@
               }
             },
             "cursor": {
-              "type": "string"
+              "type": "string",
+              "maxLength": 256
             }
           }
         }

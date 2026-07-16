@@ -5,6 +5,7 @@
 	"defs": {
 		"applicationType": {
 			"type": "string",
+			"maxLength": 64,
 			"enum": [
 				"addon",
 				"bundle",
@@ -26,6 +27,7 @@
 
 		"genre": {
 			"type": "string",
+			"maxLength": 64,
 			"knownValues": [
 				"fighting",
 				"music",
@@ -48,11 +50,12 @@
 					"accept": ["image/*", "video/*"],
 					"maxSize": 200000000
 				},
-				"description": { "type": "string" },
+				"description": { "type": "string", "maxLength": 3000 },
 				"height": { "type": "integer" },
-				"locale": { "type": "string" },
+				"locale": { "type": "string", "format": "language" },
 				"mediaType": {
 					"type": "string",
+					"maxLength": 64,
 					"enum": [
 						"accoladesTrailer",
 						"announcementTrailer",
@@ -82,13 +85,14 @@
 						"trailer"
 					]
 				},
-				"title": { "type": "string" },
+				"title": { "type": "string", "maxLength": 640 },
 				"width": { "type": "integer" }
 			}
 		},
 
 		"mode": {
 			"type": "string",
+			"maxLength": 64,
 			"knownValues": [
 				"battleRoyale",
 				"cooperative",
@@ -101,6 +105,7 @@
 
 		"playerPerspective": {
 			"type": "string",
+			"maxLength": 64,
 			"knownValues": [
 				"auditory",
 				"firstPerson",
@@ -115,6 +120,7 @@
 
 		"theme": {
 			"type": "string",
+			"maxLength": 64,
 			"knownValues": [
 				"4x",
 				"action",
@@ -147,6 +153,7 @@
 			"properties": {
 				"organization": {
 					"type": "string",
+					"maxLength": 64,
 					"knownValues": [
 						"esrb",
 						"pegi",
@@ -157,10 +164,10 @@
 						"acb"
 					]
 				},
-				"rating": { "type": "string" },
+				"rating": { "type": "string", "maxLength": 64 },
 				"contentDescriptors": {
 					"type": "array",
-					"items": { "type": "string" }
+					"items": { "type": "string", "maxLength": 64 }
 				}
 			}
 		},
@@ -169,14 +176,15 @@
 			"type": "object",
 			"required": ["name"],
 			"properties": {
-				"name": { "type": "string" },
-				"locale": { "type": "string" },
-				"comment": { "type": "string" }
+				"name": { "type": "string", "maxLength": 640 },
+				"locale": { "type": "string", "format": "language" },
+				"comment": { "type": "string", "maxLength": 3000 }
 			}
 		},
 
 		"companyRole": {
 			"type": "string",
+			"maxLength": 64,
 			"knownValues": ["developer", "publisher", "porter", "supporter"]
 		},
 
@@ -197,6 +205,7 @@
 
 		"individualRole": {
 			"type": "string",
+			"maxLength": 64,
 			"knownValues": [
 				"director",
 				"producer",
@@ -219,29 +228,29 @@
 			"type": "object",
 			"required": ["developer", "game"],
 			"properties": {
-				"developer": { "type": "string" },
-				"game": { "type": "string" }
+				"developer": { "type": "string", "maxLength": 256 },
+				"game": { "type": "string", "maxLength": 256 }
 			}
 		},
 
 		"externalIds": {
 			"type": "object",
 			"properties": {
-				"igdb": { "type": "string" },
-				"steam": { "type": "string" },
-				"gog": { "type": "string" },
-				"epicGames": { "type": "string" },
+				"igdb": { "type": "string", "maxLength": 256 },
+				"steam": { "type": "string", "maxLength": 256 },
+				"gog": { "type": "string", "maxLength": 256 },
+				"epicGames": { "type": "string", "maxLength": 256 },
 				"itchIo": {
 					"type": "ref",
 					"ref": "games.gamesgamesgamesgames.defs#itchIoId"
 				},
-				"humbleBundle": { "type": "string" },
-				"playStation": { "type": "string" },
-				"xbox": { "type": "string" },
-				"nintendoEshop": { "type": "string" },
-				"appleAppStore": { "type": "string" },
-				"googlePlay": { "type": "string" },
-				"twitch": { "type": "string" }
+				"humbleBundle": { "type": "string", "maxLength": 256 },
+				"playStation": { "type": "string", "maxLength": 256 },
+				"xbox": { "type": "string", "maxLength": 256 },
+				"nintendoEshop": { "type": "string", "maxLength": 256 },
+				"appleAppStore": { "type": "string", "maxLength": 256 },
+				"googlePlay": { "type": "string", "maxLength": 256 },
+				"twitch": { "type": "string", "maxLength": 256 }
 			}
 		},
 
@@ -249,12 +258,13 @@
 			"type": "object",
 			"required": ["videoId", "platform"],
 			"properties": {
-				"videoId": { "type": "string" },
+				"videoId": { "type": "string", "maxLength": 256 },
 				"platform": {
 					"type": "string",
+					"maxLength": 64,
 					"knownValues": ["youtube", "twitch", "vimeo"]
 				},
-				"title": { "type": "string" }
+				"title": { "type": "string", "maxLength": 640 }
 			}
 		},
 
@@ -262,7 +272,7 @@
 			"type": "object",
 			"required": ["language"],
 			"properties": {
-				"language": { "type": "string" },
+				"language": { "type": "string", "format": "language" },
 				"audio": { "type": "boolean" },
 				"subtitles": { "type": "boolean" },
 				"interface": { "type": "boolean" }
@@ -272,7 +282,7 @@
 		"multiplayerMode": {
 			"type": "object",
 			"properties": {
-				"platform": { "type": "string" },
+				"platform": { "type": "string", "maxLength": 128 },
 				"onlineMax": { "type": "integer" },
 				"offlineMax": { "type": "integer" },
 				"onlineCoopMax": { "type": "integer" },
@@ -301,6 +311,7 @@
 				"url": { "type": "string", "format": "uri" },
 				"type": {
 					"type": "string",
+					"maxLength": 64,
 					"knownValues": [
 						"official",
 						"wiki",
@@ -341,12 +352,12 @@
 			"required": ["uri", "name", "applicationType"],
 			"properties": {
 				"uri": { "type": "string", "format": "at-uri" },
-				"name": { "type": "string" },
+				"name": { "type": "string", "maxLength": 640 },
 				"applicationType": {
 					"type": "ref",
 					"ref": "games.gamesgamesgamesgames.defs#applicationType"
 				},
-				"summary": { "type": "string" },
+				"summary": { "type": "string", "maxLength": 3000 },
 				"genres": {
 					"type": "array",
 					"items": {
@@ -375,7 +386,7 @@
 						"ref": "games.gamesgamesgamesgames.defs#release"
 					}
 				},
-				"slug": { "type": "string" },
+				"slug": { "type": "string", "maxLength": 128 },
 				"likeCount": { "type": "integer", "minimum": 0 },
 				"viewer": {
 					"type": "ref",
@@ -433,7 +444,7 @@
 						"ref": "games.gamesgamesgamesgames.defs#mode"
 					}
 				},
-				"name": { "type": "string" },
+				"name": { "type": "string", "maxLength": 640 },
 				"parent": { "type": "string", "format": "at-uri" },
 				"playerPerspectives": {
 					"type": "array",
@@ -450,7 +461,7 @@
 						"ref": "games.gamesgamesgamesgames.defs#release"
 					}
 				},
-				"summary": { "type": "string" },
+				"summary": { "type": "string", "maxLength": 3000 },
 				"themes": {
 					"type": "array",
 					"items": {
@@ -459,10 +470,10 @@
 					}
 				},
 				"uri": { "type": "string", "format": "at-uri" },
-				"storyline": { "type": "string" },
+				"storyline": { "type": "string", "maxLength": 10000 },
 				"keywords": {
 					"type": "array",
-					"items": { "type": "string" }
+					"items": { "type": "string", "maxLength": 64 }
 				},
 				"websites": {
 					"type": "array",
@@ -522,7 +533,7 @@
 					"type": "ref",
 					"ref": "games.gamesgamesgamesgames.defs#externalIds"
 				},
-				"slug": { "type": "string" },
+				"slug": { "type": "string", "maxLength": 128 },
 				"orgCredits": {
 					"type": "array",
 					"items": {
@@ -579,8 +590,8 @@
 			"required": ["uri", "name"],
 			"properties": {
 				"uri": { "type": "string", "format": "at-uri" },
-				"name": { "type": "string" },
-				"summary": { "type": "string" },
+				"name": { "type": "string", "maxLength": 640 },
+				"summary": { "type": "string", "maxLength": 3000 },
 				"media": {
 					"type": "array",
 					"items": {
@@ -588,7 +599,7 @@
 						"ref": "games.gamesgamesgamesgames.defs#mediaItem"
 					}
 				},
-				"slug": { "type": "string" },
+				"slug": { "type": "string", "maxLength": 128 },
 				"applicationType": {
 					"type": "ref",
 					"ref": "games.gamesgamesgamesgames.defs#applicationType"
@@ -606,7 +617,7 @@
 			"properties": {
 				"uri": { "type": "string", "format": "at-uri" },
 				"did": { "type": "string", "format": "did" },
-				"profileType": { "type": "string", "knownValues": ["actor", "org"] },
+				"profileType": { "type": "string", "knownValues": ["actor", "org"], "maxLength": 64 },
 				"displayName": { "type": "string", "maxLength": 640 },
 				"avatar": {
 					"type": "blob",
@@ -690,9 +701,10 @@
 					"type": "array",
 					"items": { "type": "ref", "ref": "app.bsky.richtext.facet" }
 				},
-				"country": { "type": "string" },
+				"country": { "type": "string", "maxLength": 256 },
 				"status": {
 					"type": "string",
+					"maxLength": 64,
 					"knownValues": ["active", "inactive", "merged", "acquired", "defunct"]
 				},
 				"parent": {
@@ -749,13 +761,13 @@
 			"required": ["uri", "name"],
 			"properties": {
 				"uri": { "type": "string", "format": "at-uri" },
-				"name": { "type": "string" },
-				"abbreviation": { "type": "string" },
+				"name": { "type": "string", "maxLength": 640 },
+				"abbreviation": { "type": "string", "maxLength": 64 },
 				"category": {
 					"type": "ref",
 					"ref": "games.gamesgamesgamesgames.defs#platformCategory"
 				},
-				"slug": { "type": "string" }
+				"slug": { "type": "string", "maxLength": 128 }
 			}
 		},
 
@@ -764,12 +776,13 @@
 			"required": ["uri", "name"],
 			"properties": {
 				"uri": { "type": "string", "format": "at-uri" },
-				"name": { "type": "string" },
+				"name": { "type": "string", "maxLength": 640 },
 				"type": {
 					"type": "string",
+					"maxLength": 64,
 					"knownValues": ["franchise", "series", "curated"]
 				},
-				"slug": { "type": "string" }
+				"slug": { "type": "string", "maxLength": 128 }
 			}
 		},
 
@@ -778,8 +791,8 @@
 			"required": ["uri", "name"],
 			"properties": {
 				"uri": { "type": "string", "format": "at-uri" },
-				"name": { "type": "string" },
-				"slug": { "type": "string" }
+				"name": { "type": "string", "maxLength": 640 },
+				"slug": { "type": "string", "maxLength": 128 }
 			}
 		},
 
@@ -788,6 +801,7 @@
 			"properties": {
 				"platform": {
 					"type": "string",
+					"maxLength": 128,
 					"description": "Free-text platform name, used when no platform record exists."
 				},
 				"platformUri": {
@@ -807,6 +821,7 @@
 
 		"platformCategory": {
 			"type": "string",
+			"maxLength": 64,
 			"knownValues": [
 				"console",
 				"portable",
@@ -820,16 +835,16 @@
 			"type": "object",
 			"required": ["name"],
 			"properties": {
-				"name": { "type": "string" },
-				"summary": { "type": "string" },
-				"cpu": { "type": "string" },
-				"gpu": { "type": "string" },
-				"memory": { "type": "string" },
-				"storage": { "type": "string" },
-				"connectivity": { "type": "string" },
-				"os": { "type": "string" },
-				"output": { "type": "string" },
-				"maxResolution": { "type": "string" },
+				"name": { "type": "string", "maxLength": 640 },
+				"summary": { "type": "string", "maxLength": 3000 },
+				"cpu": { "type": "string", "maxLength": 640 },
+				"gpu": { "type": "string", "maxLength": 640 },
+				"memory": { "type": "string", "maxLength": 640 },
+				"storage": { "type": "string", "maxLength": 640 },
+				"connectivity": { "type": "string", "maxLength": 640 },
+				"os": { "type": "string", "maxLength": 640 },
+				"output": { "type": "string", "maxLength": 640 },
+				"maxResolution": { "type": "string", "maxLength": 640 },
 				"media": {
 					"type": "array",
 					"items": {
@@ -844,14 +859,14 @@
 			"type": "object",
 			"description": "Hardware/software specification for a platform.",
 			"properties": {
-				"os": { "type": "string" },
-				"processor": { "type": "string" },
-				"memory": { "type": "string" },
-				"graphics": { "type": "string" },
-				"directx": { "type": "string" },
-				"storage": { "type": "string" },
-				"soundCard": { "type": "string" },
-				"additionalNotes": { "type": "string" }
+				"os": { "type": "string", "maxLength": 640 },
+				"processor": { "type": "string", "maxLength": 640 },
+				"memory": { "type": "string", "maxLength": 640 },
+				"graphics": { "type": "string", "maxLength": 640 },
+				"directx": { "type": "string", "maxLength": 640 },
+				"storage": { "type": "string", "maxLength": 640 },
+				"soundCard": { "type": "string", "maxLength": 640 },
+				"additionalNotes": { "type": "string", "maxLength": 3000 }
 			}
 		},
 
@@ -862,6 +877,7 @@
 			"properties": {
 				"platform": {
 					"type": "string",
+					"maxLength": 64,
 					"knownValues": ["windows", "mac", "linux"]
 				},
 				"minimum": { "type": "ref", "ref": "#systemSpec" },
@@ -876,6 +892,7 @@
 			"properties": {
 				"platform": {
 					"type": "string",
+					"maxLength": 64,
 					"knownValues": [
 						"steam",
 						"gog",
@@ -889,6 +906,7 @@
 					"type": "array",
 					"items": {
 						"type": "string",
+						"maxLength": 64,
 						"knownValues": [
 							"achievements",
 							"cloudSaves",
@@ -928,10 +946,12 @@
 			"type": "object",
 			"properties": {
 				"releasedAt": {
-					"type": "string"
+					"type": "string",
+					"maxLength": 16
 				},
 				"releasedAtFormat": {
 					"type": "string",
+					"maxLength": 64,
 					"enum": [
 						"YYYY-MM-DD",
 						"YYYY-MM",
@@ -945,6 +965,7 @@
 				},
 				"region": {
 					"type": "string",
+					"maxLength": 64,
 					"knownValues": [
 						"worldwide",
 						"europe",
@@ -960,6 +981,7 @@
 				},
 				"status": {
 					"type": "string",
+					"maxLength": 64,
 					"knownValues": [
 						"advancedAccess",
 						"alpha",
@@ -982,10 +1004,12 @@
 			"properties": {
 				"key": {
 					"type": "string",
+					"maxLength": 256,
 					"description": "DID key reference (e.g., did:web:example.com#signing1)."
 				},
 				"signature": {
 					"type": "bytes",
+					"maxLength": 256,
 					"description": "The signature bytes."
 				}
 			}
@@ -997,6 +1021,7 @@
 			"properties": {
 				"type": {
 					"type": "string",
+					"maxLength": 64,
 					"knownValues": ["like", "review", "listCreate", "listAddGame"],
 					"description": "The type of activity."
 				},
@@ -1037,14 +1062,16 @@
 					"maximum": 10
 				},
 				"text": {
-					"type": "string"
+					"type": "string",
+					"maxLength": 3000
 				},
 				"title": {
-					"type": "string"
+					"type": "string",
+					"maxLength": 640
 				},
 				"tags": {
 					"type": "array",
-					"items": { "type": "string" }
+					"items": { "type": "string", "maxLength": 64 }
 				},
 				"containsSpoilers": {
 					"type": "boolean"
@@ -1065,7 +1092,8 @@
 					"format": "at-uri"
 				},
 				"name": {
-					"type": "string"
+					"type": "string",
+					"maxLength": 640
 				},
 				"createdAt": {
 					"type": "string",
@@ -1084,7 +1112,8 @@
 					"format": "did"
 				},
 				"handle": {
-					"type": "string"
+					"type": "string",
+					"format": "handle"
 				},
 				"displayName": {
 					"type": "string",
@@ -1100,6 +1129,7 @@
 			"properties": {
 				"type": {
 					"type": "string",
+					"maxLength": 64,
 					"knownValues": ["like", "review", "listCreate", "listAddGame"],
 					"description": "The type of activity."
 				},

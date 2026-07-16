@@ -24,9 +24,10 @@
 							"description": "Annotations of text (mentions, URLs, hashtags, etc)",
 							"items": { "type": "ref", "ref": "app.bsky.richtext.facet" }
 						},
-						"country": { "type": "string" },
+						"country": { "type": "string", "maxLength": 256 },
 						"status": {
 							"type": "string",
+							"maxLength": 64,
 							"knownValues": [
 								"active",
 								"inactive",
@@ -73,7 +74,7 @@
 					"required": ["uri", "cid"],
 					"properties": {
 						"uri": { "type": "string", "format": "at-uri" },
-						"cid": { "type": "string" }
+						"cid": { "type": "string", "format": "cid" }
 					}
 				}
 			}

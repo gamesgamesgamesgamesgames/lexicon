@@ -13,6 +13,7 @@
 				"properties": {
 					"type": {
 						"type": "string",
+						"maxLength": 64,
 						"knownValues": ["game", "org"]
 					},
 					"createdAt": { "type": "string", "format": "datetime" },

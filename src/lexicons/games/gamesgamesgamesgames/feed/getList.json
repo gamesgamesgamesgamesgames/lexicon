@@ -40,10 +40,12 @@
           "format": "at-uri"
         },
         "name": {
-          "type": "string"
+          "type": "string",
+          "maxLength": 640
         },
         "description": {
-          "type": "string"
+          "type": "string",
+          "maxLength": 3000
         },
         "itemCount": {
           "type": "integer"
@@ -67,10 +69,12 @@
           "format": "did"
         },
         "handle": {
-          "type": "string"
+          "type": "string",
+          "format": "handle"
         },
         "displayName": {
-          "type": "string"
+          "type": "string",
+          "maxLength": 640
         },
         "avatar": {
           "type": "unknown"

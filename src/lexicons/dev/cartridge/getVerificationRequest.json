@@ -11,6 +11,7 @@
         "properties": {
           "id": {
             "type": "string",
+            "maxLength": 128,
             "description": "ID of the verification request."
           },
           "requesterDid": {
@@ -38,13 +39,13 @@
       "type": "object",
       "required": ["id", "requesterDid", "accountType", "message", "status", "createdAt"],
       "properties": {
-        "id": { "type": "string" },
+        "id": { "type": "string", "maxLength": 128 },
         "requesterDid": { "type": "string", "format": "did" },
-        "accountType": { "type": "string" },
-        "message": { "type": "string" },
-        "contact": { "type": "string" },
-        "status": { "type": "string", "knownValues": ["pending", "approved", "denied"] },
-        "reviewReason": { "type": "string" },
+        "accountType": { "type": "string", "maxLength": 64 },
+        "message": { "type": "string", "maxLength": 3000 },
+        "contact": { "type": "string", "maxLength": 256 },
+        "status": { "type": "string", "maxLength": 64, "knownValues": ["pending", "approved", "denied"] },
+        "reviewReason": { "type": "string", "maxLength": 3000 },
         "reviewedBy": { "type": "string", "format": "did" },
         "reviewedAt": { "type": "string", "format": "datetime" },
         "createdAt": { "type": "string", "format": "datetime" }

@@ -11,6 +11,7 @@
 				"properties": {
 					"handle": {
 						"type": "string",
+						"format": "at-identifier",
 						"description": "The handle or DID of the user whose profile to fetch."
 					}
 				}
@@ -29,10 +30,12 @@
 						},
 						"profileType": {
 							"type": "string",
+							"maxLength": 64,
 							"knownValues": ["actor", "org"]
 						},
 						"handle": {
 							"type": "string",
+							"format": "handle",
 							"description": "The resolved ATProto handle for display."
 						}
 					}

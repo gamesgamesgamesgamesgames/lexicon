@@ -12,6 +12,7 @@
 				"properties": {
 					"handle": {
 						"type": "string",
+						"format": "at-identifier",
 						"description": "DID or handle to check."
 					}
 				}
@@ -28,6 +29,7 @@
 						},
 						"accountType": {
 							"type": "string",
+							"maxLength": 64,
 							"knownValues": ["studio", "developer", "publisher"],
 							"description": "The verified account type. Only present when isVerified is true."
 						}

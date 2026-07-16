@@ -10,7 +10,8 @@
 				"type": "params",
 				"properties": {
 					"cursor": {
-						"type": "string"
+						"type": "string",
+						"maxLength": 256
 					},
 					"did": {
 						"type": "string",
@@ -24,11 +25,13 @@
 					},
 					"sort": {
 						"type": "string",
+						"maxLength": 64,
 						"description": "Field to sort by (e.g. name, createdAt, indexed_at).",
 						"default": "indexed_at"
 					},
 					"sortDirection": {
 						"type": "string",
+						"maxLength": 64,
 						"description": "Sort direction.",
 						"enum": ["asc", "desc"],
 						"default": "desc"
@@ -38,6 +41,7 @@
 						"description": "Filter by application type (e.g. game, dlc, bundle).",
 						"items": {
 							"type": "string",
+							"maxLength": 64,
 							"knownValues": [
 								"addon",
 								"bundle",
@@ -60,24 +64,24 @@
 					},
 					"genres": {
 						"type": "array",
-						"items": { "type": "string" }
+						"items": { "type": "string", "maxLength": 64 }
 					},
 					"themes": {
 						"type": "array",
-						"items": { "type": "string" }
+						"items": { "type": "string", "maxLength": 64 }
 					},
 					"modes": {
 						"type": "array",
-						"items": { "type": "string" }
+						"items": { "type": "string", "maxLength": 64 }
 					},
 					"playerPerspectives": {
 						"type": "array",
-						"items": { "type": "string" }
+						"items": { "type": "string", "maxLength": 64 }
 					},
 					"ageRatings": {
 						"type": "array",
 						"description": "Filter by age rating in 'organization:rating' format (e.g. esrb:M, pegi:Eighteen).",
-						"items": { "type": "string" }
+						"items": { "type": "string", "maxLength": 64 }
 					},
 					"includeUnrated": {
 						"type": "boolean",
@@ -96,7 +100,7 @@
 					"type": "object",
 					"required": ["games"],
 					"properties": {
-						"cursor": { "type": "string" },
+						"cursor": { "type": "string", "maxLength": 256 },
 						"games": {
 							"type": "array",
 							"items": {

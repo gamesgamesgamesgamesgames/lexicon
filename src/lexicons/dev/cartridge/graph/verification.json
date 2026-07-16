@@ -23,10 +23,12 @@
 					},
 					"displayName": {
 						"type": "string",
+						"maxLength": 640,
 						"description": "Display name at time of verification."
 					},
 					"accountType": {
 						"type": "string",
+						"maxLength": 64,
 						"knownValues": ["studio", "developer", "publisher"],
 						"description": "Type of verified account."
 					},

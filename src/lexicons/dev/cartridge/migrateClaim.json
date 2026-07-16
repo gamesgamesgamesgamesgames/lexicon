@@ -30,10 +30,12 @@
 					"required": ["jobId", "status", "gamesCount"],
 					"properties": {
 						"jobId": {
-							"type": "string"
+							"type": "string",
+							"maxLength": 128
 						},
 						"status": {
-							"type": "string"
+							"type": "string",
+							"maxLength": 64
 						},
 						"gamesCount": {
 							"type": "integer"

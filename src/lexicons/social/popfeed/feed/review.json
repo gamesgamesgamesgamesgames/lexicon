@@ -21,6 +21,7 @@
           },
           "creativeWorkType": {
             "type": "string",
+            "maxLength": 64,
             "enum": ["movie", "tv_show", "video_game", "album", "book", "book_series", "episode", "album", "ep", "tv_season", "tv_episode", "track"]
           },
           "rating": {
@@ -97,6 +98,7 @@
           },
           "mainCreditRole": {
             "type": "string",
+            "maxLength": 64,
             "enum": ["director", "author", "artist", "showrunner", "lead_actor", "creator", "studio", "publisher", "developer", "performer", "network"],
             "description": "The role of the main credit."
           },
@@ -119,16 +121,16 @@
     "identifiers": {
       "type": "object",
       "properties": {
-        "imdbId": { "type": "string" },
-        "isbn10": { "type": "string" },
-        "isbn13": { "type": "string" },
-        "asin": { "type": "string" },
-        "other": { "type": "string" },
-        "tmdbId": { "type": "string" },
-        "igdbId": { "type": "string" },
-        "mbId": { "type": "string", "description": "DEPRECATED - soon to be ignored" },
-        "mbReleaseId": { "type": "string", "description": "MusicBrainz ID for specific releases (albums, EPs, tracks)" },
-        "parentMbReleaseId": { "type": "string", "description": "MusicBrainz ID for parent release (e.g., album for a track)" },
+        "imdbId": { "type": "string", "maxLength": 256 },
+        "isbn10": { "type": "string", "maxLength": 256 },
+        "isbn13": { "type": "string", "maxLength": 256 },
+        "asin": { "type": "string", "maxLength": 256 },
+        "other": { "type": "string", "maxLength": 256 },
+        "tmdbId": { "type": "string", "maxLength": 256 },
+        "igdbId": { "type": "string", "maxLength": 256 },
+        "mbId": { "type": "string", "maxLength": 256, "description": "DEPRECATED - soon to be ignored" },
+        "mbReleaseId": { "type": "string", "maxLength": 256, "description": "MusicBrainz ID for specific releases (albums, EPs, tracks)" },
+        "parentMbReleaseId": { "type": "string", "maxLength": 256, "description": "MusicBrainz ID for parent release (e.g., album for a track)" },
         "episodeNumber": {
           "type": "integer",
           "description": "Episode number for TV shows or series"
@@ -139,6 +141,7 @@
         },
         "tmdbTvSeriesId": {
           "type": "string",
+          "maxLength": 256,
           "description": "TMDb ID for TV series"
         }
       }

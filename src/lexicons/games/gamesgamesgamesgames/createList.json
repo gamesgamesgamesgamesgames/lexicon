@@ -36,7 +36,8 @@
               "format": "at-uri"
             },
             "cid": {
-              "type": "string"
+              "type": "string",
+              "format": "cid"
             }
           }
         }

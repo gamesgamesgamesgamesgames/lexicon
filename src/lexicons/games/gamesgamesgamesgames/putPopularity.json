@@ -43,6 +43,7 @@
 			"properties": {
 				"steamId": {
 					"type": "string",
+					"maxLength": 256,
 					"description": "Steam app ID."
 				},
 				"ccu": {

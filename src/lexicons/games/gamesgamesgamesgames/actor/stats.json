@@ -18,6 +18,7 @@
 					},
 					"source": {
 						"type": "string",
+						"maxLength": 64,
 						"description": "The platform that provided this statistics data.",
 						"knownValues": ["steam", "gog", "epic", "playstation", "xbox", "nintendo", "itchio", "humble"]
 					},

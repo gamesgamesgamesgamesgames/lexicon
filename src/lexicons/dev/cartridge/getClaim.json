@@ -39,10 +39,12 @@
 					"format": "at-uri"
 				},
 				"cid": {
-					"type": "string"
+					"type": "string",
+					"format": "cid"
 				},
 				"type": {
 					"type": "string",
+					"maxLength": 64,
 					"knownValues": ["game", "org"]
 				},
 				"claimantDid": {
@@ -62,10 +64,12 @@
 					"format": "at-uri"
 				},
 				"message": {
-					"type": "string"
+					"type": "string",
+					"maxLength": 3000
 				},
 				"contact": {
-					"type": "string"
+					"type": "string",
+					"maxLength": 256
 				},
 				"review": {
 					"type": "ref",
@@ -83,6 +87,7 @@
 				},
 				"status": {
 					"type": "string",
+					"maxLength": 64,
 					"knownValues": ["approved", "denied"]
 				},
 				"reviewedBy": {
@@ -95,7 +100,8 @@
 					"items": { "type": "string", "format": "at-uri" }
 				},
 				"reason": {
-					"type": "string"
+					"type": "string",
+					"maxLength": 3000
 				}
 			}
 		}

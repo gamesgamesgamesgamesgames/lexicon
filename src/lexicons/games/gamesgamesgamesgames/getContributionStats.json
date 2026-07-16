@@ -53,9 +53,9 @@
 			"type": "object",
 			"required": ["id", "name"],
 			"properties": {
-				"id": { "type": "string" },
-				"name": { "type": "string" },
-				"description": { "type": "string" }
+				"id": { "type": "string", "maxLength": 128 },
+				"name": { "type": "string", "maxLength": 640 },
+				"description": { "type": "string", "maxLength": 3000 }
 			}
 		}
 	}

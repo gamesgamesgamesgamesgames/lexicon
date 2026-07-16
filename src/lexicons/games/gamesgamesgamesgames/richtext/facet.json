@@ -84,7 +84,7 @@
 			"required": ["blob"],
 			"properties": {
 				"blob": { "type": "blob", "accept": ["image/*"], "maxSize": 10000000 },
-				"alt": { "type": "string" },
+				"alt": { "type": "string", "maxLength": 2000 },
 				"width": { "type": "integer" },
 				"height": { "type": "integer" }
 			}
@@ -95,7 +95,7 @@
 			"properties": {
 				"blob": { "type": "blob", "accept": ["video/*"], "maxSize": 200000000 },
 				"uri": { "type": "string", "format": "uri" },
-				"alt": { "type": "string" }
+				"alt": { "type": "string", "maxLength": 2000 }
 			}
 		},
 		"byteSlice": {

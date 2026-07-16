@@ -38,10 +38,12 @@
             },
             "cid": {
               "type": "string",
+              "format": "cid",
               "description": "CID of the created listItem record. Present when action is 'added'."
             },
             "action": {
               "type": "string",
+              "maxLength": 64,
               "knownValues": ["added", "removed"],
               "description": "Whether the game was added to or removed from the list."
             }

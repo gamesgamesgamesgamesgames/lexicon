@@ -11,7 +11,8 @@
 				"required": ["genre"],
 				"properties": {
 					"genre": {
-						"type": "string"
+						"type": "string",
+						"maxLength": 64
 					},
 					"limit": {
 						"type": "integer",
@@ -20,7 +21,8 @@
 						"default": 20
 					},
 					"cursor": {
-						"type": "string"
+						"type": "string",
+						"maxLength": 256
 					}
 				}
 			},
@@ -38,7 +40,8 @@
 							}
 						},
 						"cursor": {
-							"type": "string"
+							"type": "string",
+							"maxLength": 256
 						}
 					}
 				}

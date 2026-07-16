@@ -19,7 +19,8 @@
 								"required": ["genre", "count"],
 								"properties": {
 									"genre": {
-										"type": "string"
+										"type": "string",
+										"maxLength": 64
 									},
 									"count": {
 										"type": "integer"
