@@ -1,0 +1,91 @@
+{
+  "$type": "com.atproto.lexicon.schema",
+  "lexicon": 1,
+  "id": "dev.cartridge.claims.getMigrationStatus",
+  "defs": {
+    "main": {
+      "type": "query",
+      "description": "Get the status of a migration background job.",
+      "parameters": {
+        "type": "params",
+        "required": ["jobId"],
+        "properties": {
+          "jobId": {
+            "type": "string",
+            "maxLength": 128
+          }
+        }
+      },
+      "output": {
+        "encoding": "application/json",
+        "schema": {
+          "type": "object",
+          "required": ["jobId", "status"],
+          "properties": {
+            "jobId": {
+              "type": "string",
+              "maxLength": 128
+            },
+            "status": {
+              "type": "string",
+              "maxLength": 64,
+              "knownValues": ["pending", "running", "completed", "failed", "paused", "cancelled"]
+            },
+            "progress": {
+              "type": "ref",
+              "ref": "#progressView"
+            },
+            "results": {
+              "type": "array",
+              "items": {
+                "type": "ref",
+                "ref": "#migrationResult"
+              }
+            },
+            "error": {
+              "type": "string",
+              "maxLength": 256
+            }
+          }
+        }
+      }
+    },
+    "progressView": {
+      "type": "object",
+      "properties": {
+        "total": {
+          "type": "integer"
+        },
+        "processed": {
+          "type": "integer"
+        },
+        "orgProfileDone": {
+          "type": "boolean"
+        }
+      }
+    },
+    "migrationResult": {
+      "type": "object",
+      "required": ["gameUri", "status"],
+      "properties": {
+        "gameUri": {
+          "type": "string",
+          "format": "at-uri"
+        },
+        "status": {
+          "type": "string",
+          "maxLength": 64,
+          "knownValues": ["success", "failed", "skipped"]
+        },
+        "newUri": {
+          "type": "string",
+          "format": "at-uri"
+        },
+        "error": {
+          "type": "string",
+          "maxLength": 256
+        }
+      }
+    }
+  }
+}

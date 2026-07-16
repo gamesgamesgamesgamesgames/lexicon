@@ -10,14 +10,10 @@ end
 local ADMIN_DIDS = parse_admin_dids()
 
 function handle()
-  local PENTARACT_DID = env.PENTARACT_DID
-
-  -- Verify caller is admin
   if not ADMIN_DIDS[caller_did] then
     error("unauthorized: only admins can review claims")
   end
 
-  -- Validate input
   if not input.claim or not input.claim.uri or not input.claim.cid then
     error("claim strongRef (uri + cid) is required")
   end
@@ -26,11 +22,35 @@ function handle()
     error("status must be 'approved' or 'denied'")
   end
 
-  -- If approving, check that each approved game isn't already approved in another claimReview
+  local claim_uri = input.claim.uri
+  local claimant_did = claim_uri:match("^at://([^/]+)/")
+  if not claimant_did then
+    error("invalid claim URI")
+  end
+
+  local space_uri = "at://" .. claimant_did .. "/space/dev.cartridge.claims.space/self"
+  local space = atproto.spaces.get(space_uri)
+  if not space then
+    error("claimant has no claims space")
+  end
+
+  local claim_rows = db.raw(
+    "SELECT uri FROM happyview_space_records WHERE uri = $1 AND collection = 'dev.cartridge.claims.claim' LIMIT 1",
+    { claim_uri }
+  )
+  if not claim_rows or #claim_rows == 0 then
+    error("claim not found in claimant's space")
+  end
+
   if input.status == "approved" and input.approvedGames then
     for _, game_uri in ipairs(input.approvedGames) do
       local existing = db.raw(
-        "SELECT uri FROM happyview_records WHERE collection = 'dev.cartridge.claimReview' AND record::jsonb->>'status' = 'approved' AND EXISTS (SELECT 1 FROM jsonb_array_elements_text(record::jsonb->'approvedGames') AS elem WHERE elem = $1) LIMIT 1",
+        "SELECT sr.uri FROM happyview_space_records sr " ..
+        "INNER JOIN happyview_spaces s ON s.id = sr.space_id AND s.type_nsid = 'dev.cartridge.claims.space' " ..
+        "WHERE sr.collection = 'dev.cartridge.claims.claimReview' " ..
+        "AND sr.record::jsonb->>'status' = 'approved' " ..
+        "AND EXISTS (SELECT 1 FROM jsonb_array_elements_text(sr.record::jsonb->'approvedGames') AS elem WHERE elem = $1) " ..
+        "LIMIT 1",
         { game_uri }
       )
       if existing and #existing > 0 then
@@ -39,7 +59,6 @@ function handle()
     end
   end
 
-  -- Create claimReview in pentaract's repo
   local review_data = {
     claim = {
       uri = input.claim.uri,
@@ -58,9 +77,10 @@ function handle()
     review_data.reason = input.reason
   end
 
-  local review = Record.new("dev.cartridge.claimReview", review_data)
-  review:set_repo(PENTARACT_DID)
-  review:save()
+  local result = space:write_record{
+    collection = "dev.cartridge.claims.claimReview",
+    record = review_data,
+  }
 
-  return { uri = review._uri }
+  return { uri = result.uri }
 end

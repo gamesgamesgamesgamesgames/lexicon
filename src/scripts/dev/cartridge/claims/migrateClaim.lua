@@ -1,6 +1,4 @@
 function handle()
-  local PENTARACT_DID = env.PENTARACT_DID
-
   local claim_uri = input.claim
   local review_uri = input.claimReview
 
@@ -11,23 +9,28 @@ function handle()
     error("claimReview URI is required")
   end
 
-  -- Verify claim belongs to caller
   local claim_did = claim_uri:match("^at://([^/]+)/")
   if claim_did ~= caller_did then
     error("unauthorized: claim does not belong to caller")
   end
 
-  -- Load the claim
-  local claim_record = db.get(claim_uri)
-  if not claim_record then
+  local claim_rows = db.raw(
+    "SELECT uri, record FROM happyview_space_records WHERE uri = $1 AND collection = 'dev.cartridge.claims.claim' LIMIT 1",
+    { claim_uri }
+  )
+  if not claim_rows or #claim_rows == 0 then
     error("claim not found")
   end
+  local claim_record = json.decode(claim_rows[1].record)
 
-  -- Load the review and verify
-  local review_record = db.get(review_uri)
-  if not review_record then
+  local review_rows = db.raw(
+    "SELECT uri, record FROM happyview_space_records WHERE uri = $1 AND collection = 'dev.cartridge.claims.claimReview' LIMIT 1",
+    { review_uri }
+  )
+  if not review_rows or #review_rows == 0 then
     error("claimReview not found")
   end
+  local review_record = json.decode(review_rows[1].record)
 
   if review_record.status ~= "approved" then
     error("claim review is not approved")
@@ -39,7 +42,6 @@ function handle()
 
   local approved_games = review_record.approvedGames or {}
 
-  -- Extract org info for org claims
   local org_uri = nil
   local org_did = nil
   if claim_record.type == "org" and claim_record.org then
@@ -47,7 +49,6 @@ function handle()
     org_did = org_uri:match("^at://([^/]+)/")
   end
 
-  -- Enqueue migration job
   local job_id = jobs.create("migration.claim", {
     claim_type = claim_record.type,
     claim_uri = claim_uri,

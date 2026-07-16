@@ -52,7 +52,6 @@ function handle()
   local status_filter = params.status
   local cursor_val = params.cursor
 
-  -- Parse cursor: format "indexed_at|uri"
   local cursor_indexed_at = nil
   local cursor_uri = nil
   if cursor_val and cursor_val ~= "" then
@@ -63,7 +62,6 @@ function handle()
     end
   end
 
-  -- Build SQL dynamically
   local sql = ""
   local sql_params = {}
   local param_idx = 0
@@ -75,16 +73,17 @@ function handle()
   end
 
   if status_filter == "pending" then
-    -- Claims with no associated review
-    sql = "SELECT c.uri, c.cid, c.record, c.indexed_at FROM happyview_records c " ..
-          "WHERE c.collection = 'dev.cartridge.claim' " ..
+    sql = "SELECT c.uri, c.cid, c.record, c.indexed_at, c.author_did FROM happyview_space_records c " ..
+          "INNER JOIN happyview_spaces s ON s.id = c.space_id AND s.type_nsid = 'dev.cartridge.claims.space' " ..
+          "WHERE c.collection = 'dev.cartridge.claims.claim' " ..
           "AND NOT EXISTS (" ..
-            "SELECT 1 FROM happyview_records r WHERE r.collection = 'dev.cartridge.claimReview' " ..
+            "SELECT 1 FROM happyview_space_records r WHERE r.space_id = c.space_id " ..
+            "AND r.collection = 'dev.cartridge.claims.claimReview' " ..
             "AND r.record::jsonb->'claim'->>'uri' = c.uri" ..
           ")"
 
     if not is_admin then
-      sql = sql .. " AND c.did = " .. next_param(caller_did)
+      sql = sql .. " AND c.author_did = " .. next_param(caller_did)
     end
 
     if cursor_indexed_at and cursor_uri then
@@ -94,15 +93,16 @@ function handle()
     sql = sql .. " ORDER BY c.indexed_at DESC, c.uri DESC LIMIT " .. next_param(limit)
 
   elseif status_filter == "approved" or status_filter == "denied" then
-    -- Claims with a review matching the given status
-    sql = "SELECT c.uri, c.cid, c.record, c.indexed_at FROM happyview_records c " ..
-          "INNER JOIN happyview_records r ON r.collection = 'dev.cartridge.claimReview' " ..
+    sql = "SELECT c.uri, c.cid, c.record, c.indexed_at, c.author_did FROM happyview_space_records c " ..
+          "INNER JOIN happyview_spaces s ON s.id = c.space_id AND s.type_nsid = 'dev.cartridge.claims.space' " ..
+          "INNER JOIN happyview_space_records r ON r.space_id = c.space_id " ..
+          "AND r.collection = 'dev.cartridge.claims.claimReview' " ..
           "AND r.record::jsonb->'claim'->>'uri' = c.uri " ..
           "AND r.record::jsonb->>'status' = " .. next_param(status_filter) .. " " ..
-          "WHERE c.collection = 'dev.cartridge.claim'"
+          "WHERE c.collection = 'dev.cartridge.claims.claim'"
 
     if not is_admin then
-      sql = sql .. " AND c.did = " .. next_param(caller_did)
+      sql = sql .. " AND c.author_did = " .. next_param(caller_did)
     end
 
     if cursor_indexed_at and cursor_uri then
@@ -112,12 +112,12 @@ function handle()
     sql = sql .. " ORDER BY c.indexed_at DESC, c.uri DESC LIMIT " .. next_param(limit)
 
   else
-    -- All claims (no status filter)
-    sql = "SELECT c.uri, c.cid, c.record, c.indexed_at FROM happyview_records c " ..
-          "WHERE c.collection = 'dev.cartridge.claim'"
+    sql = "SELECT c.uri, c.cid, c.record, c.indexed_at, c.author_did FROM happyview_space_records c " ..
+          "INNER JOIN happyview_spaces s ON s.id = c.space_id AND s.type_nsid = 'dev.cartridge.claims.space' " ..
+          "WHERE c.collection = 'dev.cartridge.claims.claim'"
 
     if not is_admin then
-      sql = sql .. " AND c.did = " .. next_param(caller_did)
+      sql = sql .. " AND c.author_did = " .. next_param(caller_did)
     end
 
     if cursor_indexed_at and cursor_uri then
@@ -134,20 +134,18 @@ function handle()
 
   for _, row in ipairs(rows or {}) do
     local record = json.decode(row.record)
-    local claimant_did = row.uri:match("^at://([^/]+)/")
 
     local claim_view = {
-      ["$type"] = "dev.cartridge.getClaim#claimView",
+      ["$type"] = "dev.cartridge.claims.getClaim#claimView",
       uri = row.uri,
       cid = row.cid,
       type = record.type,
-      claimantDid = claimant_did,
+      claimantDid = row.author_did,
       createdAt = record.createdAt,
       message = record.message,
       org = record.org,
     }
 
-    -- Resolve games for game claims
     if record.type == "game" and record.games then
       local games = {}
       for _, game_uri in ipairs(record.games) do
@@ -160,21 +158,19 @@ function handle()
       claim_view.games = games
     end
 
-    -- Include contact only for admins (contact is stored on record, filtered on output)
     if is_admin and record.contact then
       claim_view.contact = record.contact
     end
 
-    -- Look up associated claimReview
     local review_rows = db.raw(
-      "SELECT uri, record FROM happyview_records WHERE collection = 'dev.cartridge.claimReview' AND record::jsonb->'claim'->>'uri' = $1 LIMIT 1",
-      { row.uri }
+      "SELECT uri, record FROM happyview_space_records WHERE space_id = (SELECT space_id FROM happyview_space_records WHERE uri = $1) AND collection = 'dev.cartridge.claims.claimReview' AND record::jsonb->'claim'->>'uri' = $2 LIMIT 1",
+      { row.uri, row.uri }
     )
 
     if review_rows and #review_rows > 0 then
       local review_record = json.decode(review_rows[1].record)
       claim_view.review = {
-        ["$type"] = "dev.cartridge.getClaim#reviewView",
+        ["$type"] = "dev.cartridge.claims.getClaim#reviewView",
         uri = review_rows[1].uri,
         status = review_record.status,
         reviewedBy = review_record.reviewedBy,
@@ -188,7 +184,6 @@ function handle()
     last_row = row
   end
 
-  -- Build cursor for next page
   local next_cursor = nil
   if last_row and #claims == limit then
     next_cursor = last_row.indexed_at .. "|" .. last_row.uri

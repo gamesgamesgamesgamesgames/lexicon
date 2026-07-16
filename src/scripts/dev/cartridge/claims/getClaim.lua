@@ -52,9 +52,18 @@ function handle()
     error("uri is required")
   end
 
-  -- Use db.raw to get record + cid (db.get doesn't return cid)
+  local claimant_did = uri:match("^at://([^/]+)/")
+  if not claimant_did then
+    error("invalid claim URI")
+  end
+
+  local is_admin = ADMIN_DIDS[caller_did]
+  if caller_did ~= claimant_did and not is_admin then
+    error("unauthorized")
+  end
+
   local rows = db.raw(
-    "SELECT uri, cid, record FROM happyview_records WHERE uri = $1 LIMIT 1",
+    "SELECT uri, cid, record FROM happyview_space_records WHERE uri = $1 LIMIT 1",
     { uri }
   )
 
@@ -65,12 +74,8 @@ function handle()
   local row = rows[1]
   local record = json.decode(row.record)
 
-  -- Extract claimantDid from URI: at://did:plc:xxx/collection/rkey
-  local claimant_did = uri:match("^at://([^/]+)/")
-
-  -- Build base claim view
   local claim_view = {
-    ["$type"] = "dev.cartridge.getClaim#claimView",
+    ["$type"] = "dev.cartridge.claims.getClaim#claimView",
     uri = row.uri,
     cid = row.cid,
     type = record.type,
@@ -80,7 +85,6 @@ function handle()
     org = record.org,
   }
 
-  -- For game claims: resolve each game URI into gameSummaryView
   if record.type == "game" and record.games then
     local games = {}
     for _, game_uri in ipairs(record.games) do
@@ -93,7 +97,6 @@ function handle()
     claim_view.games = games
   end
 
-  -- For org claims: find all games credited to the org via backlinks
   if record.type == "org" and record.org then
     local all_credits = {}
     local cursor = nil
@@ -117,7 +120,6 @@ function handle()
       end
     until not cursor
 
-    -- Extract unique game URIs and resolve
     local seen = {}
     local games = {}
     for _, credit in ipairs(all_credits) do
@@ -134,22 +136,25 @@ function handle()
     claim_view.games = games
   end
 
-  -- Include contact ONLY if caller is admin (contact is stored on record, filtered on output)
-  if ADMIN_DIDS[caller_did] and record.contact then
+  if is_admin and record.contact then
     claim_view.contact = record.contact
   end
 
-  -- Look up associated claimReview
+  local space_uri = "at://" .. claimant_did .. "/space/dev.cartridge.claims.space/self"
   local review_rows = db.raw(
-    "SELECT uri, record FROM happyview_records WHERE collection = 'dev.cartridge.claimReview' AND record::jsonb->'claim'->>'uri' = $1 LIMIT 1",
-    { uri }
+    "SELECT sr.uri, sr.record FROM happyview_space_records sr " ..
+    "INNER JOIN happyview_spaces s ON s.id = sr.space_id " ..
+    "WHERE s.id = (SELECT id FROM happyview_spaces WHERE owner_did = $1 AND type_nsid = 'dev.cartridge.claims.space' AND skey = 'self' LIMIT 1) " ..
+    "AND sr.collection = 'dev.cartridge.claims.claimReview' " ..
+    "AND sr.record::jsonb->'claim'->>'uri' = $2 LIMIT 1",
+    { claimant_did, uri }
   )
 
   if review_rows and #review_rows > 0 then
     local review_row = review_rows[1]
     local review_record = json.decode(review_row.record)
     claim_view.review = {
-      ["$type"] = "dev.cartridge.getClaim#reviewView",
+      ["$type"] = "dev.cartridge.claims.getClaim#reviewView",
       uri = review_row.uri,
       status = review_record.status,
       reviewedBy = review_record.reviewedBy,
