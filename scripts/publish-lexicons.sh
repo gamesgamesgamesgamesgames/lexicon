@@ -192,21 +192,39 @@ if [[ $total -eq 0 ]]; then
 fi
 
 # ---------------------------------------------------------------------------
-# Apply writes in batches of 200 (PDS limit)
+# Split writes into batches that stay under the PDS request-body size limit.
+#
+# applyWrites returns HTTP 413 PayloadTooLargeError when the batch payload is
+# too large; the limit is a byte size, not a write count (a single batch of 50
+# G5 lexicons at ~88KB was rejected). We greedily pack writes into batches
+# capped by both serialized byte size and count, so an outsized record like
+# defs.json (~26KB) can't blow the budget regardless of how many writes there
+# are.
 # ---------------------------------------------------------------------------
 
-batch_size=50
-batches=$(( (total + batch_size - 1) / batch_size ))
+max_batch_bytes=50000
+max_batch_count=40
+
+tmp_batches=$(mktemp)
+jq -c --argjson budget "$max_batch_bytes" --argjson maxcount "$max_batch_count" '
+  reduce .[] as $w ({batches: [], cur: [], curlen: 0};
+    ($w | tojson | length) as $wl
+    | if (.cur | length) > 0
+         and ((.curlen + $wl > $budget) or (.cur | length) >= $maxcount)
+      then {batches: (.batches + [.cur]), cur: [$w], curlen: $wl}
+      else {batches: .batches, cur: (.cur + [$w]), curlen: (.curlen + $wl)}
+      end)
+  | .batches + (if (.cur | length) > 0 then [.cur] else [] end)
+' "$tmp_writes" > "$tmp_batches"
+
+batches=$(jq 'length' "$tmp_batches")
 
 tmp_request=$(mktemp)
 
 for ((i = 0; i < batches; i++)); do
-  offset=$((i * batch_size))
-
-  jq --argjson offset "$offset" \
-     --argjson limit "$batch_size" \
+  jq -c --argjson i "$i" \
      --arg repo "$did" \
-     '{repo: $repo, writes: .[$offset:$offset + $limit]}' "$tmp_writes" > "$tmp_request"
+     '{repo: $repo, writes: .[$i]}' "$tmp_batches" > "$tmp_request"
 
   batch_count=$(jq '.writes | length' "$tmp_request")
 
@@ -243,7 +261,7 @@ for ((i = 0; i < batches; i++)); do
     else
       echo "FAIL: batch $((i + 1)) → HTTP $http_code" >&2
       cat "$response" >&2; echo >&2
-      rm -f "$tmp_writes" "$tmp_request" "$response" "$resp_headers"
+      rm -f "$tmp_writes" "$tmp_batches" "$tmp_request" "$response" "$resp_headers"
       exit 1
     fi
   done
@@ -253,6 +271,6 @@ done
 
 rm -f "$tmp_request"
 
-rm -f "$tmp_writes"
+rm -f "$tmp_writes" "$tmp_batches"
 echo ""
 echo "Published $total lexicon(s) to $PUBLISH_HANDLE ($did)"
