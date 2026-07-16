@@ -30,7 +30,7 @@
 						"accountType": {
 							"type": "string",
 							"maxLength": 64,
-							"knownValues": ["studio", "developer", "publisher"],
+							"knownValues": ["studio", "developer", "publisher", "game"],
 							"description": "The verified account type. Only present when isVerified is true."
 						}
 					}

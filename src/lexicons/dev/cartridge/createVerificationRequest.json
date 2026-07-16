@@ -5,7 +5,7 @@
   "defs": {
     "main": {
       "type": "procedure",
-      "description": "Submit a verification request to flag your account as a studio, developer, or publisher.",
+      "description": "Submit a verification request to flag your account as a studio, developer, publisher, or game.",
       "input": {
         "encoding": "application/json",
         "schema": {
@@ -15,7 +15,7 @@
             "accountType": {
               "type": "string",
               "maxLength": 64,
-              "knownValues": ["studio", "developer", "publisher"]
+              "knownValues": ["studio", "developer", "publisher", "game"]
             },
             "message": {
               "type": "string",

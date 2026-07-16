@@ -4,7 +4,7 @@
 	"id": "dev.cartridge.graph.verification",
 	"defs": {
 		"main": {
-			"description": "A Cartridge-specific verification record for studios, developers, and publishers. Written by the Cartridge verifier account.",
+			"description": "A Cartridge-specific verification record for studios, developers, publishers, and games. Written by the Cartridge verifier account.",
 			"type": "record",
 			"key": "tid",
 			"record": {
@@ -29,7 +29,7 @@
 					"accountType": {
 						"type": "string",
 						"maxLength": 64,
-						"knownValues": ["studio", "developer", "publisher"],
+						"knownValues": ["studio", "developer", "publisher", "game"],
 						"description": "Type of verified account."
 					},
 					"createdAt": {
