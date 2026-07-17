@@ -4,16 +4,14 @@
 	"defs": {
 		"main": {
 			"type": "permission-set",
-			"title": "Actor",
-			"detail": "Access Cartridge actor profile with roles.",
+			"title": "Cartridge Profiles",
+			"detail": "Retrieve Cartridge-specific profiles.",
 			"permissions": [
 				{
 					"type": "permission",
 					"resource": "rpc",
 					"inheritAud": true,
-					"lxm": [
-						"dev.cartridge.actor.getProfile"
-					]
+					"lxm": ["dev.cartridge.actor.getProfile"]
 				}
 			]
 		}
