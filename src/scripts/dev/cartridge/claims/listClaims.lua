@@ -1,10 +1,10 @@
 local function get_admin_space_uri()
   local rows = db.raw(
-    "SELECT owner_did FROM happyview_spaces WHERE type_nsid = 'dev.cartridge.claims.adminGroup' AND skey = 'self' LIMIT 1",
+    "SELECT authority_did FROM happyview_spaces WHERE type_nsid = 'dev.cartridge.claims.adminGroup' AND skey = 'self' LIMIT 1",
     {}
   )
   if not rows or #rows == 0 then return nil end
-  return "at://" .. rows[1].owner_did .. "/space/dev.cartridge.claims.adminGroup/self"
+  return "at://" .. rows[1].authority_did .. "/space/dev.cartridge.claims.adminGroup/self"
 end
 
 function find_slug(target_uri)
