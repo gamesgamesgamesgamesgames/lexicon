@@ -1,6 +1,6 @@
 {
   "lexicon": 1,
-  "id": "dev.cartridge.claims.authClaims",
+  "id": "dev.cartridge.authClaims",
   "defs": {
     "main": {
       "type": "permission-set",
