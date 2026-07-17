@@ -1,0 +1,51 @@
+{
+	"$type": "com.atproto.lexicon.schema",
+	"lexicon": 1,
+	"id": "dev.cartridge.actor.getProfile",
+	"defs": {
+		"main": {
+			"type": "query",
+			"description": "Get a Cartridge profile with roles. Wraps games.gamesgamesgamesgames.getProfile and appends a roles array.",
+			"parameters": {
+				"type": "params",
+				"properties": {
+					"handle": {
+						"type": "string",
+						"format": "at-identifier"
+					}
+				}
+			},
+			"output": {
+				"encoding": "application/json",
+				"schema": {
+					"type": "object",
+					"properties": {
+						"profile": {
+							"type": "union",
+							"refs": [
+								"games.gamesgamesgamesgames.defs#actorProfileDetailView",
+								"games.gamesgamesgamesgames.defs#orgProfileDetailView"
+							]
+						},
+						"profileType": {
+							"type": "string",
+							"maxLength": 64,
+							"knownValues": ["actor", "org"]
+						},
+						"handle": {
+							"type": "string",
+							"format": "handle"
+						},
+						"roles": {
+							"type": "array",
+							"items": {
+								"type": "string",
+								"knownValues": ["superadmin", "admin"]
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}

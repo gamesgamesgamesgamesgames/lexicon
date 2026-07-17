@@ -1,0 +1,21 @@
+{
+	"lexicon": 1,
+	"id": "dev.cartridge.authActor",
+	"defs": {
+		"main": {
+			"type": "permission-set",
+			"title": "Actor",
+			"detail": "Access Cartridge actor profile with roles.",
+			"permissions": [
+				{
+					"type": "permission",
+					"resource": "rpc",
+					"inheritAud": true,
+					"lxm": [
+						"dev.cartridge.actor.getProfile"
+					]
+				}
+			]
+		}
+	}
+}
