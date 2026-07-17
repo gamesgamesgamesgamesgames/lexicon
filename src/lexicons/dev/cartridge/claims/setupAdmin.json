@@ -1,0 +1,45 @@
+{
+	"$type": "com.atproto.lexicon.schema",
+	"lexicon": 1,
+	"id": "dev.cartridge.claims.setupAdmin",
+	"defs": {
+		"main": {
+			"type": "procedure",
+			"description": "Bootstrap the claims admin space or add a member to it. Creates the admin space on first call; subsequent calls can add new admin DIDs.",
+			"input": {
+				"encoding": "application/json",
+				"schema": {
+					"type": "object",
+					"properties": {
+						"adminDid": {
+							"type": "string",
+							"format": "did",
+							"description": "DID to add as admin. Omit on first call to just create the space."
+						}
+					}
+				}
+			},
+			"output": {
+				"encoding": "application/json",
+				"schema": {
+					"type": "object",
+					"required": ["spaceUri"],
+					"properties": {
+						"spaceUri": {
+							"type": "string",
+							"format": "at-uri"
+						},
+						"created": {
+							"type": "boolean",
+							"description": "True if the admin space was created by this call"
+						},
+						"memberAdded": {
+							"type": "boolean",
+							"description": "True if adminDid was added as a member"
+						}
+					}
+				}
+			}
+		}
+	}
+}

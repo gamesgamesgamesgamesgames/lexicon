@@ -17,7 +17,8 @@
             "dev.cartridge.claims.getMigrationStatus",
             "dev.cartridge.claims.listClaims",
             "dev.cartridge.claims.migrateClaim",
-            "dev.cartridge.claims.reviewClaim"
+            "dev.cartridge.claims.reviewClaim",
+            "dev.cartridge.claims.setupAdmin"
           ]
         }
       ]

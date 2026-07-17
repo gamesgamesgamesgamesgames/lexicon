@@ -1,10 +1,10 @@
-local function parse_admin_dids()
-  local dids = {}
-  local raw = env.ADMIN_DIDS or ""
-  for did in raw:gmatch("[^,]+") do
-    dids[#dids + 1] = did:match("^%s*(.-)%s*$")
-  end
-  return dids
+local function get_admin_space_uri()
+  local rows = db.raw(
+    "SELECT owner_did FROM happyview_spaces WHERE type_nsid = 'dev.cartridge.claims.adminGroup' AND skey = 'self' LIMIT 1",
+    {}
+  )
+  if not rows or #rows == 0 then return nil end
+  return "at://" .. rows[1].owner_did .. "/space/dev.cartridge.claims.adminGroup/self"
 end
 
 function handle()
@@ -38,9 +38,9 @@ function handle()
       config = { membershipPublic = false, recordsPublic = false },
     }
 
-    local admin_dids = parse_admin_dids()
-    for _, admin_did in ipairs(admin_dids) do
-      space:add_member{ did = admin_did, access = "write" }
+    local admin_space_uri = get_admin_space_uri()
+    if admin_space_uri then
+      space:add_member{ did = admin_space_uri, access = "write", is_delegation = true }
     end
   end
 

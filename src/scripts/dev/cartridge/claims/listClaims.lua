@@ -1,13 +1,11 @@
-local function parse_admin_dids()
-  local dids = {}
-  local raw = env.ADMIN_DIDS or ""
-  for did in raw:gmatch("[^,]+") do
-    dids[did:match("^%s*(.-)%s*$")] = true
-  end
-  return dids
+local function get_admin_space_uri()
+  local rows = db.raw(
+    "SELECT owner_did FROM happyview_spaces WHERE type_nsid = 'dev.cartridge.claims.adminGroup' AND skey = 'self' LIMIT 1",
+    {}
+  )
+  if not rows or #rows == 0 then return nil end
+  return "at://" .. rows[1].owner_did .. "/space/dev.cartridge.claims.adminGroup/self"
 end
-
-local ADMIN_DIDS = parse_admin_dids()
 
 function find_slug(target_uri)
   local rows = db.raw("SELECT slug FROM slugs WHERE uri = $1 LIMIT 1", { target_uri })
@@ -47,7 +45,8 @@ function build_game_summary(game_record)
 end
 
 function handle()
-  local is_admin = ADMIN_DIDS[caller_did]
+  local admin_space_uri = get_admin_space_uri()
+  local is_admin = admin_space_uri and atproto.spaces.is_member(admin_space_uri, caller_did)
   local limit = params.limit or 25
   local status_filter = params.status
   local cursor_val = params.cursor
