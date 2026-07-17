@@ -5,7 +5,7 @@ function handle()
   end
 
   local rows = db.raw(
-    "SELECT id, status, progress, result, error FROM happyview_jobs WHERE id = $1 AND created_by = $2 LIMIT 1",
+    "SELECT id, status, input, progress, result, error FROM happyview_jobs WHERE id = $1 AND created_by = $2 LIMIT 1",
     { job_id, caller_did }
   )
 
@@ -19,12 +19,20 @@ function handle()
     status = row.status,
   }
 
+  local job_input = json.decode(row.input or "{}")
+  local input_total = job_input.approved_games and #job_input.approved_games or 0
+
   if row.progress then
     local progress = json.decode(row.progress)
     response.progress = {
-      total = progress.total,
-      processed = progress.processed,
+      total = progress.total or input_total,
+      processed = progress.processed or 0,
       orgProfileDone = progress.org_profile_done,
+    }
+  else
+    response.progress = {
+      total = input_total,
+      processed = 0,
     }
   end
 
