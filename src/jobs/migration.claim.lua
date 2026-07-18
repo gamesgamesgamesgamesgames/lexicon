@@ -116,10 +116,12 @@ function migrate_blobs(data, source_did)
       end
 
       local err_str = tostring(result)
-      if err_str:find("429") or err_str:find("rate") or err_str:find("RateLimit") then
+      local err_lower = err_str:lower()
+      if err_str:find("429") or err_lower:find("rate limit") or err_lower:find("ratelimit") then
         retries = retries + 1
         local wait_time = math.min(30 * retries, 300)
         log("rate limited on blob upload, waiting " .. wait_time .. "s (attempt " .. retries .. "/10)")
+        job.log("warn", "blob upload error: " .. err_str)
         job.wait(wait_time)
 
         if job.should_stop() then
