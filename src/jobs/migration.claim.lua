@@ -229,6 +229,10 @@ function migrate_record(source_uri, collection, PENTARACT_DID, pentaract_session
     return { status = "failed", sourceUri = source_uri, error = "verification failed" }
   end
 
+  if collection == "games.gamesgamesgamesgames.game" then
+    db.raw("UPDATE slugs SET uri = $1 WHERE uri = $2", { new_uri, source_uri })
+  end
+
   local escaped_source = escape_pattern(source_uri)
   for _, ref_collection in ipairs(REF_COLLECTIONS) do
     local bl_cursor = nil
