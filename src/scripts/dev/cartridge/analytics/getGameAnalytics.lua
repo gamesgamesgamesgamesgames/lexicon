@@ -140,11 +140,13 @@ end
 
 local function record_trend_by_day(collection, game_uri, from)
   local counts = {}
-  -- Explicit UTC cutoff (…T00:00:00Z) so the comparison is timezone-unambiguous
-  -- regardless of DB session timezone (mirrors getHotGamesFeed.lua's cutoff).
+  -- indexed_at/created_at are ISO-8601 UTC text (e.g. 2026-07-26T02:12:44Z), not
+  -- timestamp columns — so we take the YYYY-MM-DD prefix directly (substr is
+  -- portable to Postgres + SQLite) rather than timezone math, and compare
+  -- against an explicit UTC cutoff (…T00:00:00Z), mirroring getHotGamesFeed.lua.
   local cutoff = from .. "T00:00:00Z"
   local rows = db.raw(
-    "SELECT to_char(COALESCE(indexed_at, created_at) AT TIME ZONE 'UTC', 'YYYY-MM-DD') AS day, " ..
+    "SELECT substr(COALESCE(indexed_at, created_at), 1, 10) AS day, " ..
     "COUNT(*) AS c FROM happyview_records " ..
     "WHERE collection = $1 AND record::jsonb->>'subject' = $2 " ..
     "AND COALESCE(indexed_at, created_at) >= $3 GROUP BY day",
