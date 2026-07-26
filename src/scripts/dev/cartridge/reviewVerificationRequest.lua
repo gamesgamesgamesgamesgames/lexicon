@@ -118,8 +118,8 @@ function handle()
     })
     if profile_results.records and #profile_results.records > 0 then
       local pr = profile_results.records[1]
-      if pr.value and pr.value.displayName and pr.value.displayName ~= "" then
-        display_name = pr.value.displayName
+      if pr.displayName and pr.displayName ~= "" then
+        display_name = pr.displayName
       end
     end
 
