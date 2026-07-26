@@ -131,30 +131,109 @@ local function owner_of(uri)
 end
 
 -- ---------------------------------------------------------------------------
+-- Migration history.
+--
+-- An approved claim copies the game record into the claimant's repo under a NEW
+-- AT-URI and leaves a `redirect` record (sourceUri -> targetUri) behind. The
+-- migration job re-points the `slugs` row, so every ClickHouse rollup — which
+-- keys on `game_slug` — stays continuous across a claim. Record trends do not:
+-- likes, reviews and list items live in other users' repos on PDSes we don't
+-- control, so their `subject` still names the pre-migration URI and can never
+-- be rewritten. Walking the redirect chain backwards recovers those rows.
+--
+-- The walk is breadth-first because two source URIs can redirect to the same
+-- target (a claim that merges duplicate community records), and bounded by
+-- MAX_REDIRECT_HOPS plus a `seen` set so a cyclic or pathological chain can't
+-- spin. Returns the current URI first, then every ancestor found.
+-- ---------------------------------------------------------------------------
+
+local MAX_REDIRECT_HOPS = 8
+
+local function uri_history(uri)
+  local uris = { uri }
+  local seen = { [uri] = true }
+  local frontier = { uri }
+
+  for _ = 1, MAX_REDIRECT_HOPS do
+    if #frontier == 0 then break end
+
+    local next_frontier = {}
+    for _, target in ipairs(frontier) do
+      local rows = db.raw(
+        "SELECT record FROM happyview_records " ..
+        "WHERE collection = 'games.gamesgamesgamesgames.redirect' " ..
+        "AND record::jsonb->>'targetUri' = $1",
+        { target }
+      )
+      for _, row in ipairs(rows or {}) do
+        local ok, rec = pcall(json.decode, row.record)
+        local source = ok and type(rec) == "table" and rec.sourceUri or nil
+        if source and not seen[source] then
+          seen[source] = true
+          uris[#uris + 1] = source
+          next_frontier[#next_frontier + 1] = source
+        end
+      end
+    end
+    frontier = next_frontier
+  end
+
+  return uris
+end
+
+-- ---------------------------------------------------------------------------
 -- Record-creation trends from HappyView (authoritative, not ClickHouse).
 --
 -- Likes/reviews/list-adds all reference a game via `record.subject` = game URI
--- (same predicate getHotGamesFeed.lua uses to compute weekly counts). Grouped
--- by UTC day over the range.
+-- (same predicate getHotGamesFeed.lua uses to compute weekly counts). Matched
+-- against every URI the game has ever had (see uri_history) so a claim doesn't
+-- zero out the pre-migration days. Grouped by UTC day over the range.
 -- ---------------------------------------------------------------------------
 
-local function record_trend_by_day(collection, game_uri, from)
+local function record_trend_by_day(collection, game_uris, from)
   local counts = {}
+  if not game_uris or #game_uris == 0 then return counts end
+
   -- indexed_at/created_at are ISO-8601 UTC text (e.g. 2026-07-26T02:12:44Z), not
   -- timestamp columns — so we take the YYYY-MM-DD prefix directly (substr is
   -- portable to Postgres + SQLite) rather than timezone math, and compare
   -- against an explicit UTC cutoff (…T00:00:00Z), mirroring getHotGamesFeed.lua.
   local cutoff = from .. "T00:00:00Z"
+
+  -- The URI list is variable-length, so placeholders are numbered on the fly
+  -- (mirrors listVerificationRequests.lua) — every value stays parameter-bound.
+  local sql_params = {}
+  local param_idx = 0
+  local function next_param(val)
+    param_idx = param_idx + 1
+    sql_params[param_idx] = val
+    return "$" .. param_idx
+  end
+
+  local collection_placeholder = next_param(collection)
+
+  local uri_placeholders = {}
+  for _, uri in ipairs(game_uris) do
+    uri_placeholders[#uri_placeholders + 1] = next_param(uri)
+  end
+
+  local cutoff_placeholder = next_param(cutoff)
+
   local rows = db.raw(
     "SELECT substr(COALESCE(indexed_at, created_at), 1, 10) AS day, " ..
     "COUNT(*) AS c FROM happyview_records " ..
-    "WHERE collection = $1 AND record::jsonb->>'subject' = $2 " ..
-    "AND COALESCE(indexed_at, created_at) >= $3 GROUP BY day",
-    { collection, game_uri, cutoff }
+    "WHERE collection = " .. collection_placeholder ..
+    " AND record::jsonb->>'subject' IN (" .. table.concat(uri_placeholders, ", ") .. ")" ..
+    " AND COALESCE(indexed_at, created_at) >= " .. cutoff_placeholder ..
+    " GROUP BY day",
+    sql_params
   )
   if rows then
     for _, row in ipairs(rows) do
-      counts[row.day] = num(row.c)
+      -- Two ancestor URIs can contribute rows for the same day; sum, don't
+      -- overwrite. (GROUP BY day already collapses within a single query, but
+      -- the day key is shared across the whole result set.)
+      counts[row.day] = (counts[row.day] or 0) + num(row.c)
     end
   end
   return counts
@@ -364,9 +443,11 @@ function handle()
   local total_actions = iround(actions_rows[1] and actions_rows[1].actions)
 
   -- --- Conversions: record-creation trends (HappyView) -------------------
-  local likes_by_day = record_trend_by_day(RECORD_TREND_COLLECTIONS.likes, uri, from)
-  local reviews_by_day = record_trend_by_day(RECORD_TREND_COLLECTIONS.reviews, uri, from)
-  local list_adds_by_day = record_trend_by_day(RECORD_TREND_COLLECTIONS.listAdds, uri, from)
+  -- Every URI this game has had, so a claim migration doesn't zero the trend.
+  local uri_chain = uri_history(uri)
+  local likes_by_day = record_trend_by_day(RECORD_TREND_COLLECTIONS.likes, uri_chain, from)
+  local reviews_by_day = record_trend_by_day(RECORD_TREND_COLLECTIONS.reviews, uri_chain, from)
+  local list_adds_by_day = record_trend_by_day(RECORD_TREND_COLLECTIONS.listAdds, uri_chain, from)
   local record_trends = {}
   for _, d in ipairs(axis) do
     record_trends[#record_trends + 1] = {
