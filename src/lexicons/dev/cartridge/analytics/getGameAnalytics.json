@@ -1,0 +1,248 @@
+{
+	"$type": "com.atproto.lexicon.schema",
+	"lexicon": 1,
+	"id": "dev.cartridge.analytics.getGameAnalytics",
+	"defs": {
+		"main": {
+			"type": "query",
+			"description": "Owner-facing analytics for a single game. Authenticates the caller, verifies they own the game, then merges ClickHouse rollups with record-creation trends from HappyView. Fractional metrics use `unknown` because atproto lexicons have no float type.",
+			"parameters": {
+				"type": "params",
+				"required": ["slug"],
+				"properties": {
+					"slug": {
+						"type": "string",
+						"description": "Slug of the game to report on. The caller must own it.",
+						"maxLength": 512
+					},
+					"range": {
+						"type": "string",
+						"description": "Reporting window ending today (UTC).",
+						"knownValues": ["7d", "30d", "90d"],
+						"default": "30d"
+					}
+				}
+			},
+			"output": {
+				"encoding": "application/json",
+				"schema": {
+					"type": "object",
+					"required": [
+						"slug",
+						"name",
+						"range",
+						"generatedAt",
+						"totals",
+						"discovery",
+						"attribution",
+						"engagement",
+						"conversions"
+					],
+					"properties": {
+						"slug": { "type": "string" },
+						"name": { "type": "string" },
+						"range": {
+							"type": "string",
+							"knownValues": ["7d", "30d", "90d"]
+						},
+						"generatedAt": {
+							"type": "string",
+							"format": "datetime"
+						},
+						"totals": {
+							"type": "ref",
+							"ref": "#totals"
+						},
+						"discovery": {
+							"type": "ref",
+							"ref": "#discovery"
+						},
+						"attribution": {
+							"type": "ref",
+							"ref": "#attribution"
+						},
+						"engagement": {
+							"type": "ref",
+							"ref": "#engagement"
+						},
+						"conversions": {
+							"type": "ref",
+							"ref": "#conversions"
+						}
+					}
+				}
+			}
+		},
+		"totals": {
+			"type": "object",
+			"required": [
+				"impressions",
+				"clicks",
+				"pageviews",
+				"ctr",
+				"avgDwellMs",
+				"medianDwellMs",
+				"avgScrollPct",
+				"avgDailyUniques"
+			],
+			"properties": {
+				"impressions": { "type": "integer" },
+				"clicks": { "type": "integer" },
+				"pageviews": { "type": "integer" },
+				"ctr": {
+					"type": "unknown",
+					"description": "clicks / impressions, 0..1 (float; unknown-typed)."
+				},
+				"avgDwellMs": {
+					"type": "unknown",
+					"description": "Mean dwell time in milliseconds (float; unknown-typed)."
+				},
+				"medianDwellMs": {
+					"type": "unknown",
+					"description": "Median dwell time in milliseconds (float; unknown-typed)."
+				},
+				"avgScrollPct": {
+					"type": "unknown",
+					"description": "Mean scroll depth percentage (float; unknown-typed)."
+				},
+				"avgDailyUniques": {
+					"type": "unknown",
+					"description": "Mean of per-day unique visitors across the range (float; unknown-typed)."
+				}
+			}
+		},
+		"discovery": {
+			"type": "object",
+			"required": ["impressionsOverTime", "feedBreakdown", "topSearchTerms"],
+			"properties": {
+				"impressionsOverTime": {
+					"type": "array",
+					"items": { "type": "ref", "ref": "#impressionPoint" }
+				},
+				"feedBreakdown": {
+					"type": "array",
+					"items": { "type": "ref", "ref": "#namedCount" }
+				},
+				"topSearchTerms": {
+					"type": "array",
+					"items": { "type": "ref", "ref": "#namedCount" }
+				}
+			}
+		},
+		"attribution": {
+			"type": "object",
+			"required": ["trafficSources", "topReferrerFeeds", "ctrBySurface"],
+			"properties": {
+				"trafficSources": {
+					"type": "array",
+					"items": { "type": "ref", "ref": "#namedCount" }
+				},
+				"topReferrerFeeds": {
+					"type": "array",
+					"items": { "type": "ref", "ref": "#namedCount" }
+				},
+				"ctrBySurface": {
+					"type": "array",
+					"items": { "type": "ref", "ref": "#ctrBySurface" }
+				}
+			}
+		},
+		"engagement": {
+			"type": "object",
+			"required": ["dwellDistribution", "avgScrollPct", "tabEngagement", "dailyUniques"],
+			"properties": {
+				"dwellDistribution": {
+					"type": "array",
+					"items": { "type": "ref", "ref": "#namedCount" }
+				},
+				"avgScrollPct": {
+					"type": "unknown",
+					"description": "Mean scroll depth percentage (float; unknown-typed)."
+				},
+				"tabEngagement": {
+					"type": "array",
+					"items": { "type": "ref", "ref": "#namedCount" }
+				},
+				"dailyUniques": {
+					"type": "array",
+					"items": { "type": "ref", "ref": "#timeseriesPoint" }
+				}
+			}
+		},
+		"conversions": {
+			"type": "object",
+			"required": ["recordTrends", "funnel"],
+			"properties": {
+				"recordTrends": {
+					"type": "array",
+					"items": { "type": "ref", "ref": "#recordTrendPoint" }
+				},
+				"funnel": {
+					"type": "ref",
+					"ref": "#funnel"
+				}
+			}
+		},
+		"funnel": {
+			"type": "object",
+			"required": ["impressions", "pageviews", "actions"],
+			"properties": {
+				"impressions": { "type": "integer" },
+				"pageviews": { "type": "integer" },
+				"actions": { "type": "integer" }
+			}
+		},
+		"namedCount": {
+			"type": "object",
+			"description": "A labelled count, e.g. a feed name or search term with its total.",
+			"required": ["name", "count"],
+			"properties": {
+				"name": { "type": "string" },
+				"count": { "type": "integer" }
+			}
+		},
+		"timeseriesPoint": {
+			"type": "object",
+			"description": "A single day's value in a time series. `date` is 'YYYY-MM-DD' (UTC).",
+			"required": ["date", "value"],
+			"properties": {
+				"date": { "type": "string" },
+				"value": { "type": "integer" }
+			}
+		},
+		"impressionPoint": {
+			"type": "object",
+			"description": "Impressions on one day, split by discovery surface.",
+			"required": ["date", "search", "feed"],
+			"properties": {
+				"date": { "type": "string" },
+				"search": { "type": "integer" },
+				"feed": { "type": "integer" }
+			}
+		},
+		"ctrBySurface": {
+			"type": "object",
+			"required": ["surface", "impressions", "clicks", "ctr"],
+			"properties": {
+				"surface": { "type": "string" },
+				"impressions": { "type": "integer" },
+				"clicks": { "type": "integer" },
+				"ctr": {
+					"type": "unknown",
+					"description": "clicks / impressions for this surface, 0..1 (float; unknown-typed)."
+				}
+			}
+		},
+		"recordTrendPoint": {
+			"type": "object",
+			"description": "Authoritative record-creation counts for one day.",
+			"required": ["date", "likes", "reviews", "listAdds"],
+			"properties": {
+				"date": { "type": "string" },
+				"likes": { "type": "integer" },
+				"reviews": { "type": "integer" },
+				"listAdds": { "type": "integer" }
+			}
+		}
+	}
+}

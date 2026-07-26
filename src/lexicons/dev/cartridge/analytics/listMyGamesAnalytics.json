@@ -1,0 +1,72 @@
+{
+	"$type": "com.atproto.lexicon.schema",
+	"lexicon": 1,
+	"id": "dev.cartridge.analytics.listMyGamesAnalytics",
+	"defs": {
+		"main": {
+			"type": "query",
+			"description": "Headline analytics for every game the authenticated caller owns. Powers the multi-game dashboard overview. Fractional metrics use `unknown` because atproto lexicons have no float type.",
+			"parameters": {
+				"type": "params",
+				"properties": {
+					"range": {
+						"type": "string",
+						"description": "Reporting window ending today (UTC).",
+						"knownValues": ["7d", "30d", "90d"],
+						"default": "30d"
+					}
+				}
+			},
+			"output": {
+				"encoding": "application/json",
+				"schema": {
+					"type": "object",
+					"required": ["range", "games"],
+					"properties": {
+						"range": {
+							"type": "string",
+							"knownValues": ["7d", "30d", "90d"]
+						},
+						"games": {
+							"type": "array",
+							"items": { "type": "ref", "ref": "#gameSummary" }
+						}
+					}
+				}
+			}
+		},
+		"gameSummary": {
+			"type": "object",
+			"description": "One row in the multi-game overview.",
+			"required": ["slug", "name", "impressions", "pageviews", "ctr", "avgDwellMs", "sparkline"],
+			"properties": {
+				"slug": { "type": "string" },
+				"name": { "type": "string" },
+				"impressions": { "type": "integer" },
+				"pageviews": { "type": "integer" },
+				"ctr": {
+					"type": "unknown",
+					"description": "clicks / impressions, 0..1 (float; unknown-typed)."
+				},
+				"avgDwellMs": {
+					"type": "unknown",
+					"description": "Mean dwell time in milliseconds (float; unknown-typed)."
+				},
+				"sparkline": {
+					"type": "array",
+					"description": "Pageviews per day for a compact sparkline.",
+					"items": { "type": "ref", "ref": "#timeseriesPoint" }
+				}
+			}
+		},
+		"timeseriesPoint": {
+			"type": "object",
+			"description": "A single day's value in a time series. `date` is 'YYYY-MM-DD' (UTC).",
+			"required": ["date", "value"],
+			"properties": {
+				"date": { "type": "string" },
+				"value": { "type": "integer" }
+			}
+		}
+	}
+}
