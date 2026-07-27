@@ -1,3 +1,20 @@
+-- Get a list of games on the network.
+--
+-- Visibility: only published records are public. A caller asking for their own
+--             games (`did == caller_did`) may opt into unpublished drafts with
+--             `includeUnpublished`; nobody can see anyone else's drafts.
+-- Sorting:    `sort` names a key in SORT_COLUMNS, never a raw column. The value
+--             reaches an ORDER BY clause, which cannot be parameterised, so an
+--             allowlist is the only safe way to accept it from a caller.
+
+-- Sort keys the caller may ask for, mapped to the SQL that implements them.
+-- `name` and `createdAt` live inside the record JSON rather than as columns.
+local SORT_COLUMNS = {
+  indexed_at = "indexed_at",
+  createdAt = "record::jsonb->>'createdAt'",
+  name = "record::jsonb->>'name'",
+}
+
 function find_slug(target_uri)
   local rows = db.raw("SELECT slug FROM slugs WHERE uri = $1 LIMIT 1", {target_uri})
   if rows and #rows > 0 then return rows[1].slug end
@@ -41,12 +58,32 @@ function handle()
   end
 
   local include_cancelled = params.includeCancelled == true or params.includeCancelled == "true"
+  local include_unpublished = params.includeUnpublished == true or params.includeUnpublished == "true"
 
-  local where_parts = {
-    "collection = $1",
-    "record::jsonb->>'publishedAt' IS NOT NULL",
-  }
+  -- Drafts are visible only to the DID whose repo holds them. Refuse the
+  -- request rather than quietly returning the published-only set, so a caller
+  -- never mistakes "you may not see these" for "you have none".
+  if include_unpublished then
+    if not caller_did or caller_did == "" then
+      return {
+        error = "AuthRequired",
+        message = "includeUnpublished requires an authenticated caller",
+      }
+    end
+    if params.did ~= caller_did then
+      return {
+        error = "Forbidden",
+        message = "includeUnpublished is only available for your own games; pass did=<your DID>",
+      }
+    end
+  end
+
+  local where_parts = { "collection = $1" }
   local bind = {"games.gamesgamesgamesgames.game"}
+
+  if not include_unpublished then
+    table.insert(where_parts, "record::jsonb->>'publishedAt' IS NOT NULL")
+  end
 
   if not include_cancelled then
     table.insert(where_parts, "(record::jsonb->>'cancelled' IS NULL OR record::jsonb->>'cancelled' != 'true')")
@@ -111,11 +148,20 @@ function handle()
     end
   end
 
-  local order_col = "indexed_at"
-  local order_dir = "DESC"
+  -- Resolved through the allowlist, never taken from the caller directly: this
+  -- lands in an ORDER BY clause, where bind parameters are not usable.
+  local order_col = SORT_COLUMNS.indexed_at
   if params.sort then
-    order_col = params.sort
+    order_col = SORT_COLUMNS[params.sort]
+    if not order_col then
+      return {
+        error = "InvalidRequest",
+        message = "Unknown sort field. Expected one of: indexed_at, createdAt, name",
+      }
+    end
   end
+
+  local order_dir = "DESC"
   if params.sortDirection and params.sortDirection:lower() == "asc" then
     order_dir = "ASC"
   end

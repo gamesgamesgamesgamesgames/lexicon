@@ -15,7 +15,8 @@
 					},
 					"did": {
 						"type": "string",
-						"format": "did"
+						"format": "did",
+						"description": "Restrict results to games in this DID's repo. Omitting it returns games from every repo — it does NOT default to the authenticated caller. Owner-facing surfaces must pass it explicitly."
 					},
 					"limit": {
 						"type": "integer",
@@ -26,7 +27,8 @@
 					"sort": {
 						"type": "string",
 						"maxLength": 64,
-						"description": "Field to sort by (e.g. name, createdAt, indexed_at).",
+						"description": "Field to sort by. Constrained because the value reaches an ORDER BY clause, which cannot be parameterised.",
+						"enum": ["indexed_at", "createdAt", "name"],
 						"default": "indexed_at"
 					},
 					"sortDirection": {
@@ -90,6 +92,11 @@
 					},
 					"includeCancelled": {
 						"type": "boolean",
+						"default": false
+					},
+					"includeUnpublished": {
+						"type": "boolean",
+						"description": "Include the caller's own unpublished drafts. Requires authentication and `did` set to the caller's own DID; the request is rejected otherwise.",
 						"default": false
 					}
 				}
