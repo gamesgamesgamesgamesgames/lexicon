@@ -1,96 +1,24 @@
+-- Migration moves records out of the Pentaract repo and into the claimant's,
+-- so it writes to a repo that is not the caller's. That needs a linked-repo
+-- grant over the Pentaract account — HappyView can only write to a repo it
+-- holds a session for.
 function create_pentaract_session(PENTARACT_DID)
-  local pds_endpoint = atproto.resolve_service_endpoint(PENTARACT_DID)
-  if not pds_endpoint then
-    error("failed to resolve PDS for PENTARACT_DID: " .. PENTARACT_DID)
+  local repo = linked_repos.get(PENTARACT_DID)
+  if not repo then
+    error("no linked repo grant for " .. PENTARACT_DID ..
+          " — an admin must link that account before migrations can run")
   end
-
-  local handle = env.PENTARACT_HANDLE
-  local app_password = env.PENTARACT_APP_PASSWORD
-  if not handle or not app_password then
-    error("PENTARACT_HANDLE and PENTARACT_APP_PASSWORD env vars are required for migration")
-  end
-
-  local body = json.encode({ identifier = handle, password = app_password })
-  local resp = http.post(pds_endpoint .. "/xrpc/com.atproto.server.createSession", {
-    body = body,
-    headers = { ["content-type"] = "application/json" },
-  })
-
-  if resp.status ~= 200 then
-    error("failed to create session for PENTARACT_DID: " .. resp.body)
-  end
-
-  local session = json.decode(resp.body)
-  return {
-    endpoint = pds_endpoint,
-    access_jwt = session.accessJwt,
-    did = session.did,
-  }
+  return repo
 end
 
-function pds_create_record(session, collection, rkey, record)
-  local body = {
-    repo = session.did,
-    collection = collection,
-    record = record,
-  }
-  if rkey then
-    body.rkey = rkey
+-- A source record can only be deleted from the repo it lives in, which is not
+-- necessarily the Pentaract repo. Any other repo is reachable only if an admin
+-- has linked it too; nil means nobody has.
+function source_repo(source_did, PENTARACT_DID, pentaract_session)
+  if source_did == PENTARACT_DID then
+    return pentaract_session
   end
-  local resp = http.post(session.endpoint .. "/xrpc/com.atproto.repo.createRecord", {
-    body = json.encode(body),
-    headers = {
-      ["content-type"] = "application/json",
-      ["authorization"] = "Bearer " .. session.access_jwt,
-    },
-  })
-
-  if resp.status ~= 200 then
-    error("PDS createRecord failed (" .. resp.status .. "): " .. resp.body)
-  end
-
-  return json.decode(resp.body)
-end
-
-function pds_put_record(session, collection, rkey, record)
-  local body = {
-    repo = session.did,
-    collection = collection,
-    rkey = rkey,
-    record = record,
-  }
-  local resp = http.post(session.endpoint .. "/xrpc/com.atproto.repo.putRecord", {
-    body = json.encode(body),
-    headers = {
-      ["content-type"] = "application/json",
-      ["authorization"] = "Bearer " .. session.access_jwt,
-    },
-  })
-
-  if resp.status ~= 200 then
-    error("PDS putRecord failed (" .. resp.status .. "): " .. resp.body)
-  end
-
-  return json.decode(resp.body)
-end
-
-function pds_delete_record(session, collection, rkey)
-  local body = {
-    repo = session.did,
-    collection = collection,
-    rkey = rkey,
-  }
-  local resp = http.post(session.endpoint .. "/xrpc/com.atproto.repo.deleteRecord", {
-    body = json.encode(body),
-    headers = {
-      ["content-type"] = "application/json",
-      ["authorization"] = "Bearer " .. session.access_jwt,
-    },
-  })
-
-  if resp.status ~= 200 then
-    error("PDS deleteRecord failed (" .. resp.status .. "): " .. resp.body)
-  end
+  return linked_repos.get(source_did)
 end
 
 function migrate_blobs(data, source_did)
@@ -269,9 +197,13 @@ function migrate_record(source_uri, collection, PENTARACT_DID, pentaract_session
                     end
                   end
                   record_data["$type"] = ref_col
-                  pds_put_record(pentaract_session, ref_col, ref_rkey, record_data)
-                  loaded:set_repo(PENTARACT_DID)
-                  loaded:save_local()
+                  -- The linked-repo write updates the local index itself, with
+                  -- the CID the PDS returned.
+                  pentaract_session:put_record({
+                    collection = ref_col,
+                    rkey = ref_rkey,
+                    record = record_data,
+                  })
                 end
               end
             end)
@@ -288,38 +220,30 @@ function migrate_record(source_uri, collection, PENTARACT_DID, pentaract_session
   end
 
   local redir_ok, redir_err = pcall(function()
-    local redirect_data = {
-      ["$type"] = "games.gamesgamesgamesgames.redirect",
-      sourceUri = source_uri,
-      targetUri = new_uri,
-      collection = collection,
-      createdAt = now(),
-    }
-    local pds_result = pds_create_record(pentaract_session, "games.gamesgamesgamesgames.redirect", nil, redirect_data)
-
-    local redirect = Record.new("games.gamesgamesgamesgames.redirect", {
-      sourceUri = source_uri,
-      targetUri = new_uri,
-      collection = collection,
-      createdAt = redirect_data.createdAt,
+    pentaract_session:create_record({
+      collection = "games.gamesgamesgamesgames.redirect",
+      record = {
+        ["$type"] = "games.gamesgamesgamesgames.redirect",
+        sourceUri = source_uri,
+        targetUri = new_uri,
+        collection = collection,
+        createdAt = now(),
+      },
     })
-    redirect:set_repo(PENTARACT_DID)
-    redirect._uri = pds_result.uri
-    redirect._cid = pds_result.cid
-    redirect:save_local()
   end)
   if not redir_ok then
     log("warning: failed to create redirect for " .. source_uri .. ": " .. tostring(redir_err))
   end
 
   local del_ok, del_err = pcall(function()
-    local source_rkey = rkey_from_uri(source_uri)
-    pds_delete_record(pentaract_session, collection, source_rkey)
-
-    local to_delete = Record.load(source_uri)
-    if to_delete then
-      to_delete:delete_local()
+    local source = source_repo(source_did, PENTARACT_DID, pentaract_session)
+    if not source then
+      error("no linked repo grant for " .. tostring(source_did))
     end
+    source:delete_record({
+      collection = collection,
+      rkey = rkey_from_uri(source_uri),
+    })
   end)
   if not del_ok then
     log("warning: failed to delete old record " .. source_uri .. ": " .. tostring(del_err))
@@ -331,7 +255,7 @@ end
 function handle()
   local PENTARACT_DID = env.PENTARACT_DID
   local pentaract_session = create_pentaract_session(PENTARACT_DID)
-  log("authenticated to PENTARACT PDS at " .. pentaract_session.endpoint)
+  log("using linked repo grant for " .. pentaract_session.did)
 
   local claim_type = job.input.claim_type
   local approved_games = job.input.approved_games or {}
@@ -380,32 +304,28 @@ function handle()
           new_profile:set_rkey("self")
           new_profile:save()
 
-          local redirect_data = {
-            ["$type"] = "games.gamesgamesgamesgames.redirect",
-            sourceUri = source_profile_uri,
-            targetUri = claimant_profile_uri,
-            collection = "games.gamesgamesgamesgames.org.profile",
-            createdAt = now(),
-          }
-          local pds_result = pds_create_record(pentaract_session, "games.gamesgamesgamesgames.redirect", nil, redirect_data)
-
-          local redirect = Record.new("games.gamesgamesgamesgames.redirect", {
-            sourceUri = source_profile_uri,
-            targetUri = claimant_profile_uri,
-            collection = "games.gamesgamesgamesgames.org.profile",
-            createdAt = redirect_data.createdAt,
+          pentaract_session:create_record({
+            collection = "games.gamesgamesgamesgames.redirect",
+            record = {
+              ["$type"] = "games.gamesgamesgamesgames.redirect",
+              sourceUri = source_profile_uri,
+              targetUri = claimant_profile_uri,
+              collection = "games.gamesgamesgamesgames.org.profile",
+              createdAt = now(),
+            },
           })
-          redirect:set_repo(PENTARACT_DID)
-          redirect._uri = pds_result.uri
-          redirect._cid = pds_result.cid
-          redirect:save_local()
 
-          local source_rkey = "self"
-          pds_delete_record(pentaract_session, "games.gamesgamesgamesgames.org.profile", source_rkey)
-
-          local orig_profile = Record.load(source_profile_uri)
-          if orig_profile then
-            orig_profile:delete_local()
+          -- org.profile is a literal:self record, so deleting "self" from the
+          -- wrong repo removes that account's own profile.
+          local source = source_repo(org_did, PENTARACT_DID, pentaract_session)
+          if source then
+            source:delete_record({
+              collection = "games.gamesgamesgamesgames.org.profile",
+              rkey = "self",
+            })
+          else
+            log("warning: copied org profile " .. source_profile_uri ..
+                " but could not delete it: no linked repo grant for " .. org_did)
           end
         end)
         if not prof_ok then

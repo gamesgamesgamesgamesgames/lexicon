@@ -46,7 +46,7 @@ function handle()
     end
   end
 
-  local game = Record.new("games.gamesgamesgamesgames.game", {
+  local game_data = {
     name = input.name,
     summary = input.summary,
     applicationType = input.applicationType,
@@ -69,10 +69,17 @@ function handle()
     engines = input.engines,
     externalIds = external_ids,
     createdAt = now()
-  })
+  }
 
   if input.shouldPublish then
-    game.publishedAt = now()
+    game_data.publishedAt = now()
+  end
+
+  -- The game lexicon requires applicationType but the createGame input schema
+  -- does not, so check it here. Record.new():save() would catch this on the
+  -- verified path; the linked-repo path has no schema to validate against.
+  if not game_data.applicationType then
+    error("applicationType is required")
   end
 
   -- Check if the caller is verified (has a dev.cartridge.graph.verification record from the trusted verifier)
@@ -88,18 +95,38 @@ function handle()
     is_verified = verification_rows and #verification_rows > 0
   end
 
-  if not is_verified and PENTARACT_DID and PENTARACT_DID ~= "" then
-    game:set_repo(PENTARACT_DID)
-  end
-  -- Verified user: game:save() defaults to caller's repo
+  local uri, cid
 
-  game:save()
+  if is_verified or not PENTARACT_DID or PENTARACT_DID == "" then
+    -- Verified author: the game lives in their own repo, written with their
+    -- own credentials.
+    local game = Record.new("games.gamesgamesgamesgames.game", game_data)
+    game:save()
+    uri, cid = game._uri, game._cid
+  else
+    -- Unverified author: the instance publishes on their behalf into the
+    -- Pentaract repo. That needs a linked-repo grant — HappyView can only
+    -- write to a repo it holds a session for, and the caller's credentials
+    -- are not credentials for someone else's repo.
+    local pentaract = linked_repos.get(PENTARACT_DID)
+    if not pentaract then
+      error("cannot publish on your behalf: no linked repo grant for " .. PENTARACT_DID ..
+            " — an admin must link that account")
+    end
+
+    game_data["$type"] = "games.gamesgamesgamesgames.game"
+    local result = pentaract:create_record({
+      collection = "games.gamesgamesgamesgames.game",
+      record = game_data,
+    })
+    uri, cid = result.uri, result.cid
+  end
 
   local slug_value = input.slug or generate_slug(input.name)
   if slug_value then
     db.raw("INSERT INTO slugs (slug, uri) VALUES ($1, $2) ON CONFLICT (slug) DO UPDATE SET uri = $2",
-      {slug_value, game._uri})
+      {slug_value, uri})
   end
 
-  return { uri = game._uri, cid = game._cid }
+  return { uri = uri, cid = cid }
 end

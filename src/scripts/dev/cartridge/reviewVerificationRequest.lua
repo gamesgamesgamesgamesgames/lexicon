@@ -9,47 +9,18 @@ end
 
 local ADMIN_DIDS = parse_admin_dids()
 
-local function get_verifier_session()
-  local pds_url = env.VERIFIER_PDS_URL
-  local identifier = env.VERIFIER_DID
-  local password = env.VERIFIER_APP_PASSWORD
-  if not pds_url or not identifier or not password then
-    error("VERIFIER_PDS_URL, VERIFIER_DID, and VERIFIER_APP_PASSWORD must all be configured")
+-- Verification records are written from the verifier account, not the
+-- reviewing admin's, so this needs a linked-repo grant over that account.
+local function verifier_repo()
+  local did = env.VERIFIER_DID
+  if not did or did == "" then
+    error("VERIFIER_DID is not configured")
   end
-
-  local resp = http.post(pds_url .. "/xrpc/com.atproto.server.createSession", {
-    headers = { ["content-type"] = "application/json" },
-    body = json.encode({ identifier = identifier, password = password }),
-  })
-
-  if not resp or resp.status ~= 200 then
-    local msg = resp and resp.body or "no response"
-    error("failed to create verifier session: " .. msg)
+  local repo = linked_repos.get(did)
+  if not repo then
+    error("no linked repo grant for " .. did .. " — an admin must link the verifier account")
   end
-
-  local session = json.decode(resp.body)
-  return session.accessJwt, session.did
-end
-
-local function create_record_as_verifier(pds_url, access_token, repo_did, collection, record_value)
-  local resp = http.post(pds_url .. "/xrpc/com.atproto.repo.createRecord", {
-    headers = {
-      ["content-type"] = "application/json",
-      ["authorization"] = "Bearer " .. access_token,
-    },
-    body = json.encode({
-      repo = repo_did,
-      collection = collection,
-      record = record_value,
-    }),
-  })
-
-  if not resp or resp.status ~= 200 then
-    local msg = resp and resp.body or "no response"
-    error("failed to create " .. collection .. " record: " .. msg)
-  end
-
-  return json.decode(resp.body)
+  return repo
 end
 
 function handle()
@@ -123,28 +94,32 @@ function handle()
       end
     end
 
-    -- Authenticate as the verifier account via app password
-    local access_token, verifier_did = get_verifier_session()
-    local pds_url = env.VERIFIER_PDS_URL
+    local verifier = verifier_repo()
     local created_at = now()
 
     -- Write app.bsky.graph.verification record from verifier account
-    create_record_as_verifier(pds_url, access_token, verifier_did, "app.bsky.graph.verification", {
-      ["$type"] = "app.bsky.graph.verification",
-      subject = requester_did,
-      handle = resolved_handle,
-      displayName = display_name,
-      createdAt = created_at,
+    verifier:create_record({
+      collection = "app.bsky.graph.verification",
+      record = {
+        ["$type"] = "app.bsky.graph.verification",
+        subject = requester_did,
+        handle = resolved_handle,
+        displayName = display_name,
+        createdAt = created_at,
+      },
     })
 
     -- Write dev.cartridge.graph.verification record from verifier account
-    local cartridge_result = create_record_as_verifier(pds_url, access_token, verifier_did, "dev.cartridge.graph.verification", {
-      ["$type"] = "dev.cartridge.graph.verification",
-      subject = requester_did,
-      handle = resolved_handle,
-      displayName = display_name,
-      accountType = request.account_type,
-      createdAt = created_at,
+    local cartridge_result = verifier:create_record({
+      collection = "dev.cartridge.graph.verification",
+      record = {
+        ["$type"] = "dev.cartridge.graph.verification",
+        subject = requester_did,
+        handle = resolved_handle,
+        displayName = display_name,
+        accountType = request.account_type,
+        createdAt = created_at,
+      },
     })
 
     verification_uri = cartridge_result.uri
