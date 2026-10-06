@@ -5,7 +5,17 @@ set -uo pipefail
 
 LUA_BIN="${LUA_BIN:-}"
 if [ -z "$LUA_BIN" ]; then
-  for candidate in lua5.4 lua5.3 lua; do
+  # CI installs lua5.4, so prefer it and match what CI will run. Homebrew's
+  # lua@5.4 is keg-only and never lands on PATH, so probe it by full path too —
+  # otherwise a machine with both runs 5.5 and nobody ever exercises CI's
+  # interpreter locally.
+  for candidate in \
+    lua5.4 \
+    /opt/homebrew/opt/lua@5.4/bin/lua5.4 \
+    /usr/local/opt/lua@5.4/bin/lua5.4 \
+    lua5.3 \
+    lua
+  do
     if command -v "$candidate" >/dev/null 2>&1; then
       LUA_BIN="$candidate"
       break

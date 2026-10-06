@@ -9,8 +9,12 @@
 --
 -- `game.lua` writes a game's index document whenever the record changes. The
 -- `search.reindex` job has to write the very same document for games whose
--- Meilisearch copy went missing or stale, so the builder cannot live in one
--- handler.
+-- Meilisearch copy went missing or stale, and a contributionPatch create or
+-- delete has to rebuild it from a game record nobody edited, so the builder
+-- cannot live in one handler.
+--
+-- `record` is always what the public should see: callers pass the stored game
+-- with its live patches overlaid (overlay_game in src/shared/game_changes.lua).
 --
 -- Declarations only: no `return`, no `function handle()`. Reads the handler
 -- globals `db`, `json`, `env`, `http` and `toarray`.

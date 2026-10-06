@@ -56,6 +56,13 @@ local PATCH_COLLECTION = "games.gamesgamesgamesgames.contributionPatch"
 
 -- Whole-field replace, in place. Only a missing key means "no change": an empty
 -- string is an edit that clears the field.
+--
+-- A table-valued field is assigned, not copied, so the result shares that table
+-- with whatever owned `changes`. Safe as things stand: overlay_game deep-copies
+-- its argument, the sharing runs changes->output and never output->argument, and
+-- load_patches_by_subject decodes fresh tables per call. It stops being safe the
+-- moment anything caches or reuses patches across records — if you add that,
+-- copy on assignment here in the same change.
 local function apply_changes(record, changes)
   for _, field in ipairs(GAME_FIELDS) do
     if changes[field] ~= nil then
@@ -98,6 +105,89 @@ local function apply_patches(record, patches)
     apply_changes(record, patch.changes or {})
   end
   return record
+end
+
+-- Live patches for the given game URIs, grouped by subject.
+--
+-- `did = PENTARACT_DID` is a security filter, not an optimisation.
+-- happyview_records indexes every subscribed collection across the whole
+-- network, so any account can publish a contributionPatch naming someone
+-- else's game. Only a patch in the Pentaract repo was written by a moderator,
+-- and only those may reach a public read.
+local function load_patches_by_subject(uris)
+  local by_subject = {}
+
+  if not uris or #uris == 0 then
+    return by_subject
+  end
+
+  -- Fail closed. An unconfigured instance overlays nothing rather than
+  -- overlaying whatever the network happens to have published.
+  local pentaract_did = env.PENTARACT_DID
+  if not pentaract_did or pentaract_did == "" then
+    return by_subject
+  end
+
+  local bind = { pentaract_did }
+  local placeholders = {}
+  for _, uri in ipairs(uris) do
+    table.insert(bind, uri)
+    table.insert(placeholders, "$" .. #bind)
+  end
+
+  local rows = db.raw(
+    "SELECT uri, record FROM happyview_records " ..
+    "WHERE collection = '" .. PATCH_COLLECTION .. "' AND did = $1 " ..
+    "AND record::jsonb->>'subject' IN (" .. table.concat(placeholders, ", ") .. ")",
+    bind
+  )
+
+  for _, row in ipairs(rows or {}) do
+    local patch = json.decode(row.record)
+    if patch and patch.subject then
+      local list = by_subject[patch.subject]
+      if not list then
+        list = {}
+        by_subject[patch.subject] = list
+      end
+      table.insert(list, {
+        uri = row.uri,
+        createdAt = patch.createdAt,
+        changes = patch.changes,
+      })
+    end
+  end
+
+  return by_subject
+end
+
+-- The public view of one game: the stored record with every live patch applied.
+--
+-- Always a copy. A record handler's return value replaces what gets stored, so
+-- an in-place overlay would write the provisional version into the index row
+-- and the owner's decision would no longer mean anything.
+--
+-- `exclude_patch_uri` covers the reindex that happens while a patch is being
+-- deleted: the record handler runs before the row goes away.
+local function overlay_game(record, uri, exclude_patch_uri)
+  local overlaid = deep_copy(record)
+  local patches = load_patches_by_subject({ uri })[uri]
+
+  if not patches then
+    return overlaid
+  end
+
+  if exclude_patch_uri then
+    local kept = {}
+    for _, patch in ipairs(patches) do
+      if patch.uri ~= exclude_patch_uri then
+        table.insert(kept, patch)
+      end
+    end
+    patches = kept
+  end
+
+  return apply_patches(overlaid, patches)
 end
 -- <<< generated from src/shared/game_changes.lua
 
