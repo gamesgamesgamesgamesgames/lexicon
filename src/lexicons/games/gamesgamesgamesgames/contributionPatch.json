@@ -4,7 +4,7 @@
 	"id": "games.gamesgamesgamesgames.contributionPatch",
 	"defs": {
 		"main": {
-			"description": "A mod-approved patch representing changes to apply to an entity. Created on mod approval, deleted when the entity owner accepts and merges.",
+			"description": "A moderator-approved change that is currently overlaid on an entity at every read path. Created on moderator approval, deleted when the owner accepts (merging it permanently) or declines (withdrawing it). Its existence means the public is seeing the patched version.",
 			"type": "record",
 			"key": "tid",
 			"record": {
@@ -22,7 +22,7 @@
 					"subject": {
 						"type": "string",
 						"format": "at-uri",
-						"description": "The entity these changes apply to. Absent for newGame contributions."
+						"description": "The entity these changes are overlaid on. Absent for newGame contributions. Rewritten by claim migration when the entity moves repos."
 					},
 					"changes": {
 						"type": "unknown",

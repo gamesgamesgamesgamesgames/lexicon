@@ -1,0 +1,38 @@
+{
+	"$type": "com.atproto.lexicon.schema",
+	"lexicon": 1,
+	"id": "games.gamesgamesgamesgames.contributionOwnerDecision",
+	"defs": {
+		"main": {
+			"description": "The decision of an entity's owner on a contribution to it. Lives in the owner's repo, so the decision is signed by the party it belongs to. Its existence removes the contribution from both the owner's and the moderators' queues.",
+			"type": "record",
+			"key": "tid",
+			"record": {
+				"type": "object",
+				"required": ["contribution", "subject", "status", "createdAt"],
+				"properties": {
+					"contribution": {
+						"type": "ref",
+						"ref": "com.atproto.repo.strongRef",
+						"description": "The contribution being decided."
+					},
+					"subject": {
+						"type": "string",
+						"format": "at-uri",
+						"description": "The entity the contribution applies to, denormalised so queues can filter without joining through the contribution."
+					},
+					"status": {
+						"type": "string",
+						"maxLength": 64,
+						"knownValues": ["accepted", "declined"]
+					},
+					"reason": {
+						"type": "string",
+						"maxGraphemes": 3000
+					},
+					"createdAt": { "type": "string", "format": "datetime" }
+				}
+			}
+		}
+	}
+}

@@ -9,6 +9,19 @@ end
 
 local ADMIN_DIDS = parse_admin_dids()
 
+-- System identities (the IGDB scraper) are the only submitters whose edits to
+-- an ownerless game apply without anyone accepting them.
+local function parse_system_dids()
+  local dids = {}
+  local raw = env.SYSTEM_DIDS or ""
+  for did in raw:gmatch("[^,]+") do
+    dids[did:match("^%s*(.-)%s*$")] = true
+  end
+  return dids
+end
+
+local SYSTEM_DIDS = parse_system_dids()
+
 -- Every record this script writes lands in the Pentaract repo, not the
 -- caller's, so it needs a linked-repo grant over that account. HappyView can
 -- only write to a repo it holds a session for.
@@ -330,12 +343,20 @@ function handle()
   local subject = contribution_record.subject
   local is_new_game = subject == nil or subject == ""
 
-  -- A game in the Pentaract repo has no owner to accept a patch, and a new
-  -- game belongs in the Pentaract repo until a studio claims it, so approving
-  -- either applies the changes now. Games with a real owner get a patch for
-  -- that owner to accept instead.
+  local contributor_did = contribution_uri:match("^at://([^/]+)/")
+
+  -- A new game belongs in the Pentaract repo until a studio claims it, and it
+  -- has no subject to overlay onto, so approving one applies the changes now.
+  --
+  -- A game already in the Pentaract repo has no owner to accept a patch either,
+  -- but that is only a reason to apply the change immediately when the
+  -- submitter is trusted. A user's edit to an ownerless game overlays instead,
+  -- and persists until the game is claimed — the claimant decides.
   local applies_now = input.status == "approved"
-    and (is_new_game or subject:match("^at://([^/]+)/") == pentaract.did)
+    and (
+      is_new_game
+      or (subject:match("^at://([^/]+)/") == pentaract.did and SYSTEM_DIDS[contributor_did] == true)
+    )
 
   -- The game is written before the review so a failed write (a concurrent
   -- edit tripping swap_cid, say) leaves the contribution reviewable again.
@@ -410,8 +431,6 @@ function handle()
   -- If approved: create contributionPatch (unless already applied) and
   -- contributionVerification
   if input.status == "approved" then
-    local contributor_did = contribution_uri:match("^at://([^/]+)/")
-
     -- A patch is what an owner accepts; one that has been applied has nothing
     -- left to accept, just as acceptContribution deletes a patch once merged.
     if not applies_now then

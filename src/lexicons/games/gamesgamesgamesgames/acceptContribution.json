@@ -5,17 +5,17 @@
 	"defs": {
 		"main": {
 			"type": "procedure",
-			"description": "Accept a mod-approved contribution patch, merging changes into the entity record.",
+			"description": "Accept a contribution to an entity you own, merging its changes permanently into your record. An owner may accept before any moderator has reviewed it.",
 			"input": {
 				"encoding": "application/json",
 				"schema": {
 					"type": "object",
-					"required": ["contributionPatch"],
+					"required": ["contribution"],
 					"properties": {
-						"contributionPatch": {
+						"contribution": {
 							"type": "string",
 							"format": "at-uri",
-							"description": "URI of the contributionPatch record to accept."
+							"description": "URI of the contribution record to accept."
 						}
 					}
 				}
