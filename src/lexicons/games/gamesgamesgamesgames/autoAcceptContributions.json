@@ -1,0 +1,52 @@
+{
+	"$type": "com.atproto.lexicon.schema",
+	"lexicon": 1,
+	"id": "games.gamesgamesgamesgames.autoAcceptContributions",
+	"defs": {
+		"main": {
+			"type": "procedure",
+			"description": "Queue a job that applies pending contributions from system identities to the catalogue. Requires admin auth.",
+			"input": {
+				"encoding": "application/json",
+				"schema": {
+					"type": "object",
+					"properties": {
+						"limit": {
+							"type": "integer",
+							"minimum": 1,
+							"maximum": 5000,
+							"default": 500,
+							"description": "How many pending contributions the job looks at."
+						},
+						"after": {
+							"type": "string",
+							"format": "at-uri",
+							"description": "Resume after this contribution URI. Use the `after` a previous job reported."
+						},
+						"writes": {
+							"type": "string",
+							"maxLength": 64,
+							"knownValues": ["full", "game_only"],
+							"description": "full writes the game, a verification and a review. game_only writes just the game."
+						},
+						"dryRun": {
+							"type": "boolean",
+							"default": false,
+							"description": "Report what would be applied without writing anything."
+						}
+					}
+				}
+			},
+			"output": {
+				"encoding": "application/json",
+				"schema": {
+					"type": "object",
+					"required": ["jobId"],
+					"properties": {
+						"jobId": { "type": "string", "maxLength": 128 }
+					}
+				}
+			}
+		}
+	}
+}

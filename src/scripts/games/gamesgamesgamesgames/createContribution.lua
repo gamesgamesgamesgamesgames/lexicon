@@ -127,5 +127,19 @@ function handle()
   end
   contribution:save()
 
+  -- System contributions are applied without a moderator, in a job so a
+  -- failure there (a dead Pentaract grant, say) never fails this call. The
+  -- contribution stays pending until a job applies it, and a sweep through
+  -- autoAcceptContributions picks up any that were missed.
+  if is_system then
+    local queued, queue_err = pcall(jobs.create, "contribution.auto-accept", {
+      uri = contribution._uri,
+      cid = contribution._cid,
+    })
+    if not queued then
+      log("warning: failed to queue auto-accept for " .. tostring(contribution._uri) .. ": " .. tostring(queue_err))
+    end
+  end
+
   return { uri = contribution._uri }
 end
