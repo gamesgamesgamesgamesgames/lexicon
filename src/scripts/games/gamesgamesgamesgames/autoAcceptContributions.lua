@@ -21,8 +21,8 @@ function handle()
     error("limit must be between 1 and 5000")
   end
 
-  if input.writes and input.writes ~= "full" and input.writes ~= "game_only" then
-    error("writes must be 'full' or 'game_only'")
+  if input.writes and input.writes ~= "" and input.writes ~= "full" and input.writes ~= "minimal" then
+    error("writes must be 'full' or 'minimal'")
   end
 
   local job_input = {
@@ -33,7 +33,7 @@ function handle()
   if input.after and input.after ~= "" then
     job_input.after = input.after
   end
-  if input.writes then
+  if input.writes and input.writes ~= "" then
     job_input.writes = input.writes
   end
 

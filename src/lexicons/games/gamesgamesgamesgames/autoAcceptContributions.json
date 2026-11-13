@@ -5,7 +5,7 @@
 	"defs": {
 		"main": {
 			"type": "procedure",
-			"description": "Queue a job that applies pending contributions from system identities to the catalogue. Requires admin auth.",
+			"description": "Queue a job that applies pending contributions from auto-accept accounts to the catalogue, oldest first. Requires admin auth.",
 			"input": {
 				"encoding": "application/json",
 				"schema": {
@@ -20,14 +20,14 @@
 						},
 						"after": {
 							"type": "string",
-							"format": "at-uri",
-							"description": "Resume after this contribution URI. Use the `after` a previous job reported."
+							"maxLength": 4096,
+							"description": "Resume from this cursor. Use the `after` a previous sweep reported."
 						},
 						"writes": {
 							"type": "string",
 							"maxLength": 64,
-							"knownValues": ["full", "game_only"],
-							"description": "full writes the game, a verification and a review. game_only writes just the game."
+							"knownValues": ["full", "minimal"],
+							"description": "full writes the game, a verification and a review. minimal writes the game and the review, which is what marks the contribution as no longer pending."
 						},
 						"dryRun": {
 							"type": "boolean",

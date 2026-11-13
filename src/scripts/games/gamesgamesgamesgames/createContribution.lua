@@ -127,11 +127,20 @@ function handle()
   end
   contribution:save()
 
-  -- System contributions are applied without a moderator, in a job so a
-  -- failure there (a dead Pentaract grant, say) never fails this call. The
-  -- contribution stays pending until a job applies it, and a sweep through
-  -- autoAcceptContributions picks up any that were missed.
-  if is_system then
+  -- Contributions from auto-accept accounts (AUTO_ACCEPT_DIDS, kept separate
+  -- from the rate-limit exemption above) are applied without a moderator, in
+  -- a job so a failure there (a dead Pentaract grant, say) never fails this
+  -- call. The contribution stays pending until a job applies it, and a sweep
+  -- through autoAcceptContributions picks up any that were missed.
+  local auto_accept = false
+  for d in (env.AUTO_ACCEPT_DIDS or ""):gmatch("[^,]+") do
+    if d:match("^%s*(.-)%s*$") == caller_did then
+      auto_accept = true
+      break
+    end
+  end
+
+  if auto_accept then
     local queued, queue_err = pcall(jobs.create, "contribution.auto-accept", {
       uri = contribution._uri,
       cid = contribution._cid,
