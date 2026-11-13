@@ -1,6 +1,13 @@
 function handle()
   local uri = params.uri
 
+  -- A missing uri can't match any game. Answer "no likes" instead of running
+  -- the queries: db.raw drops a nil parameter, which binds too few values and
+  -- fails the request with a 500.
+  if not uri or uri == "" then
+    return { count = 0, liked = false }
+  end
+
   -- Count total likes for this game
   local count_rows = db.raw(
     "SELECT COUNT(*) as count FROM happyview_records WHERE collection = $1 AND record::jsonb->>'subject' = $2",
