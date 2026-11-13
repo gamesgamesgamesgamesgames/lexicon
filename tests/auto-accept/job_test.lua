@@ -9,10 +9,11 @@ local function copy(t) if type(t) ~= "table" then return t end local o = {} for 
 
 local function setup(opts)
   opts = opts or {}
-  local S = { records = {}, slugs = {}, ext = {}, writes = {}, logs = {}, cid_n = 0, grant_status = opts.grant_status or "active", missing_blobs = opts.missing_blobs or {} }
+  local S = { records = {}, slugs = {}, ext = {}, writes = {}, logs = {}, deferrals = {}, clock_h = 0, cid_n = 0, grant_status = opts.grant_status or "active", missing_blobs = opts.missing_blobs or {} }
   local function put(uri, rec) S.cid_n = S.cid_n + 1; S.records[uri] = { cid = "cid" .. S.cid_n, record = copy(rec), collection = uri:match("^at://[^/]+/([^/]+)/"), did = uri:match("^at://([^/]+)/") } end
   S.put = put
-  env = { PENTARACT_DID = P, AUTO_ACCEPT_DIDS = SYS .. ", did:plc:other", AUTO_ACCEPT_WRITES = opts.writes_env }
+  env = { PENTARACT_DID = P, AUTO_ACCEPT_DIDS = SYS .. ", did:plc:other", AUTO_ACCEPT_WRITES = opts.writes_env,
+    AUTO_ACCEPT_MEDIA_MAX_ATTEMPTS = opts.max_attempts, AUTO_ACCEPT_MEDIA_MAX_DAYS = opts.max_days, AUTO_ACCEPT_MEDIA_RETRY_HOURS = opts.retry_hours }
   json = { decode = function(s) return copy(s) end, encode = function(t) return "<json>" end }
   toarray = function(t) return t end
   now = function() return "2026-11-13T00:00:00Z" end
@@ -47,6 +48,17 @@ local function setup(opts)
     if S.grant_status == "needs_reauth" then error("linked repo " .. did .. " needs reauthorization: boom") end
     return repo end }
   db = { raw = function(sql, b)
+    if sql:find("FROM contribution_deferrals WHERE uri") and sql:find("^SELECT") then
+      local d = S.deferrals[b[1]]
+      if not d then return {} end
+      return {{ attempts = tostring(d.attempts), age_days = tostring((S.clock_h - d.first) / 24), since_hours = tostring(S.clock_h - d.last) }}
+    end
+    if sql:find("INSERT INTO contribution_deferrals") then
+      local d = S.deferrals[b[1]]
+      if d then d.attempts = d.attempts + 1; d.last = S.clock_h else S.deferrals[b[1]] = { attempts = 1, first = S.clock_h, last = S.clock_h } end
+      return {}
+    end
+    if sql:find("DELETE FROM contribution_deferrals") then S.deferrals[b[1]] = nil return {} end
     if sql:find("DELETE FROM slugs") then if S.slugs[b[1]] == b[2] then S.slugs[b[1]] = nil end return {} end
     if sql:find("FROM slugs WHERE uri") then for s,u in pairs(S.slugs) do if u == b[1] then return {{slug=s}} end end return {} end
     if sql:find("FROM slugs WHERE slug") then return S.slugs[b[1]] and {{uri=S.slugs[b[1]]}} or {} end
@@ -59,6 +71,7 @@ local function setup(opts)
     local function key(u, r) return (r.record.createdAt or "") .. "\0" .. u end
     local function dids_of(list) local d = {} for x in list:gmatch("[^,]+") do d[x] = true end return d end
     if sql:find("record::jsonb%->>'subject' = %$2") then
+      assert(sql:find("AND did = %$1"), "newer_contribution must filter by author")
       local dids = dids_of(b[1]); local best
       for u, r in pairs(S.records) do
         if r.collection == "games.gamesgamesgamesgames.contribution" and dids[r.did] and r.record.subject == b[2] and key(u, r) > (b[3] .. "\0" .. b[4]) then
@@ -68,6 +81,7 @@ local function setup(opts)
       return best and {{uri=best[2]}} or {}
     end
     if sql:find("'igdb' = %$2") or sql:find("%->>'igdb' = %$2") then
+      assert(sql:find("AND did = %$1"), "newer_contribution must filter by author")
       local dids = dids_of(b[1]); local best
       for u, r in pairs(S.records) do
         local ig = r.record.changes and r.record.changes.externalIds and r.record.changes.externalIds.igdb
@@ -221,16 +235,64 @@ t("dry run writes nothing", function()
   eq(res.status, "applied"); eq(#S.writes, 0); eq(S.records[GAME].record.summary, nil)
 end)
 
-t("missing media blob applies the other fields and leaves it pending", function()
+t("missing media blob applies nothing and leaves it pending", function()
   local S = base({ missing_blobs = { b2 = true } })
   local u, c = contrib(S, "a8", SYS, { contributionType = "correction", subject = GAME, changes = { summary = "x", media = {{ blob = "b1" }, { blob = "b2" }} } })
   job.input = { uri = u, cid = c }; local ok, res = run(S); assert(ok, res)
-  eq(res.status, "deferred"); eq(S.records[GAME].record.summary, "x"); eq(#S.records[GAME].record.media, 1)
-  eq(count(S, "contributionReview"), 0); eq(count(S, "contributionVerification"), 0)
-  -- once the blob exists, a rerun applies the media and finishes it
-  S.missing_blobs.b2 = nil
+  eq(res.status, "deferred"); eq(S.records[GAME].record.summary, nil); eq(#S.writes, 0)
+  -- too soon to retry
+  local okw, resw = run(S); assert(okw, resw); eq(resw.status, "waiting")
+  -- once the blob exists and the retry is due, it applies in full
+  S.missing_blobs.b2 = nil; S.clock_h = 7
   local ok2, res2 = run(S); assert(ok2, res2)
-  eq(res2.status, "applied"); eq(#S.records[GAME].record.media, 2); eq(count(S, "contributionReview"), 1)
+  eq(res2.status, "applied"); eq(#S.records[GAME].record.media, 2); eq(S.records[GAME].record.summary, "x")
+  eq(count(S, "contributionReview"), 1); eq(S.deferrals[u], nil, "deferral cleared")
+end)
+
+t("after 3 deferred attempts it applies without media and says so", function()
+  local S = base({ missing_blobs = { b2 = true } })
+  local u, c = contrib(S, "cap1", SYS, { contributionType = "correction", subject = GAME, changes = { summary = "x", media = {{ blob = "b2" }} } })
+  job.input = { uri = u, cid = c }
+  for i = 1, 3 do
+    S.clock_h = (i - 1) * 7
+    local ok, res = run(S); assert(ok, res); eq(res.status, "deferred", "attempt " .. i)
+  end
+  S.clock_h = 21
+  local ok, res = run(S); assert(ok, res)
+  eq(res.status, "applied"); eq(res.mediaDropped, true)
+  eq(S.records[GAME].record.summary, "x"); eq(S.records[GAME].record.media[1].blob, "b1", "media kept")
+  local review; for _, w in ipairs(S.writes) do if w.uri:find("contributionReview") then review = w.record end end
+  eq(review.status, "approved"); assert(review.reason:find("media unavailable in catalogue repo"), review.reason)
+  eq(count(S, "contributionVerification"), 1)
+end)
+
+t("7 days after the first deferral it applies without media even with attempts left", function()
+  local S = base({ missing_blobs = { b2 = true }, max_attempts = "10", retry_hours = "200" })
+  local u, c = contrib(S, "cap2", SYS, { contributionType = "correction", subject = GAME, changes = { summary = "x", media = {{ blob = "b2" }} } })
+  job.input = { uri = u, cid = c }
+  local ok, res = run(S); assert(ok, res); eq(res.status, "deferred")
+  S.clock_h = 24 * 3; ok, res = run(S); assert(ok, res); eq(res.status, "waiting")
+  S.clock_h = 24 * 7; ok, res = run(S); assert(ok, res)
+  eq(res.status, "applied"); eq(res.mediaDropped, true)
+end)
+
+t("a media-only change given up on writes no game and no verification", function()
+  local S = base({ missing_blobs = { b2 = true }, max_attempts = "1" })
+  local u, c = contrib(S, "cap3", SYS, { contributionType = "correction", subject = GAME, changes = { media = {{ blob = "b2" }} } })
+  job.input = { uri = u, cid = c }
+  local ok, res = run(S); assert(ok, res); eq(res.status, "deferred")
+  S.clock_h = 7; ok, res = run(S); assert(ok, res)
+  eq(res.status, "applied"); eq(count(S, "gamesgamesgamesgames.game/"), 0); eq(count(S, "contributionVerification"), 0); eq(count(S, "contributionReview"), 1)
+end)
+
+t("a newGame given up on is created without media", function()
+  local S = base({ missing_blobs = { bx = true }, max_attempts = "1" })
+  local u, c = contrib(S, "cap4", SYS, { contributionType = "newGame", changes = { name = "Late Art", applicationType = "game", media = {{ blob = "bx" }}, externalIds = { igdb = "77" } } })
+  job.input = { uri = u, cid = c }
+  local ok, res = run(S); assert(ok, res); eq(res.status, "deferred")
+  S.clock_h = 7; ok, res = run(S); assert(ok, res)
+  eq(res.status, "applied"); local g = S.records["at://" .. P .. "/games.gamesgamesgamesgames.game/igdb-77"]
+  assert(g, "created"); eq(g.record.media, nil)
 end)
 
 t("cid mismatch is skipped", function()
@@ -498,6 +560,59 @@ t("bad sweep cursor errors clearly", function()
   local S = base()
   job.input = { sweep = true, after = "at://not-a-cursor" }; local ok, err = run(S)
   eq(ok, false); assert(tostring(err):find("cursor"), err)
+end)
+
+t("a rerun after a failed review approves, even with a newer contribution waiting", function()
+  local S = base({ fail_collection = "games.gamesgamesgamesgames.contributionReview" })
+  local u, c = contrib(S, "rr1", SYS, { contributionType = "correction", subject = GAME, createdAt = "2026-06-14T00:00:00Z", changes = { summary = "A" } })
+  job.input = { uri = u, cid = c }; local ok = run(S); eq(ok, false)
+  eq(S.records[GAME].record.summary, "A")
+  contrib(S, "rr2", SYS, { contributionType = "correction", subject = GAME, createdAt = "2026-11-14T00:00:00Z", changes = { summary = "B" } })
+  local S2 = setup(); S2.records = S.records; S2.cid_n = 900
+  job.input = { uri = u, cid = c }; local ok2, res = run(S2); assert(ok2, res)
+  eq(res.status, "noop")
+  local review; for _, w in ipairs(S2.writes) do if w.uri:find("contributionReview") then review = w.record end end
+  eq(review.status, "approved")
+end)
+
+-- ===== igdb-review round 2 =====
+t("Q1 deferred contribution re-applies its other fields over a later edit on every sweep", function()
+  local S = base({ missing_blobs = { b9 = true } })
+  local u, c = contrib(S, "d1", SYS, { contributionType = "correction", subject = GAME, createdAt = "2026-11-14T00:00:00Z", changes = { summary = "IGDB Nov", media = {{ blob = "b9" }} } })
+  job.input = { uri = u, cid = c }; local ok, res = run(S); assert(ok, res); eq(res.status, "deferred")
+  -- a moderator-approved human edit (or admin putGame) lands later
+  local rec = S.records[GAME].record; rec.summary = "Human fix Dec"; S.put(GAME, rec)
+  job.input = { sweep = true, limit = 10 }; local ok2, res2 = run(S); assert(ok2, res2)
+  eq(S.records[GAME].record.summary, "Human fix Dec", "summary after sweep")
+end)
+
+t("Q2 supersede writes a Pentaract review on an owner-held game's contribution", function()
+  local S = base()
+  local owned = "at://did:plc:studio/games.gamesgamesgamesgames.game/s1"
+  S.put(owned, { name = "Owned" })
+  local u, c = contrib(S, "o1", SYS, { contributionType = "correction", subject = owned, createdAt = "2026-06-14T00:00:00Z", changes = { summary = "x" } })
+  contrib(S, "o2", SYS, { contributionType = "correction", subject = owned, createdAt = "2026-11-14T00:00:00Z", changes = { summary = "y" } })
+  job.input = { uri = u, cid = c }; local ok, res = run(S); assert(ok, res)
+  eq(#S.writes, 0, "writes for an owner-held game")
+end)
+
+t("Q3 a newer contribution from a different auto-accept account supersedes one it does not carry", function()
+  local S = base()
+  local u, c = contrib(S, "x1", SYS, { contributionType = "correction", subject = GAME, createdAt = "2026-06-14T00:00:00Z", changes = { summary = "IGDB summary" } })
+  contrib(S, "x2", "did:plc:other", { contributionType = "correction", subject = GAME, createdAt = "2026-11-14T00:00:00Z", changes = { websites = {{ url = "https://x" }} } })
+  job.input = { uri = u, cid = c }; local ok, res = run(S); assert(ok, res)
+  eq(res.status, "applied", "status")
+end)
+
+t("Q4 deferred-forever: every sweep re-attempts the put and nothing ever finishes it", function()
+  local S = base({ missing_blobs = { b9 = true } })
+  local u, c = contrib(S, "f1", SYS, { contributionType = "correction", subject = GAME, createdAt = "2026-11-14T00:00:00Z", changes = { media = {{ blob = "b9" }} } })
+  local attempts = 0
+  for i = 1, 3 do
+    job.input = { sweep = true, limit = 10 }; local ok, res = run(S); assert(ok, res)
+    attempts = attempts + (res.counts.deferred or 0)
+  end
+  eq(attempts, 1, "deferred count across 3 sweeps")
 end)
 
 print(string.format("%d passed, %d failed", pass, fail))

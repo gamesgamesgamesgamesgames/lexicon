@@ -18,12 +18,21 @@
 --
 -- Every contribution this job finishes gets a review in the Pentaract repo:
 -- approved when it was applied or already matched, denied when a newer
--- contribution for the same game superseded it. The review is the marker
--- every pending check keys on (listContributions, createContribution's limit,
--- the sweep), so "minimal" still writes it; only the verification, which
--- credits the contributor, is optional. Contributions the job declines to
--- touch (human authors, owned games, media it cannot apply yet) get no review
--- and stay pending.
+-- contribution from the same account for the same game superseded it. The
+-- review is the marker every pending check keys on (listContributions,
+-- createContribution's limit, the sweep), so "minimal" still writes it; only
+-- the verification, which credits the contributor, is optional. Contributions
+-- the job declines to touch (human authors, owned games) get no review and
+-- stay pending.
+--
+-- Media: a PDS refuses a record that references a blob it does not hold. When
+-- that happens nothing is applied and the contribution stays pending
+-- ("deferred"), tracked in the contribution_deferrals table. It is retried no
+-- sooner than AUTO_ACCEPT_MEDIA_RETRY_HOURS (default 6) later ("waiting" until
+-- then). After AUTO_ACCEPT_MEDIA_MAX_ATTEMPTS (default 3) deferred attempts,
+-- or AUTO_ACCEPT_MEDIA_MAX_DAYS (default 7) after the first, whichever comes
+-- first, it is applied without its media and approved with the reason "media
+-- unavailable in catalogue repo".
 --
 -- Note: IGDB is treated as authoritative for the fields it sends. An accepted
 -- IGDB contribution overwrites those fields on a Pentaract game, including
@@ -34,9 +43,10 @@
 --     a dead grant fails the job with nothing applied.
 --   * Only reviews written by the Pentaract repo count. Anyone can publish a
 --     contributionReview record, so a review from any other repo is ignored.
---   * A contribution is superseded, never applied, when a newer one from an
---     auto-accept account exists for the same game (or the same IGDB id for a
---     new game). Sweeps also run oldest first. Old data cannot land over new.
+--   * A contribution is superseded, never applied, when the same account has
+--     a newer one for the same game (or the same IGDB id for a new game).
+--     Sweeps also run oldest first, and a deferred contribution applies
+--     nothing until it applies in full. Old data cannot land over new.
 --   * The game is the only write that changes catalogue data: a single put
 --     guarded by swap_cid, or a create at a deterministic rkey. The
 --     verification and review follow it. If one of them fails, a rerun finds
@@ -255,23 +265,24 @@ local function resolve_igdb(igdb_id)
   return nil
 end
 
--- A newer contribution from an auto-accept account for the same game, if any.
+-- A newer contribution from the same author for the same game, if any.
 -- "Newer" is by the record's createdAt, then uri, the order sweeps use.
--- Corrections are full diffs against the stored game, so the newest one
--- carries everything the older pending ones would have changed.
-local function newer_contribution(c, contribution_uri)
-  local dids = table.concat(auto_accept_did_list(), ",")
+-- Corrections are full diffs against the stored game, so the author's newest
+-- one carries everything its older pending ones would have changed. Another
+-- account's contribution carries its own fields, not this one's, so it never
+-- supersedes.
+local function newer_contribution(c, contribution_uri, author)
   local created = c.createdAt or ""
   local rows
   if c.subject and c.subject ~= "" then
     rows = db.raw(
       "SELECT uri FROM happyview_records " ..
       "WHERE collection = 'games.gamesgamesgamesgames.contribution' " ..
-      "AND did = ANY(string_to_array($1, ',')) " ..
+      "AND did = $1 " ..
       "AND record::jsonb->>'subject' = $2 " ..
       "AND (COALESCE(record::jsonb->>'createdAt', ''), uri) > ($3, $4) " ..
       "ORDER BY record::jsonb->>'createdAt' DESC LIMIT 1",
-      { dids, c.subject, created, contribution_uri }
+      { author, c.subject, created, contribution_uri }
     )
   else
     local igdb = c.changes and c.changes.externalIds and c.changes.externalIds.igdb
@@ -281,18 +292,64 @@ local function newer_contribution(c, contribution_uri)
     rows = db.raw(
       "SELECT uri FROM happyview_records " ..
       "WHERE collection = 'games.gamesgamesgamesgames.contribution' " ..
-      "AND did = ANY(string_to_array($1, ',')) " ..
+      "AND did = $1 " ..
       "AND record::jsonb->>'contributionType' = 'newGame' " ..
       "AND record::jsonb->'changes'->'externalIds'->>'igdb' = $2 " ..
       "AND (COALESCE(record::jsonb->>'createdAt', ''), uri) > ($3, $4) " ..
       "ORDER BY record::jsonb->>'createdAt' DESC LIMIT 1",
-      { dids, tostring(igdb), created, contribution_uri }
+      { author, tostring(igdb), created, contribution_uri }
     )
   end
   if rows and #rows > 0 then
     return rows[1].uri
   end
   return nil
+end
+
+-- Media deferral state lives in the `contribution_deferrals` table (created by
+-- the deploy DDL, not by this script). A contribution whose media blobs are
+-- missing from the catalogue repo is retried no more often than every
+-- AUTO_ACCEPT_MEDIA_RETRY_HOURS, and after AUTO_ACCEPT_MEDIA_MAX_ATTEMPTS
+-- failed attempts or AUTO_ACCEPT_MEDIA_MAX_DAYS since the first one,
+-- whichever comes first, it is applied without its media.
+local function config_number(name, fallback)
+  local v = tonumber(env[name])
+  if v and v > 0 then
+    return v
+  end
+  return fallback
+end
+
+local function load_deferral(uri)
+  local rows = db.raw(
+    "SELECT attempts, " ..
+    "EXTRACT(EPOCH FROM (now() - first_deferred_at)) / 86400 AS age_days, " ..
+    "EXTRACT(EPOCH FROM (now() - last_attempt_at)) / 3600 AS since_hours " ..
+    "FROM contribution_deferrals WHERE uri = $1",
+    { uri }
+  )
+  if not rows or #rows == 0 then
+    return nil
+  end
+  return {
+    attempts = tonumber(rows[1].attempts) or 0,
+    age_days = tonumber(rows[1].age_days) or 0,
+    since_hours = tonumber(rows[1].since_hours) or 0,
+  }
+end
+
+local function record_deferral(uri, err)
+  db.raw(
+    "INSERT INTO contribution_deferrals (uri, attempts, first_deferred_at, last_attempt_at, last_error) " ..
+    "VALUES ($1, 1, now(), now(), $2) " ..
+    "ON CONFLICT (uri) DO UPDATE SET attempts = contribution_deferrals.attempts + 1, " ..
+    "last_attempt_at = now(), last_error = $2",
+    { uri, tostring(err):sub(1, 500) }
+  )
+end
+
+local function clear_deferral(uri)
+  db.raw("DELETE FROM contribution_deferrals WHERE uri = $1", { uri })
 end
 
 -- Game record keys are "any", so a new game gets a key derived from its IGDB
@@ -335,6 +392,33 @@ local function write_review(pentaract, ref, author, status, reason)
   return true
 end
 
+local function verify(pentaract, ref, author, subject, contribution_type, opts)
+  if opts.writes == "full" and not pentaract_has(VERIFICATION_COLLECTION, ref.uri) then
+    pentaract:create_record({
+      collection = VERIFICATION_COLLECTION,
+      record = {
+        ["$type"] = VERIFICATION_COLLECTION,
+        contribution = ref,
+        contributor = author,
+        subject = subject,
+        contributionType = contribution_type,
+        acceptedBy = "mod",
+        createdAt = now(),
+      },
+    })
+  end
+end
+
+local function without_media(fields)
+  local rest = {}
+  for _, f in ipairs(fields) do
+    if f ~= "media" then
+      table.insert(rest, f)
+    end
+  end
+  return rest
+end
+
 local function process(contribution_uri, opts)
   local pentaract = opts.pentaract
   local author = did_of(contribution_uri)
@@ -360,16 +444,6 @@ local function process(contribution_uri, opts)
   local c = contribution.record
   local changes = c.changes or {}
   local ref = { uri = contribution_uri, cid = contribution.cid }
-
-  local newer = newer_contribution(c, contribution_uri)
-  if newer then
-    local result = { status = "superseded", supersededBy = newer }
-    if not opts.dry_run then
-      write_review(pentaract, ref, author, "denied", "Superseded by a newer contribution: " .. newer)
-    end
-    return result
-  end
-
   local subject = c.subject
   local is_new_game = subject == nil or subject == ""
   local result = { status = "applied", contributionType = c.contributionType }
@@ -390,9 +464,11 @@ local function process(contribution_uri, opts)
     end
   end
 
+  -- Ownership and subject checks come before anything that writes, including
+  -- the supersede review: a contribution to an owned game belongs to the
+  -- owner's queue and gets no Pentaract review from here.
   if subject then
     if did_of(subject) ~= pentaract.did then
-      -- Owned games take changes through the owner's patch flow, not here.
       return { status = "skipped", reason = "subject is not in the Pentaract repo" }
     end
     if collection_of(subject) ~= GAME_COLLECTION then
@@ -400,7 +476,50 @@ local function process(contribution_uri, opts)
     end
   end
 
-  local fields
+  local current, diff, fields
+  if not create_rkey then
+    current = load_record(subject)
+    if not current then
+      return { status = "skipped", reason = "subject game not found: " .. subject }
+    end
+    diff, fields = effective_changes(changes, current.record)
+    result.fields = fields
+    result.subject = subject
+
+    -- Already matching, whether from an earlier run of this job whose review
+    -- write failed or by coincidence: approve, never deny.
+    if #fields == 0 then
+      result.status = "noop"
+      if not opts.dry_run then
+        clear_deferral(contribution_uri)
+        write_review(pentaract, ref, author, "approved", "Auto-accepted: the game already matches this contribution.")
+      end
+      return result
+    end
+  end
+
+  local newer = newer_contribution(c, contribution_uri, author)
+  if newer then
+    if not opts.dry_run then
+      clear_deferral(contribution_uri)
+      write_review(pentaract, ref, author, "denied", "Superseded by a newer contribution: " .. newer)
+    end
+    return { status = "superseded", supersededBy = newer, subject = subject }
+  end
+
+  -- Media deferral: a contribution whose media blobs were missing is not
+  -- retried until AUTO_ACCEPT_MEDIA_RETRY_HOURS have passed, which gives the
+  -- sync a chance to mirror them.
+  local deferral = load_deferral(contribution_uri)
+  local max_attempts = config_number("AUTO_ACCEPT_MEDIA_MAX_ATTEMPTS", 3)
+  local max_days = config_number("AUTO_ACCEPT_MEDIA_MAX_DAYS", 7)
+  local retry_hours = config_number("AUTO_ACCEPT_MEDIA_RETRY_HOURS", 6)
+  local give_up_media = deferral ~= nil and (deferral.attempts >= max_attempts or deferral.age_days >= max_days)
+  if deferral and not give_up_media and deferral.since_hours < retry_hours then
+    return { status = "waiting", reason = "media retry not due yet", attempts = deferral.attempts }
+  end
+
+  local media_dropped = false
 
   if create_rkey then
     if not changes.name or changes.name == "" or not changes.applicationType or changes.applicationType == "" then
@@ -409,6 +528,11 @@ local function process(contribution_uri, opts)
     subject = "at://" .. pentaract.did .. "/" .. GAME_COLLECTION .. "/" .. create_rkey
     local game
     game, fields = effective_changes(changes, {})
+    if give_up_media and game.media ~= nil then
+      game.media = nil
+      fields = without_media(fields)
+      media_dropped = true
+    end
     game["$type"] = GAME_COLLECTION
     game.createdAt = now()
     -- IGDB games have always been published on import.
@@ -432,98 +556,77 @@ local function process(contribution_uri, opts)
         db.raw("DELETE FROM slugs WHERE slug = $1 AND uri = $2", { slug, subject })
       end
       if is_missing_blob_error(err) and game.media ~= nil then
-        -- A new game is not created without its media. It stays pending and a
-        -- later sweep retries once the blobs are in the catalogue repo.
+        record_deferral(contribution_uri, err)
         return { status = "deferred", reason = "media blobs are not in the catalogue repo", subject = subject }
       end
       error(err)
     end
   else
-    local current = load_record(subject)
-    if not current then
-      return { status = "skipped", reason = "subject game not found: " .. subject }
+    if opts.dry_run then
+      return result
     end
-    local diff
-    diff, fields = effective_changes(changes, current.record)
-    result.fields = fields
-    result.subject = subject
 
-    if #fields == 0 then
-      result.status = "noop"
-    else
-      if opts.dry_run then
-        return result
+    local function put(fields_to_apply)
+      -- Only top-level fields are replaced, so a shallow copy keeps
+      -- current.record intact for a second attempt.
+      local game = {}
+      for k, v in pairs(current.record) do
+        game[k] = v
       end
-
-      local function put(fields_to_apply)
-        -- Only top-level fields are replaced, so a shallow copy keeps
-        -- current.record intact for a second attempt.
-        local game = {}
-        for k, v in pairs(current.record) do
-          game[k] = v
-        end
-        for _, f in ipairs(fields_to_apply) do
-          game[f] = diff[f]
-        end
-        game["$type"] = GAME_COLLECTION
-        game.uri = nil
-        game.cid = nil
-        return pentaract:put_record({
-          collection = GAME_COLLECTION,
-          rkey = rkey_of(subject),
-          record = game,
-          swap_cid = current.cid,
-        })
+      for _, f in ipairs(fields_to_apply) do
+        game[f] = diff[f]
       end
+      game["$type"] = GAME_COLLECTION
+      game.uri = nil
+      game.cid = nil
+      return pentaract:put_record({
+        collection = GAME_COLLECTION,
+        rkey = rkey_of(subject),
+        record = game,
+        swap_cid = current.cid,
+      })
+    end
 
-      local ok, err = pcall(put, fields)
+    local to_apply = fields
+    if give_up_media and contains(fields, "media") then
+      to_apply = without_media(fields)
+      media_dropped = true
+    end
+
+    if #to_apply > 0 then
+      local ok, err = pcall(put, to_apply)
       if not ok then
-        if not (is_missing_blob_error(err) and contains(fields, "media")) then
+        if not (is_missing_blob_error(err) and contains(to_apply, "media")) then
           error(err)
         end
         -- The new media references blobs the catalogue PDS does not hold.
-        -- Apply the other fields, but leave the contribution pending (no
-        -- review, no verification) so its media is retried rather than lost.
-        local rest = {}
-        for _, f in ipairs(fields) do
-          if f ~= "media" then
-            table.insert(rest, f)
-          end
-        end
-        if #rest > 0 then
-          put(rest)
-        end
-        return { status = "deferred", reason = "media blobs are not in the catalogue repo", subject = subject, fields = toarray(rest) }
+        -- Nothing is applied: a partial apply that stays pending would be
+        -- re-applied by later sweeps over whatever changed since.
+        record_deferral(contribution_uri, err)
+        return { status = "deferred", reason = "media blobs are not in the catalogue repo", subject = subject, attempts = (deferral and deferral.attempts or 0) + 1 }
       end
     end
+    result.fields = to_apply
   end
 
-  if opts.dry_run then
-    return result
+  clear_deferral(contribution_uri)
+  if media_dropped then
+    result.mediaDropped = true
   end
 
-  -- A no-op gets a review but no verification: nothing was accepted from it.
+  -- A verification credits the contributor for something that landed. A
+  -- media-only change whose media was given up on applied nothing.
   -- (A rerun after a failure between the game write and the verification
-  -- also lands here, so that contribution goes uncredited. It is rare, and
-  -- crediting every no-op would be worse.)
-  if opts.writes == "full" and result.status == "applied" and not pentaract_has(VERIFICATION_COLLECTION, contribution_uri) then
-    pentaract:create_record({
-      collection = VERIFICATION_COLLECTION,
-      record = {
-        ["$type"] = VERIFICATION_COLLECTION,
-        contribution = ref,
-        contributor = author,
-        subject = subject,
-        contributionType = c.contributionType,
-        acceptedBy = "mod",
-        createdAt = now(),
-      },
-    })
+  -- finds the game matching and lands in the no-op branch, so that
+  -- contribution goes uncredited. It is rare, and crediting every no-op
+  -- would be worse.)
+  if #result.fields > 0 then
+    verify(pentaract, ref, author, subject, c.contributionType, opts)
   end
 
   local reason = "Auto-accepted: contribution from an automated account."
-  if result.status == "noop" then
-    reason = "Auto-accepted: the game already matches this contribution."
+  if media_dropped then
+    reason = "Auto-accepted without media: media unavailable in catalogue repo."
   end
   write_review(pentaract, ref, author, "approved", reason)
 
@@ -600,7 +703,7 @@ local function sweep(input, opts)
     { table.concat(dids, ","), after_created, after_uri, env.PENTARACT_DID, limit }
   )
 
-  local counts = { applied = 0, noop = 0, superseded = 0, deferred = 0, skipped = 0, failed = 0 }
+  local counts = { applied = 0, noop = 0, superseded = 0, deferred = 0, waiting = 0, skipped = 0, failed = 0 }
   local failures = {}
   local last = input.after
 
