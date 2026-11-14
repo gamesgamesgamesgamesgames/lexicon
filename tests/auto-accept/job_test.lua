@@ -641,6 +641,22 @@ t("a newGame at the cap is created with media when the blob has arrived", functi
   eq(S.records["at://" .. P .. "/games.gamesgamesgamesgames.game/igdb-88"].record.media[1].blob, "bx")
 end)
 
+t("a sweep pinned to an author only touches that author's contributions", function()
+  local S = base()
+  local G2 = "at://" .. P .. "/games.gamesgamesgamesgames.game/g2"
+  S.put(G2, { name = "Other" })
+  contrib(S, "pa1", SYS, { contributionType = "correction", subject = GAME, changes = { summary = "mine" } })
+  contrib(S, "pa2", "did:plc:other", { contributionType = "correction", subject = G2, changes = { summary = "theirs" } })
+  job.input = { sweep = true, limit = 10, author = SYS }; local ok, res = run(S); assert(ok, res)
+  eq(res.counts.applied, 1); eq(S.records[GAME].record.summary, "mine"); eq(S.records[G2].record.summary, nil)
+end)
+
+t("a sweep pinned to an account that is not auto-accept errors", function()
+  local S = base()
+  job.input = { sweep = true, author = "did:plc:human" }; local ok, err = run(S)
+  eq(ok, false); assert(tostring(err):find("not an auto%-accept account"), err)
+end)
+
 -- ===== igdb-review final pass =====
 local function puts(S) local n = 0 for _, w in ipairs(S.writes) do if w.op == "put" then n = n + 1 end end return n end
 t("F1 deferral applies nothing (no partial put), later edit survives sweeps", function()

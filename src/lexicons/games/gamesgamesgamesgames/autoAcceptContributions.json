@@ -5,7 +5,7 @@
 	"defs": {
 		"main": {
 			"type": "procedure",
-			"description": "Queue a job that applies pending contributions from auto-accept accounts to the catalogue, oldest first. Requires admin auth.",
+			"description": "Queue a job that applies pending contributions from auto-accept accounts to the catalogue, oldest first. Admins sweep every auto-accept account; an auto-accept account can sweep only its own contributions.",
 			"input": {
 				"encoding": "application/json",
 				"schema": {

@@ -11,9 +11,26 @@ end
 
 local ADMIN_DIDS = parse_admin_dids()
 
+local function is_auto_accept_account(did)
+  for d in (env.AUTO_ACCEPT_DIDS or ""):gmatch("[^,]+") do
+    if d:match("^%s*(.-)%s*$") == did then
+      return true
+    end
+  end
+  return false
+end
+
 function handle()
+  -- Admins can sweep everything. An auto-accept account (the IGDB sync) can
+  -- queue a sweep of its own contributions only: that applies nothing the
+  -- per-contribution jobs would not have applied anyway, so it needs no
+  -- admin credential.
+  local own_only = false
   if not ADMIN_DIDS[caller_did] then
-    error("unauthorized: only admins can queue auto-accept sweeps")
+    if not is_auto_accept_account(caller_did) then
+      error("unauthorized: only admins and auto-accept accounts can queue auto-accept sweeps")
+    end
+    own_only = true
   end
 
   local limit = input.limit or 500
@@ -27,6 +44,7 @@ function handle()
 
   local job_input = {
     sweep = true,
+    author = own_only and caller_did or nil,
     limit = limit,
     dryRun = input.dryRun == true,
   }

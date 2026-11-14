@@ -695,6 +695,14 @@ local function sweep(input, opts)
   if #dids == 0 then
     error("AUTO_ACCEPT_DIDS is not configured")
   end
+  -- A sweep an auto-accept account queued for itself covers only its own
+  -- contributions.
+  if input.author and input.author ~= "" then
+    if not AUTO_ACCEPT_DIDS[input.author] then
+      error("author is not an auto-accept account: " .. input.author)
+    end
+    dids = { input.author }
+  end
 
   local after_created, after_uri = parse_cursor(input.after)
 
