@@ -8,9 +8,16 @@
 --
 -- Input:
 --   uri, cid        apply a single contribution
---   sweep = true    process pending contributions, oldest first
---     limit         how many to look at (default 500, max 5000)
+--   sweep = true    process pending contributions: deferrals that are due
+--                   first, then the rest oldest first. Contributions the job
+--                   would only skip (owned, non-game or vanished subjects,
+--                   incomplete newGames) and deferrals not yet due are left out
+--                   of the window. A full window chains a follow-up job that
+--                   continues after its cursor, so a sweep always drains.
+--     limit         window size per job (default 500, max 5000)
 --     after         resume from the `after` cursor a previous sweep reported
+--     author        only this auto-accept account's contributions
+--     continued     set on chained jobs, which skip the deferral phase
 --   writes          "full" (game + verification + review, the default) or
 --                   "minimal" (game + review). Falls back to
 --                   env.AUTO_ACCEPT_WRITES, then "full".
@@ -321,6 +328,12 @@ local function config_number(name, fallback)
   return fallback
 end
 
+local function media_limits()
+  return config_number("AUTO_ACCEPT_MEDIA_MAX_ATTEMPTS", 3),
+    config_number("AUTO_ACCEPT_MEDIA_MAX_DAYS", 7),
+    config_number("AUTO_ACCEPT_MEDIA_RETRY_HOURS", 6)
+end
+
 local function load_deferral(uri)
   local rows = db.raw(
     "SELECT attempts, " ..
@@ -512,9 +525,7 @@ local function process(contribution_uri, opts)
   -- retried until AUTO_ACCEPT_MEDIA_RETRY_HOURS have passed, which gives the
   -- sync a chance to mirror them.
   local deferral = load_deferral(contribution_uri)
-  local max_attempts = config_number("AUTO_ACCEPT_MEDIA_MAX_ATTEMPTS", 3)
-  local max_days = config_number("AUTO_ACCEPT_MEDIA_MAX_DAYS", 7)
-  local retry_hours = config_number("AUTO_ACCEPT_MEDIA_RETRY_HOURS", 6)
+  local max_attempts, max_days, retry_hours = media_limits()
   local give_up_media = deferral ~= nil and (deferral.attempts >= max_attempts or deferral.age_days >= max_days)
   if deferral and not give_up_media and deferral.since_hours < retry_hours then
     return { status = "waiting", reason = "media retry not due yet", attempts = deferral.attempts }
@@ -683,6 +694,48 @@ local function parse_cursor(after)
   return created, uri
 end
 
+-- Contributions a sweep can actually act on: no Pentaract review yet, and
+-- either a complete newGame or a correction to a game that exists in the
+-- Pentaract repo. Owner-held, non-game and vanished subjects, and newGames
+-- missing a name or applicationType, are skipped by process() every time, so
+-- leaving them in would let them fill every sweep's window. Deferrals that are
+-- not due are left out too; they would only report "waiting".
+local SWEEP_ACTIONABLE =
+  "c.collection = 'games.gamesgamesgamesgames.contribution' " ..
+  "AND c.did = ANY(string_to_array($1, ',')) " ..
+  "AND NOT EXISTS (SELECT 1 FROM happyview_records r " ..
+    "WHERE r.collection = 'games.gamesgamesgamesgames.contributionReview' " ..
+    "AND r.did = $2 " ..
+    "AND r.record::jsonb->'contribution'->>'uri' = c.uri) " ..
+  "AND ((COALESCE(c.record::jsonb->>'subject', '') = '' " ..
+      "AND COALESCE(c.record::jsonb->'changes'->>'name', '') <> '' " ..
+      "AND COALESCE(c.record::jsonb->'changes'->>'applicationType', '') <> '') " ..
+    "OR EXISTS (SELECT 1 FROM happyview_records g " ..
+      "WHERE g.uri = c.record::jsonb->>'subject' AND g.did = $2 " ..
+      "AND g.collection = 'games.gamesgamesgamesgames.game')) "
+
+-- A deferral is due when its retry spacing has passed or either cap is reached.
+local DEFERRAL_DUE =
+  "(d.last_attempt_at <= now() - ($3 * interval '1 hour') " ..
+  "OR d.attempts >= $4 " ..
+  "OR d.first_deferred_at <= now() - ($5 * interval '1 day'))"
+
+local function sweep_dids(input)
+  local dids = auto_accept_did_list()
+  if #dids == 0 then
+    error("AUTO_ACCEPT_DIDS is not configured")
+  end
+  -- A sweep an auto-accept account queued for itself covers only its own
+  -- contributions.
+  if input.author and input.author ~= "" then
+    if not AUTO_ACCEPT_DIDS[input.author] then
+      error("author is not an auto-accept account: " .. input.author)
+    end
+    dids = { input.author }
+  end
+  return table.concat(dids, ",")
+end
+
 local function sweep(input, opts)
   local limit = math.floor(tonumber(input.limit) or DEFAULT_SWEEP_LIMIT)
   if limit < 1 then
@@ -691,60 +744,93 @@ local function sweep(input, opts)
     limit = MAX_SWEEP_LIMIT
   end
 
-  local dids = auto_accept_did_list()
-  if #dids == 0 then
-    error("AUTO_ACCEPT_DIDS is not configured")
-  end
-
+  local dids = sweep_dids(input)
+  local max_attempts, max_days, retry_hours = media_limits()
   local after_created, after_uri = parse_cursor(input.after)
-
-  -- Pending = no review from the Pentaract repo yet. Oldest first, so that
-  -- even without the supersede check an older change never lands last.
-  local rows = db.raw(
-    "SELECT c.uri, COALESCE(c.record::jsonb->>'createdAt', '') AS created FROM happyview_records c " ..
-    "WHERE c.collection = 'games.gamesgamesgamesgames.contribution' " ..
-    "AND c.did = ANY(string_to_array($1, ',')) " ..
-    "AND (COALESCE(c.record::jsonb->>'createdAt', ''), c.uri) > ($2, $3) " ..
-    "AND NOT EXISTS (SELECT 1 FROM happyview_records r " ..
-      "WHERE r.collection = 'games.gamesgamesgamesgames.contributionReview' " ..
-      "AND r.did = $4 " ..
-      "AND r.record::jsonb->'contribution'->>'uri' = c.uri) " ..
-    "ORDER BY COALESCE(c.record::jsonb->>'createdAt', ''), c.uri LIMIT $5",
-    { table.concat(dids, ","), after_created, after_uri, env.PENTARACT_DID, limit }
-  )
 
   local counts = { applied = 0, noop = 0, superseded = 0, deferred = 0, waiting = 0, skipped = 0, failed = 0 }
   local failures = {}
-  local last = input.after
+  local processed = 0
 
-  for i, row in ipairs(rows or {}) do
-    if job.should_stop() then
-      break
-    end
-
-    local ok, res = pcall(process_guarded, row.uri, opts)
+  local function handle_row(uri)
+    local ok, res = pcall(process_guarded, uri, opts)
     if not ok then
       if is_grant_error(res) then
-        error("stopped at " .. row.uri .. ": " .. tostring(res))
+        error("stopped at " .. uri .. ": " .. tostring(res))
       end
       counts.failed = counts.failed + 1
       if #failures < 50 then
-        table.insert(failures, { uri = row.uri, error = tostring(res) })
+        table.insert(failures, { uri = uri, error = tostring(res) })
       end
-      job.warn("failed " .. row.uri .. ": " .. tostring(res))
+      job.warn("failed " .. uri .. ": " .. tostring(res))
     else
       counts[res.status] = (counts[res.status] or 0) + 1
     end
-
-    last = (row.created or "") .. "|" .. row.uri
-    if i % 25 == 0 then
-      job.progress({ processed = i, after = last, counts = counts })
+    processed = processed + 1
+    if processed % 25 == 0 then
+      job.progress({ processed = processed, counts = counts })
     end
   end
 
+  -- 1. Deferrals that are due, oldest deferral first. The first job of a
+  --    sweep chain does this; the jobs it chains to only continue the scan.
+  if not input.continued then
+    local due = db.raw(
+      "SELECT c.uri FROM happyview_records c " ..
+      "JOIN contribution_deferrals d ON d.uri = c.uri " ..
+      "WHERE " .. SWEEP_ACTIONABLE .. "AND " .. DEFERRAL_DUE .. " " ..
+      "ORDER BY d.first_deferred_at LIMIT $6",
+      { dids, env.PENTARACT_DID, retry_hours, max_attempts, max_days, limit }
+    )
+    for _, row in ipairs(due or {}) do
+      if job.should_stop() then
+        break
+      end
+      handle_row(row.uri)
+    end
+  end
+
+  -- 2. Everything else that is actionable, oldest first, so that even without
+  --    the supersede check an older change never lands last.
+  local rows = db.raw(
+    "SELECT c.uri, COALESCE(c.record::jsonb->>'createdAt', '') AS created FROM happyview_records c " ..
+    "WHERE " .. SWEEP_ACTIONABLE ..
+    "AND NOT EXISTS (SELECT 1 FROM contribution_deferrals d WHERE d.uri = c.uri AND NOT " .. DEFERRAL_DUE .. ") " ..
+    "AND (COALESCE(c.record::jsonb->>'createdAt', ''), c.uri) > ($6, $7) " ..
+    "ORDER BY COALESCE(c.record::jsonb->>'createdAt', ''), c.uri LIMIT $8",
+    { dids, env.PENTARACT_DID, retry_hours, max_attempts, max_days, after_created, after_uri, limit }
+  )
+
+  local last = input.after
+  local stopped = false
+  for _, row in ipairs(rows or {}) do
+    if job.should_stop() then
+      stopped = true
+      break
+    end
+    handle_row(row.uri)
+    last = (row.created or "") .. "|" .. row.uri
+  end
+
+  -- 3. A full window means there may be more: chain a job that continues
+  --    after this one's cursor, so a sweep always drains. The cursor only
+  --    moves forward, so the chain ends.
   local done = not rows or #rows < limit
-  job.progress({ processed = rows and #rows or 0, after = last, counts = counts, done = done })
-  return { counts = counts, after = last, done = done, failures = toarray(failures) }
+  local next_job
+  if not done and not stopped then
+    next_job = jobs.create("contribution.auto-accept", {
+      sweep = true,
+      continued = true,
+      author = input.author,
+      limit = limit,
+      after = last,
+      writes = input.writes,
+      dryRun = input.dryRun,
+    })
+  end
+
+  job.progress({ processed = processed, after = last, counts = counts, done = done, next = next_job })
+  return { counts = counts, after = last, done = done, next = next_job, failures = toarray(failures) }
 end
 
 function handle()
