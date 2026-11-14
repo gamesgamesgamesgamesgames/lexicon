@@ -1,0 +1,52 @@
+{
+	"$type": "com.atproto.lexicon.schema",
+	"lexicon": 1,
+	"id": "games.gamesgamesgamesgames.autoAcceptContributions",
+	"defs": {
+		"main": {
+			"type": "procedure",
+			"description": "Queue a job that applies pending contributions from auto-accept accounts to the catalogue, oldest first. Requires admin auth.",
+			"input": {
+				"encoding": "application/json",
+				"schema": {
+					"type": "object",
+					"properties": {
+						"limit": {
+							"type": "integer",
+							"minimum": 1,
+							"maximum": 5000,
+							"default": 500,
+							"description": "How many pending contributions the job looks at."
+						},
+						"after": {
+							"type": "string",
+							"maxLength": 4096,
+							"description": "Resume from this cursor. Use the `after` a previous sweep reported."
+						},
+						"writes": {
+							"type": "string",
+							"maxLength": 64,
+							"knownValues": ["full", "minimal"],
+							"description": "full writes the game, a verification and a review. minimal writes the game and the review, which is what marks the contribution as no longer pending."
+						},
+						"dryRun": {
+							"type": "boolean",
+							"default": false,
+							"description": "Report what would be applied without writing anything."
+						}
+					}
+				}
+			},
+			"output": {
+				"encoding": "application/json",
+				"schema": {
+					"type": "object",
+					"required": ["jobId"],
+					"properties": {
+						"jobId": { "type": "string", "maxLength": 128 }
+					}
+				}
+			}
+		}
+	}
+}

@@ -127,5 +127,28 @@ function handle()
   end
   contribution:save()
 
+  -- Contributions from auto-accept accounts (AUTO_ACCEPT_DIDS, kept separate
+  -- from the rate-limit exemption above) are applied without a moderator, in
+  -- a job so a failure there (a dead Pentaract grant, say) never fails this
+  -- call. The contribution stays pending until a job applies it, and a sweep
+  -- through autoAcceptContributions picks up any that were missed.
+  local auto_accept = false
+  for d in (env.AUTO_ACCEPT_DIDS or ""):gmatch("[^,]+") do
+    if d:match("^%s*(.-)%s*$") == caller_did then
+      auto_accept = true
+      break
+    end
+  end
+
+  if auto_accept then
+    local queued, queue_err = pcall(jobs.create, "contribution.auto-accept", {
+      uri = contribution._uri,
+      cid = contribution._cid,
+    })
+    if not queued then
+      log("warning: failed to queue auto-accept for " .. tostring(contribution._uri) .. ": " .. tostring(queue_err))
+    end
+  end
+
   return { uri = contribution._uri }
 end
