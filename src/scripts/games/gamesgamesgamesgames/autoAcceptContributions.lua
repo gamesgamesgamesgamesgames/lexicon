@@ -47,7 +47,7 @@ function handle()
   -- is already pending or running is reported instead of queued again.
   local author = own_only and caller_did or ""
   local existing = db.raw(
-    "SELECT id FROM happyview_jobs WHERE job_type = 'contribution.auto-accept' " ..
+    "SELECT id, status, started_at FROM happyview_jobs WHERE job_type = 'contribution.auto-accept' " ..
     "AND status IN ('pending', 'running') " ..
     "AND input::jsonb->>'sweep' = 'true' " ..
     "AND COALESCE(input::jsonb->>'author', '') = $1 " ..
@@ -55,7 +55,13 @@ function handle()
     { author }
   )
   if existing and #existing > 0 then
-    return { jobId = existing[1].id, alreadyQueued = true }
+    -- startedAt lets the caller notice a sweep that has been running far too
+    -- long, which means a stuck worker rather than a slow drain.
+    local out = { jobId = existing[1].id, alreadyQueued = true, status = existing[1].status }
+    if existing[1].started_at and existing[1].started_at ~= "" then
+      out.startedAt = existing[1].started_at
+    end
+    return out
   end
 
   local job_input = {

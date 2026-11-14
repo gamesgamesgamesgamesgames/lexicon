@@ -47,6 +47,17 @@
 						"alreadyQueued": {
 							"type": "boolean",
 							"description": "True when a sweep for the same account was already pending or running; jobId is that sweep."
+						},
+						"status": {
+							"type": "string",
+							"maxLength": 32,
+							"knownValues": ["pending", "running"],
+							"description": "The existing sweep's status, when alreadyQueued is true."
+						},
+						"startedAt": {
+							"type": "string",
+							"format": "datetime",
+							"description": "When the existing sweep started running, when alreadyQueued is true and it has started."
 						}
 					}
 				}

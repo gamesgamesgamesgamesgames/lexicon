@@ -25,7 +25,7 @@ local function call(caller, body)
     for _, j in ipairs(queue) do
       if j.type == "contribution.auto-accept" and (j.status == "pending" or j.status == "running")
         and j.input.sweep == true and (not by_author or (j.input.author or "") == b[1]) then
-        return { { id = j.id } }
+        return { { id = j.id, status = j.status, started_at = j.started_at } }
       end
     end
     return {}
@@ -77,13 +77,15 @@ t("a second sweep for the same account returns the one already queued", function
   local ok, first = call(SYNC, {}); assert(ok, first)
   local ok2, second, created = call(SYNC, {}); assert(ok2, second)
   eq(second.jobId, first.jobId); eq(second.alreadyQueued, true); eq(created, nil); eq(#queue, 1)
+  eq(second.status, "pending"); eq(second.startedAt, nil, "a pending sweep has not started")
 end)
 
 t("a running sweep also blocks a new one; a finished one does not", function()
   queue = {}
   local _, first = call(SYNC, {})
-  queue[1].status = "running"
+  queue[1].status = "running"; queue[1].started_at = "2026-11-14T00:00:05Z"
   local _, again = call(SYNC, {}); eq(again.alreadyQueued, true)
+  eq(again.status, "running"); eq(again.startedAt, "2026-11-14T00:00:05Z")
   queue[1].status = "completed"
   local _, fresh = call(SYNC, {}); eq(fresh.alreadyQueued, false); eq(#queue, 2)
 end)
