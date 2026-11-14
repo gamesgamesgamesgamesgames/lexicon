@@ -615,5 +615,92 @@ t("Q4 deferred-forever: every sweep re-attempts the put and nothing ever finishe
   eq(attempts, 1, "deferred count across 3 sweeps")
 end)
 
+t("when the cap fires and the blob is still missing, media is dropped after one more full try", function()
+  local S = base({ missing_blobs = { b2 = true }, max_attempts = "1" })
+  local u, c = contrib(S, "cf1", SYS, { contributionType = "correction", subject = GAME, changes = { summary = "x", media = {{ blob = "b2" }} } })
+  job.input = { uri = u, cid = c }
+  local ok, res = run(S); assert(ok, res); eq(res.status, "deferred")
+  local puts = 0
+  local repo = linked_repos.get(P); local orig = repo.put_record
+  S.clock_h = 7
+  handle = nil; dofile(JOB)
+  repo.put_record = function(self, o) puts = puts + 1; return orig(self, o) end
+  linked_repos.get = function() return repo end
+  ok, res = pcall(handle); assert(ok, res)
+  eq(puts, 2, "full try then without media"); eq(res.mediaDropped, true); eq(S.records[GAME].record.media[1].blob, "b1")
+end)
+
+t("a newGame at the cap is created with media when the blob has arrived", function()
+  local S = base({ missing_blobs = { bx = true }, max_attempts = "1" })
+  local u, c = contrib(S, "cn1", SYS, { contributionType = "newGame", changes = { name = "Arrived", applicationType = "game", media = {{ blob = "bx" }}, externalIds = { igdb = "88" } } })
+  job.input = { uri = u, cid = c }
+  local ok, res = run(S); assert(ok, res); eq(res.status, "deferred")
+  S.missing_blobs.bx = nil; S.clock_h = 7
+  ok, res = run(S); assert(ok, res)
+  eq(res.status, "applied"); eq(res.mediaDropped, nil)
+  eq(S.records["at://" .. P .. "/games.gamesgamesgamesgames.game/igdb-88"].record.media[1].blob, "bx")
+end)
+
+-- ===== igdb-review final pass =====
+local function puts(S) local n = 0 for _, w in ipairs(S.writes) do if w.op == "put" then n = n + 1 end end return n end
+t("F1 deferral applies nothing (no partial put), later edit survives sweeps", function()
+  local S = base({ missing_blobs = { b9 = true } }); S.deferrals = S.deferrals or {}; S.clock_h = 0
+  local u, c = contrib(S, "d1", SYS, { contributionType = "correction", subject = GAME, createdAt = "2026-11-14T00:00:00Z", changes = { summary = "IGDB Nov", media = {{ blob = "b9" }} } })
+  job.input = { uri = u, cid = c }; local ok, res = run(S); assert(ok, res); eq(res.status, "deferred")
+  eq(puts(S), 0, "puts"); eq(S.records[GAME].record.summary, nil, "summary not applied")
+  local rec = S.records[GAME].record; rec.storyline = "Human edit"; S.put(GAME, rec)
+  for h = 7, 25, 6 do S.clock_h = h; job.input = { sweep = true, limit = 10 }; assert(run(S)) end
+  eq(S.records[GAME].record.storyline, "Human edit", "unrelated human field")
+end)
+
+t("F2 cap path drops media without retrying even though the blob has since arrived", function()
+  local S = base({ missing_blobs = { b9 = true } }); S.clock_h = 0
+  local u, c = contrib(S, "d2", SYS, { contributionType = "correction", subject = GAME, createdAt = "2026-11-14T00:00:00Z", changes = { media = {{ blob = "b9" }} } })
+  job.input = { uri = u, cid = c }; assert(run(S))           -- attempt 1, deferred
+  S.missing_blobs.b9 = nil                                   -- the sync mirrors the blob
+  S.clock_h = 8 * 24                                          -- no sweep ran for 8 days
+  job.input = { sweep = true, limit = 10 }; local ok, res = run(S); assert(ok, res)
+  eq(#S.records[GAME].record.media, 1); eq(S.records[GAME].record.media[1].blob, "b9", "media applied")
+end)
+
+t("F3 cap path only after a real BlobNotFound attempt (no deferral row => media tried)", function()
+  local S = base(); S.clock_h = 500
+  local u, c = contrib(S, "d3", SYS, { contributionType = "correction", subject = GAME, createdAt = "2026-01-01T00:00:00Z", changes = { media = {{ blob = "b5" }} } })
+  job.input = { uri = u, cid = c }; local ok, res = run(S); assert(ok, res)
+  eq(res.mediaDropped, nil); eq(S.records[GAME].record.media[1].blob, "b5")
+end)
+
+t("F4 deferred set is bounded: after the cap the contribution is reviewed", function()
+  local S = base({ missing_blobs = { b9 = true } }); S.clock_h = 0
+  contrib(S, "d4", SYS, { contributionType = "correction", subject = GAME, createdAt = "2026-11-14T00:00:00Z", changes = { summary = "s", media = {{ blob = "b9" }} } })
+  local statuses = {}
+  for i = 0, 5 do S.clock_h = i * 7; job.input = { sweep = true, limit = 10 }; local ok, res = run(S); assert(ok, res)
+    for k, v in pairs(res.counts) do if v > 0 then table.insert(statuses, k) end end end
+  eq(count(S, "contributionReview"), 1, "one review after cap"); eq(S.records[GAME].record.summary, "s")
+  print("     statuses: " .. table.concat(statuses, ","))
+end)
+
+t("F5 Q2 owner-held: no write even with a newer contribution", function()
+  local S = base()
+  local owned = "at://did:plc:studio/games.gamesgamesgamesgames.game/s1"; S.put(owned, { name = "Owned" })
+  local u, c = contrib(S, "o1", SYS, { contributionType = "correction", subject = owned, createdAt = "2026-06-14T00:00:00Z", changes = { summary = "x" } })
+  contrib(S, "o2", SYS, { contributionType = "correction", subject = owned, createdAt = "2026-11-14T00:00:00Z", changes = { summary = "y" } })
+  job.input = { uri = u, cid = c }; local ok, res = run(S); assert(ok, res); eq(#S.writes, 0)
+end)
+
+t("F6 Q3 other account's newer contribution does not supersede", function()
+  local S = base()
+  local u, c = contrib(S, "x1", SYS, { contributionType = "correction", subject = GAME, createdAt = "2026-06-14T00:00:00Z", changes = { summary = "IGDB" } })
+  contrib(S, "x2", "did:plc:other", { contributionType = "correction", subject = GAME, createdAt = "2026-11-14T00:00:00Z", changes = { websites = {{ url = "https://x" }} } })
+  job.input = { uri = u, cid = c }; local ok, res = run(S); assert(ok, res); eq(res.status, "applied")
+end)
+
+t("F7 dry run never records a deferral", function()
+  local S = base({ missing_blobs = { b9 = true } }); S.clock_h = 0
+  local u, c = contrib(S, "d7", SYS, { contributionType = "correction", subject = GAME, changes = { media = {{ blob = "b9" }} } })
+  job.input = { uri = u, cid = c, dryRun = true }; assert(run(S))
+  eq(next(S.deferrals), nil, "deferral rows"); eq(#S.writes, 0)
+end)
+
 print(string.format("%d passed, %d failed", pass, fail))
 os.exit(fail == 0 and 0 or 1)

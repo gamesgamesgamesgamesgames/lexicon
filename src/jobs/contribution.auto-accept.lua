@@ -31,7 +31,8 @@
 -- sooner than AUTO_ACCEPT_MEDIA_RETRY_HOURS (default 6) later ("waiting" until
 -- then). After AUTO_ACCEPT_MEDIA_MAX_ATTEMPTS (default 3) deferred attempts,
 -- or AUTO_ACCEPT_MEDIA_MAX_DAYS (default 7) after the first, whichever comes
--- first, it is applied without its media and approved with the reason "media
+-- first, the full change is tried once more and, only if the blobs are still
+-- missing, applied without its media and approved with the reason "media
 -- unavailable in catalogue repo".
 --
 -- Note: IGDB is treated as authoritative for the fields it sends. An accepted
@@ -528,11 +529,6 @@ local function process(contribution_uri, opts)
     subject = "at://" .. pentaract.did .. "/" .. GAME_COLLECTION .. "/" .. create_rkey
     local game
     game, fields = effective_changes(changes, {})
-    if give_up_media and game.media ~= nil then
-      game.media = nil
-      fields = without_media(fields)
-      media_dropped = true
-    end
     game["$type"] = GAME_COLLECTION
     game.createdAt = now()
     -- IGDB games have always been published on import.
@@ -548,9 +544,19 @@ local function process(contribution_uri, opts)
     -- The slug goes in first so the game's index hook can see it, and comes
     -- out again if the create fails.
     local slug, inserted = assign_slug(changes.name, subject)
-    local ok, err = pcall(function()
+    local function create()
       return pentaract:create_record({ collection = GAME_COLLECTION, rkey = create_rkey, record = game })
-    end)
+    end
+    -- The full record is always tried first, even once the deferral cap has
+    -- been reached: the blobs may have arrived since the last attempt.
+    local ok, err = pcall(create)
+    if not ok and is_missing_blob_error(err) and game.media ~= nil and give_up_media then
+      game.media = nil
+      fields = without_media(fields)
+      result.fields = fields
+      media_dropped = true
+      ok, err = pcall(create)
+    end
     if not ok then
       if inserted then
         db.raw("DELETE FROM slugs WHERE slug = $1 AND uri = $2", { slug, subject })
@@ -587,24 +593,28 @@ local function process(contribution_uri, opts)
       })
     end
 
+    -- The full change is always tried first, even once the deferral cap has
+    -- been reached: the blobs may have arrived since the last attempt.
     local to_apply = fields
-    if give_up_media and contains(fields, "media") then
+    local ok, err = pcall(put, to_apply)
+    if not ok and is_missing_blob_error(err) and contains(to_apply, "media") and give_up_media then
       to_apply = without_media(fields)
       media_dropped = true
+      ok, err = true, nil
+      if #to_apply > 0 then
+        ok, err = pcall(put, to_apply)
+      end
     end
 
-    if #to_apply > 0 then
-      local ok, err = pcall(put, to_apply)
-      if not ok then
-        if not (is_missing_blob_error(err) and contains(to_apply, "media")) then
-          error(err)
-        end
-        -- The new media references blobs the catalogue PDS does not hold.
-        -- Nothing is applied: a partial apply that stays pending would be
-        -- re-applied by later sweeps over whatever changed since.
-        record_deferral(contribution_uri, err)
-        return { status = "deferred", reason = "media blobs are not in the catalogue repo", subject = subject, attempts = (deferral and deferral.attempts or 0) + 1 }
+    if not ok then
+      if not (is_missing_blob_error(err) and contains(to_apply, "media")) then
+        error(err)
       end
+      -- The new media references blobs the catalogue PDS does not hold.
+      -- Nothing is applied: a partial apply that stays pending would be
+      -- re-applied by later sweeps over whatever changed since.
+      record_deferral(contribution_uri, err)
+      return { status = "deferred", reason = "media blobs are not in the catalogue repo", subject = subject, attempts = (deferral and deferral.attempts or 0) + 1 }
     end
     result.fields = to_apply
   end
