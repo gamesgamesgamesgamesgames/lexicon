@@ -12,7 +12,7 @@ local function setup(opts)
   local S = { records = {}, slugs = {}, ext = {}, writes = {}, logs = {}, deferrals = {}, clock_h = 0, cid_n = 0, grant_status = opts.grant_status or "active", missing_blobs = opts.missing_blobs or {} }
   local function put(uri, rec) S.cid_n = S.cid_n + 1; S.records[uri] = { cid = "cid" .. S.cid_n, record = copy(rec), collection = uri:match("^at://[^/]+/([^/]+)/"), did = uri:match("^at://([^/]+)/") } end
   S.put = put
-  env = { PENTARACT_DID = P, AUTO_ACCEPT_DIDS = SYS .. ", did:plc:other", AUTO_ACCEPT_WRITES = opts.writes_env,
+  env = { PENTARACT_DID = P, AUTO_ACCEPT_DIDS = SYS .. ", did:plc:other", AUTO_ACCEPT_WRITES = opts.writes_env, AUTO_ACCEPT_SWEEP_SINCE = opts.since,
     AUTO_ACCEPT_MEDIA_MAX_ATTEMPTS = opts.max_attempts, AUTO_ACCEPT_MEDIA_MAX_DAYS = opts.max_days, AUTO_ACCEPT_MEDIA_RETRY_HOURS = opts.retry_hours }
   json = { decode = function(s) return copy(s) end, encode = function(t) return "<json>" end }
   toarray = function(t) return t end
@@ -115,7 +115,8 @@ local function setup(opts)
       local dids = dids_of(b[1]); local out = {}
       for u, r in pairs(S.records) do
         local d = S.deferrals[u]
-        if d and actionable(u, r, dids) and due(d) then table.insert(out, { uri = u, f = d.first }) end
+        local since_ok = not sql:find(">= $7", 1, true) or (r.record.createdAt or "") >= b[7]
+        if d and actionable(u, r, dids) and due(d) and since_ok then table.insert(out, { uri = u, f = d.first }) end
       end
       table.sort(out, function(x, y) return x.f < y.f end)
       while #out > b[6] do table.remove(out) end
@@ -128,7 +129,8 @@ local function setup(opts)
       local out = {}
       for u, r in pairs(S.records) do
         local d = S.deferrals[u]
-        if actionable(u, r, dids) and not (skips_not_due and d and not due(d)) and key(u, r) > (b[6] .. "\0" .. b[7]) then
+        local since_ok = not sql:find(">= $9", 1, true) or (r.record.createdAt or "") >= b[9]
+        if actionable(u, r, dids) and not (skips_not_due and d and not due(d)) and since_ok and key(u, r) > (b[6] .. "\0" .. b[7]) then
           table.insert(out, {uri=u, created=r.record.createdAt or "", k=key(u, r)})
         end
       end
@@ -744,6 +746,91 @@ t("incomplete newGames are left out of the sweep", function()
   contrib(S, "in2", SYS, { contributionType = "correction", subject = GAME, createdAt = "2026-07-01T00:00:00Z", changes = { summary = "reached" } })
   job.input = { sweep = true, limit = 1 }; local ok, res = run(S); assert(ok, res)
   eq(S.records[GAME].record.summary, "reached")
+end)
+
+local CUTOFF = "2026-11-14T00:00:00Z"
+local function old_and_new(S)
+  local G2 = "at://" .. P .. "/games.gamesgamesgamesgames.game/g2"
+  S.put(G2, { name = "Other" })
+  local old = contrib(S, "old1", SYS, { contributionType = "correction", subject = GAME, createdAt = "2026-06-14T06:19:44.848443775+00:00", changes = { summary = "June" } })
+  local new = contrib(S, "new1", SYS, { contributionType = "correction", subject = G2, createdAt = "2026-11-15T00:05:00.000Z", changes = { summary = "Nov" } })
+  return old, new, G2
+end
+
+t("AUTO_ACCEPT_SWEEP_SINCE makes a sweep skip older contributions", function()
+  local S = base({ since = CUTOFF })
+  local _, _, G2 = old_and_new(S)
+  job.input = { sweep = true, limit = 10, author = SYS }; local ok, res = run(S); assert(ok, res)
+  eq(S.records[GAME].record.summary, nil, "old one untouched"); eq(S.records[G2].record.summary, "Nov")
+  eq(count(S, "contributionReview"), 1)
+end)
+
+t("unset AUTO_ACCEPT_SWEEP_SINCE means no cutoff", function()
+  local S = base()
+  local _, _, G2 = old_and_new(S)
+  job.input = { sweep = true, limit = 10 }; local ok, res = run(S); assert(ok, res)
+  eq(S.records[GAME].record.summary, "June"); eq(S.records[G2].record.summary, "Nov")
+end)
+
+t("an empty AUTO_ACCEPT_SWEEP_SINCE also means no cutoff", function()
+  local S = base({ since = "" })
+  old_and_new(S)
+  job.input = { sweep = true, limit = 10 }; local ok, res = run(S); assert(ok, res)
+  eq(S.records[GAME].record.summary, "June")
+end)
+
+t("the cutoff also applies to the due-deferral phase", function()
+  local S = base({ missing_blobs = { b9 = true } })
+  local d = contrib(S, "olddef", SYS, { contributionType = "correction", subject = GAME, createdAt = "2026-06-14T00:00:00Z", changes = { summary = "x", media = {{ blob = "b9" }} } })
+  job.input = { uri = d }; assert(run(S))
+  S.missing_blobs.b9 = nil; S.clock_h = 7
+  env.AUTO_ACCEPT_SWEEP_SINCE = CUTOFF
+  job.input = { sweep = true, limit = 10 }
+  handle = nil; dofile(JOB)
+  local ok, res = pcall(handle); assert(ok, res)
+  eq(S.records[GAME].record.summary, nil, "old deferral held back")
+end)
+
+t("a chained job carries the cutoff it started with", function()
+  local S = base({ since = CUTOFF })
+  for i = 1, 3 do
+    local g = "at://" .. P .. "/games.gamesgamesgamesgames.game/s" .. i
+    S.put(g, { name = "S" .. i })
+    contrib(S, "sn" .. i, SYS, { contributionType = "correction", subject = g, createdAt = "2026-11-15T00:0" .. i .. ":00Z", changes = { summary = "n" .. i } })
+  end
+  job.input = { sweep = true, limit = 2, author = SYS }; local ok, res = run(S); assert(ok, res)
+  eq(#S.chained, 1); eq(S.chained[1].input.since, CUTOFF)
+end)
+
+t("a chained job's cutoff wins over a changed variable", function()
+  local S = base({ since = "" })
+  local _, _, G2 = old_and_new(S)
+  job.input = { sweep = true, limit = 10, continued = true, since = CUTOFF }; local ok, res = run(S); assert(ok, res)
+  eq(S.records[GAME].record.summary, nil); eq(S.records[G2].record.summary, "Nov")
+end)
+
+t("no cutoff means chained jobs carry none", function()
+  local S = base()
+  for i = 1, 3 do
+    local g = "at://" .. P .. "/games.gamesgamesgamesgames.game/u" .. i
+    S.put(g, { name = "U" .. i })
+    contrib(S, "un" .. i, SYS, { contributionType = "correction", subject = g, createdAt = "2026-07-0" .. i .. "T00:00:00Z", changes = { summary = "u" .. i } })
+  end
+  job.input = { sweep = true, limit = 2 }; local ok, res = run(S); assert(ok, res)
+  eq(S.chained[1].input.since, nil)
+end)
+
+t("the per-contribution path ignores AUTO_ACCEPT_SWEEP_SINCE", function()
+  local S = base({ since = CUTOFF })
+  local old = old_and_new(S)
+  job.input = { uri = old }; local ok, res = run(S); assert(ok, res)
+  eq(res.status, "applied"); eq(S.records[GAME].record.summary, "June")
+end)
+
+t("an invalid AUTO_ACCEPT_SWEEP_SINCE errors clearly", function()
+  local S = base({ since = "last tuesday" })
+  job.input = { sweep = true }; local ok, err = run(S)
+  eq(ok, false); assert(tostring(err):find("AUTO_ACCEPT_SWEEP_SINCE must be a datetime"), err)
 end)
 
 -- ===== igdb-review final pass =====

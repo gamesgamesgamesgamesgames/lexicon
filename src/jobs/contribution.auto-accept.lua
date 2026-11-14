@@ -18,6 +18,9 @@
 --     after         resume from the `after` cursor a previous sweep reported
 --     author        only this auto-accept account's contributions
 --     continued     set on chained jobs, which skip the deferral phase
+--     since         skip contributions created before this datetime; defaults
+--                   to env.AUTO_ACCEPT_SWEEP_SINCE (unset: no cutoff). Sweeps
+--                   only; a single-contribution job ignores it.
 --   writes          "full" (game + verification + review, the default) or
 --                   "minimal" (game + review). Falls back to
 --                   env.AUTO_ACCEPT_WRITES, then "full".
@@ -736,6 +739,24 @@ local function sweep_dids(input)
   return table.concat(dids, ",")
 end
 
+-- AUTO_ACCEPT_SWEEP_SINCE (or a chained job's `since`): sweeps skip
+-- contributions whose createdAt is earlier. Unset means no cutoff. It is a
+-- hold on the backlog, so sweeps don't process old contributions until
+-- someone clears it; per-contribution jobs ignore it.
+local function sweep_since(input)
+  local since = input.since
+  if since == nil or since == "" then
+    since = env.AUTO_ACCEPT_SWEEP_SINCE
+  end
+  if since == nil or since == "" then
+    return ""
+  end
+  if not tostring(since):match("^%d%d%d%d%-%d%d%-%d%dT%d%d:%d%d") then
+    error("AUTO_ACCEPT_SWEEP_SINCE must be a datetime like 2026-11-14T00:00:00Z, got " .. tostring(since))
+  end
+  return since
+end
+
 local function sweep(input, opts)
   local limit = math.floor(tonumber(input.limit) or DEFAULT_SWEEP_LIMIT)
   if limit < 1 then
@@ -747,6 +768,7 @@ local function sweep(input, opts)
   local dids = sweep_dids(input)
   local max_attempts, max_days, retry_hours = media_limits()
   local after_created, after_uri = parse_cursor(input.after)
+  local since = sweep_since(input)
 
   local counts = { applied = 0, noop = 0, superseded = 0, deferred = 0, waiting = 0, skipped = 0, failed = 0 }
   local failures = {}
@@ -779,8 +801,9 @@ local function sweep(input, opts)
       "SELECT c.uri FROM happyview_records c " ..
       "JOIN contribution_deferrals d ON d.uri = c.uri " ..
       "WHERE " .. SWEEP_ACTIONABLE .. "AND " .. DEFERRAL_DUE .. " " ..
+      "AND COALESCE(c.record::jsonb->>'createdAt', '') >= $7 " ..
       "ORDER BY d.first_deferred_at LIMIT $6",
-      { dids, env.PENTARACT_DID, retry_hours, max_attempts, max_days, limit }
+      { dids, env.PENTARACT_DID, retry_hours, max_attempts, max_days, limit, since }
     )
     for _, row in ipairs(due or {}) do
       if job.should_stop() then
@@ -797,8 +820,9 @@ local function sweep(input, opts)
     "WHERE " .. SWEEP_ACTIONABLE ..
     "AND NOT EXISTS (SELECT 1 FROM contribution_deferrals d WHERE d.uri = c.uri AND NOT " .. DEFERRAL_DUE .. ") " ..
     "AND (COALESCE(c.record::jsonb->>'createdAt', ''), c.uri) > ($6, $7) " ..
+    "AND COALESCE(c.record::jsonb->>'createdAt', '') >= $9 " ..
     "ORDER BY COALESCE(c.record::jsonb->>'createdAt', ''), c.uri LIMIT $8",
-    { dids, env.PENTARACT_DID, retry_hours, max_attempts, max_days, after_created, after_uri, limit }
+    { dids, env.PENTARACT_DID, retry_hours, max_attempts, max_days, after_created, after_uri, limit, since }
   )
 
   local last = input.after
@@ -826,6 +850,9 @@ local function sweep(input, opts)
       after = last,
       writes = input.writes,
       dryRun = input.dryRun,
+      -- The cutoff the chain started with, so changing the variable mid-chain
+      -- does not change what one sweep covers.
+      since = since ~= "" and since or nil,
     })
   end
 
