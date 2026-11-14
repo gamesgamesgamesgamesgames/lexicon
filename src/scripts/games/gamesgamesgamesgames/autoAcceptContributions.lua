@@ -42,6 +42,22 @@ function handle()
     error("writes must be 'full' or 'minimal'")
   end
 
+  -- One sweep per author at a time. A sweep chains follow-up jobs until it
+  -- drains, and the nightly caller may re-POST after a 5xx, so a sweep that
+  -- is already pending or running is reported instead of queued again.
+  local author = own_only and caller_did or ""
+  local existing = db.raw(
+    "SELECT id FROM happyview_jobs WHERE job_type = 'contribution.auto-accept' " ..
+    "AND status IN ('pending', 'running') " ..
+    "AND input::jsonb->>'sweep' = 'true' " ..
+    "AND COALESCE(input::jsonb->>'author', '') = $1 " ..
+    "ORDER BY created_at LIMIT 1",
+    { author }
+  )
+  if existing and #existing > 0 then
+    return { jobId = existing[1].id, alreadyQueued = true }
+  end
+
   local job_input = {
     sweep = true,
     author = own_only and caller_did or nil,
@@ -55,5 +71,5 @@ function handle()
     job_input.writes = input.writes
   end
 
-  return { jobId = jobs.create("contribution.auto-accept", job_input) }
+  return { jobId = jobs.create("contribution.auto-accept", job_input), alreadyQueued = false }
 end

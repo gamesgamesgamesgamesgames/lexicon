@@ -18,6 +18,8 @@ local function setup(opts)
   toarray = function(t) return t end
   now = function() return "2026-11-13T00:00:00Z" end
   log = function(m) table.insert(S.logs, m) end
+  S.chained = {}
+  jobs = { create = function(job_type, job_input) table.insert(S.chained, { type = job_type, input = job_input }); return "job-" .. #S.chained end }
   job = { input = opts.input or {}, should_stop = function() return false end, progress = function(p) S.progress = p end, warn = function(m) table.insert(S.logs, "WARN " .. m) end }
   local function check_blobs(rec)
     for _, m in ipairs(rec.media or {}) do
@@ -91,18 +93,47 @@ local function setup(opts)
       end
       return best and {{uri=best[2]}} or {}
     end
+    local function reviewed_by_p(u)
+      for _, r2 in pairs(S.records) do if r2.collection == "games.gamesgamesgamesgames.contributionReview" and r2.did == b[2] and r2.record.contribution.uri == u then return true end end
+      return false
+    end
+    local function actionable(u, r, dids)
+      if r.collection ~= "games.gamesgamesgamesgames.contribution" or not dids[r.did] or reviewed_by_p(u) then return false end
+      local subj = r.record.subject
+      if subj == nil or subj == "" then
+        local ch = r.record.changes or {}
+        return (ch.name or "") ~= "" and (ch.applicationType or "") ~= ""
+      end
+      local g = S.records[subj]
+      return g ~= nil and g.did == b[2] and g.collection == "games.gamesgamesgamesgames.game"
+    end
+    local function due(d)
+      return (S.clock_h - d.last) >= tonumber(b[3]) or d.attempts >= tonumber(b[4]) or (S.clock_h - d.first) / 24 >= tonumber(b[5])
+    end
+    if sql:find("JOIN contribution_deferrals d") then
+      assert(sql:find("g.did = %$2"), "sweep must require the subject to be in the Pentaract repo")
+      local dids = dids_of(b[1]); local out = {}
+      for u, r in pairs(S.records) do
+        local d = S.deferrals[u]
+        if d and actionable(u, r, dids) and due(d) then table.insert(out, { uri = u, f = d.first }) end
+      end
+      table.sort(out, function(x, y) return x.f < y.f end)
+      while #out > b[6] do table.remove(out) end
+      return out
+    end
     if sql:find("ORDER BY COALESCE") then
+      assert(sql:find("g.did = %$2"), "sweep must require the subject to be in the Pentaract repo")
       local dids = dids_of(b[1])
+      local skips_not_due = sql:find("FROM contribution_deferrals d WHERE d.uri = c.uri AND NOT", 1, true) ~= nil
       local out = {}
       for u, r in pairs(S.records) do
-        if r.collection == "games.gamesgamesgamesgames.contribution" and dids[r.did] and key(u, r) > (b[2] .. "\0" .. b[3]) then
-          local reviewed = false
-          for _, r2 in pairs(S.records) do if r2.collection == "games.gamesgamesgamesgames.contributionReview" and r2.did == b[4] and r2.record.contribution.uri == u then reviewed = true end end
-          if not reviewed then table.insert(out, {uri=u, created=r.record.createdAt or "", k=key(u, r)}) end
+        local d = S.deferrals[u]
+        if actionable(u, r, dids) and not (skips_not_due and d and not due(d)) and key(u, r) > (b[6] .. "\0" .. b[7]) then
+          table.insert(out, {uri=u, created=r.record.createdAt or "", k=key(u, r)})
         end
       end
       table.sort(out, function(a,c) return a.k < c.k end)
-      while #out > b[5] do table.remove(out) end
+      while #out > b[8] do table.remove(out) end
       return out
     end
     error("unmocked sql: " .. sql)
@@ -353,14 +384,12 @@ t("sweep processes pending system contributions, skips reviewed, reports cursor"
   eq(res2.counts.applied, 0); eq(res2.counts.noop, 0)
 end)
 
-t("sweep isolates per-item failures (swap conflict) but stops on grant errors", function()
+t("sweep leaves out contributions it would only skip, and reaches the rest", function()
   local S = base()
   contrib(S, "t1", SYS, { contributionType = "correction", subject = "at://" .. P .. "/games.gamesgamesgamesgames.game/missing", changes = { summary = "1" } })
   contrib(S, "t2", SYS, { contributionType = "correction", subject = GAME, changes = { summary = "2" } })
   job.input = { sweep = true, limit = 1 }; local ok, res = run(S); assert(ok, res)
-  eq(res.counts.skipped, 1); eq(res.done, false)
-  job.input = { sweep = true, limit = 10, after = res.after }; local ok2, res2 = run(S); assert(ok2, res2)
-  eq(res2.counts.applied, 1)
+  eq(res.counts.skipped, 0); eq(res.counts.applied, 1); eq(S.records[GAME].record.summary, "2")
 end)
 
 t("sweep counts a failed put and keeps going", function()
@@ -657,6 +686,66 @@ t("a sweep pinned to an account that is not auto-accept errors", function()
   eq(ok, false); assert(tostring(err):find("not an auto%-accept account"), err)
 end)
 
+t("a full sweep window chains a job that continues after its cursor", function()
+  local S = base()
+  local games = {}
+  for i = 1, 3 do
+    local g = "at://" .. P .. "/games.gamesgamesgamesgames.game/c" .. i
+    S.put(g, { name = "G" .. i }); games[i] = g
+    contrib(S, "ch" .. i, SYS, { contributionType = "correction", subject = g, createdAt = "2026-07-0" .. i .. "T00:00:00Z", changes = { summary = "s" .. i } })
+  end
+  job.input = { sweep = true, limit = 2, author = SYS, writes = "minimal" }; local ok, res = run(S); assert(ok, res)
+  eq(res.done, false); eq(#S.chained, 1)
+  local nxt = S.chained[1].input
+  eq(S.chained[1].type, "contribution.auto-accept"); eq(nxt.continued, true); eq(nxt.author, SYS); eq(nxt.after, res.after); eq(nxt.limit, 2); eq(nxt.writes, "minimal")
+  job.input = nxt; local ok2, res2 = run(S); assert(ok2, res2)
+  eq(res2.done, true); eq(#S.chained, 1, "no further chain"); eq(S.records[games[3]].record.summary, "s3")
+end)
+
+t("a sweep that is not full does not chain", function()
+  local S = base()
+  contrib(S, "nc1", SYS, { contributionType = "correction", subject = GAME, changes = { summary = "x" } })
+  job.input = { sweep = true, limit = 10 }; local ok, res = run(S); assert(ok, res)
+  eq(res.done, true); eq(#S.chained, 0)
+end)
+
+t("due deferrals are retried first, before older pending contributions", function()
+  local S = base({ missing_blobs = { b9 = true } })
+  local order = {}
+  local G2 = "at://" .. P .. "/games.gamesgamesgamesgames.game/g2"
+  S.put(G2, { name = "Other" })
+  local d = contrib(S, "def", SYS, { contributionType = "correction", subject = GAME, createdAt = "2026-11-01T00:00:00Z", changes = { media = {{ blob = "b9" }} } })
+  job.input = { uri = d }; assert(run(S))
+  contrib(S, "old", SYS, { contributionType = "correction", subject = G2, createdAt = "2026-06-01T00:00:00Z", changes = { summary = "old" } })
+  S.missing_blobs.b9 = nil; S.clock_h = 7
+  local repo = linked_repos.get(P); local orig = repo.put_record
+  repo.put_record = function(self, o) table.insert(order, o.rkey); return orig(self, o) end
+  job.input = { sweep = true, limit = 1 }
+  handle = nil; dofile(JOB); linked_repos.get = function() return repo end
+  local ok, res = pcall(handle); assert(ok, res)
+  eq(order[1], "g1", "deferral first"); eq(order[2], "g2")
+end)
+
+t("a deferral that is not due stays out of the window", function()
+  local S = base({ missing_blobs = { b9 = true } })
+  local d = contrib(S, "nd", SYS, { contributionType = "correction", subject = GAME, createdAt = "2026-06-01T00:00:00Z", changes = { media = {{ blob = "b9" }} } })
+  job.input = { uri = d }; assert(run(S))
+  local G2 = "at://" .. P .. "/games.gamesgamesgamesgames.game/g2"
+  S.put(G2, { name = "Other" })
+  contrib(S, "x2", SYS, { contributionType = "correction", subject = G2, createdAt = "2026-07-01T00:00:00Z", changes = { summary = "reached" } })
+  S.clock_h = 1
+  job.input = { sweep = true, limit = 1 }; local ok, res = run(S); assert(ok, res)
+  eq(res.counts.waiting, 0); eq(S.records[G2].record.summary, "reached")
+end)
+
+t("incomplete newGames are left out of the sweep", function()
+  local S = base()
+  contrib(S, "in1", SYS, { contributionType = "newGame", createdAt = "2026-06-01T00:00:00Z", changes = { name = "No Type" } })
+  contrib(S, "in2", SYS, { contributionType = "correction", subject = GAME, createdAt = "2026-07-01T00:00:00Z", changes = { summary = "reached" } })
+  job.input = { sweep = true, limit = 1 }; local ok, res = run(S); assert(ok, res)
+  eq(S.records[GAME].record.summary, "reached")
+end)
+
 -- ===== igdb-review final pass =====
 local function puts(S) local n = 0 for _, w in ipairs(S.writes) do if w.op == "put" then n = n + 1 end end return n end
 t("F1 deferral applies nothing (no partial put), later edit survives sweeps", function()
@@ -716,6 +805,16 @@ t("F7 dry run never records a deferral", function()
   local u, c = contrib(S, "d7", SYS, { contributionType = "correction", subject = GAME, changes = { media = {{ blob = "b9" }} } })
   job.input = { uri = u, cid = c, dryRun = true }; assert(run(S))
   eq(next(S.deferrals), nil, "deferral rows"); eq(#S.writes, 0)
+end)
+
+-- ===== igdb-review on #18 =====
+t("H1 permanently-pending old rows fill a fixed-size oldest-first sweep forever", function()
+  local S = base()
+  local owned = "at://did:plc:studio/games.gamesgamesgamesgames.game/s1"; S.put(owned, { name = "Owned" })
+  for i = 1, 5 do contrib(S, "own" .. i, SYS, { contributionType = "correction", subject = owned, createdAt = "2026-06-0" .. i .. "T00:00:00Z", changes = { summary = "v" .. i } }) end
+  contrib(S, "late", SYS, { contributionType = "correction", subject = GAME, createdAt = "2026-11-14T00:00:00Z", changes = { summary = "needs a retry" } })
+  for night = 1, 3 do job.input = { sweep = true, limit = 5, author = SYS }; local ok, res = run(S); assert(ok, res) end
+  eq(S.records[GAME].record.summary, "needs a retry", "newer pending contribution reached")
 end)
 
 print(string.format("%d passed, %d failed", pass, fail))

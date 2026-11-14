@@ -5,7 +5,7 @@
 	"defs": {
 		"main": {
 			"type": "procedure",
-			"description": "Queue a job that applies pending contributions from auto-accept accounts to the catalogue, oldest first. Admins sweep every auto-accept account; an auto-accept account can sweep only its own contributions.",
+			"description": "Queue a job that applies pending contributions from auto-accept accounts to the catalogue, oldest first. Admins sweep every auto-accept account; an auto-accept account can sweep only its own contributions. Only one sweep per account runs at a time.",
 			"input": {
 				"encoding": "application/json",
 				"schema": {
@@ -43,7 +43,11 @@
 					"type": "object",
 					"required": ["jobId"],
 					"properties": {
-						"jobId": { "type": "string", "maxLength": 128 }
+						"jobId": { "type": "string", "maxLength": 128 },
+						"alreadyQueued": {
+							"type": "boolean",
+							"description": "True when a sweep for the same account was already pending or running; jobId is that sweep."
+						}
 					}
 				}
 			}
