@@ -61,6 +61,11 @@ function M.install(opts)
   end
   db = {
     raw = function(sql, b)
+      if sql:find("FROM happyview_jobs", 1, true) then
+        S.job_queries = (S.job_queries or 0) + 1
+        if sql:find("'catalogue.reindex'", 1, true) then return opts.catalogue_jobs or {} end
+        return opts.search_jobs or {}
+      end
       if sql:find("FROM happyview_records", 1, true) then
         local rows = {}
         local function row(u)
@@ -88,11 +93,16 @@ function M.install(opts)
       end
       error("unexpected sql " .. sql)
     end,
+    -- Pages like HappyView's: at most `limit` (capped at 100) per call, with
+    -- a cursor while more remain.
     backlinks = function(o)
       local list = (opts.backlinks or {})[o.uri] or {}
+      local limit = math.min(o.limit or 20, 100)
+      local start = tonumber(o.cursor or "0") or 0
       local recs = {}
-      for _, u in ipairs(list) do recs[#recs + 1] = { uri = u } end
-      return { records = recs }
+      for i = start + 1, math.min(#list, start + limit) do recs[#recs + 1] = { uri = list[i] } end
+      local cursor = (start + limit < #list) and tostring(start + limit) or nil
+      return { records = recs, cursor = cursor }
     end,
   }
 

@@ -239,7 +239,9 @@ local function game_collections(target_uri)
   return uris
 end
 
--- Upsert the record's external IDs into the external_ids lookup table.
+-- Upsert the record's external IDs into the external_ids lookup table. A row
+-- that already points at this URI is left alone, so a full reindex does not
+-- rewrite (and bloat) every row in the table.
 local function upsert_external_ids(target_uri, record)
   local ids = record.externalIds
   if type(ids) ~= "table" then return end
@@ -247,7 +249,7 @@ local function upsert_external_ids(target_uri, record)
     local value = ids[service]
     if value and value ~= "" then
       db.raw(
-        "INSERT INTO external_ids (service, external_id, uri) VALUES ($1, $2, $3) ON CONFLICT (service, external_id) DO UPDATE SET uri = $3",
+        "INSERT INTO external_ids (service, external_id, uri) VALUES ($1, $2, $3) ON CONFLICT (service, external_id) DO UPDATE SET uri = $3 WHERE external_ids.uri IS DISTINCT FROM EXCLUDED.uri",
         { service, value, target_uri }
       )
     end
@@ -398,7 +400,8 @@ end
 -- Input:
 --   uris      optional: only these game URIs (at most 5000). Without it the
 --             job walks every game in URI order.
---   after     scan position, set by the job when it chains
+--   after     scan position: start after this URI. Set by the job when it
+--             chains; pass the `after` of a stopped run's result to resume it.
 --   maxGames  optional: stop after this many games across the whole chain
 --   dryRun    compare only
 --   delay     seconds to wait between batches (default 0.5)
@@ -446,7 +449,9 @@ local function same_set(a, b)
 end
 
 -- Names of the built document's fields that Meilisearch has differently.
--- Fields only Meilisearch has are ignored: other writers add some.
+-- Fields only Meilisearch has do not make a document stale on their own (the
+-- backfill wrote some that the builder doesn't). A document that is stale for
+-- any other reason is still replaced in full, which drops them.
 local function differing_fields(built, actual)
   local fields = {}
   for k, v in pairs(built) do
@@ -462,11 +467,13 @@ local function new_totals()
   return {
     counts = { current = 0, missing = 0, gutted = 0, stale = 0, pushed = 0, failed = 0, invalid = 0, notInIndex = 0 },
     staleFields = {},
-    samples = { missing = {}, gutted = {}, stale = {} },
+    samples = { missing = {}, gutted = {}, stale = {}, failed = {} },
   }
 end
 
 local function sample(totals, kind, uri)
+  totals.samples = totals.samples or {}
+  totals.samples[kind] = totals.samples[kind] or {}
   local list = totals.samples[kind]
   if #list < SAMPLE_CAP then table.insert(list, uri) end
 end
@@ -538,6 +545,7 @@ local function process_batch(rows, totals, dry_run)
   local fetched, found = pcall(fetch_by_uri, uris)
   if not fetched then
     c.failed = c.failed + #games
+    for _, u in ipairs(uris) do sample(totals, "failed", u) end
     return false, found
   end
   local to_push = {}
@@ -569,6 +577,7 @@ local function process_batch(rows, totals, dry_run)
     end)
     if not ok then
       c.failed = c.failed + 1
+      sample(totals, "failed", g.uri)
       job.warn("failed " .. g.uri .. ": " .. tostring(err))
     end
   end
@@ -583,6 +592,7 @@ local function process_batch(rows, totals, dry_run)
   local pushed, err = pcall(push_game_docs, docs)
   if not pushed then
     c.failed = c.failed + #docs
+    for _, p in ipairs(to_push) do sample(totals, "failed", p.game.uri) end
     return false, err
   end
   c.pushed = c.pushed + #docs

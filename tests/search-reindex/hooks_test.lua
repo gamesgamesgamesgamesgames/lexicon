@@ -55,20 +55,49 @@ t("collection.lua merges collections into the game document instead of replacing
   eq(d.name, OOT.name); eq(d.type, "game"); eq(#d.collections, 2)
 end)
 
+t("collection.lua writes the full document for a gutted game that is in the index", function()
+  local id = F.doc_id(GAME)
+  local meili = { [id] = { id = id, collections = { OTHER } } }
+  local ok, res, S = hook("collection.lua", { meili = meili, records = { [GAME] = { did = "did:web:cat", record = OOT } },
+    backlinks = { [GAME] = { OTHER } } }, "create", COLL, { name = "Zelda", games = { GAME } })
+  assert(ok, res)
+  eq(S.puts, 0)
+  local d = S.meili[id]
+  eq(d.type, "game"); eq(d.name, OOT.name); eq(d.uri, GAME); eq(#d.collections, 2)
+end)
+
+t("collection.lua leaves a game that is not in the index alone, so no stub is created", function()
+  local ok, res, S = hook("collection.lua", {}, "create", COLL, { name = "Zelda", games = { GAME } })
+  assert(ok, res)
+  eq(S.meili[F.doc_id(GAME)], nil); eq(S.puts, 0)
+end)
+
+t("collection.lua pages through backlinks past 100 collections", function()
+  local id = F.doc_id(GAME)
+  local many = {}
+  for i = 1, 250 do many[i] = "at://did:plc:c/games.gamesgamesgamesgames.collection/c" .. i end
+  local meili = { [id] = { id = id, type = "game", uri = GAME, name = OOT.name } }
+  local ok, res, S = hook("collection.lua", { meili = meili, backlinks = { [GAME] = many } }, "create", COLL,
+    { name = "Zelda", games = { GAME } })
+  assert(ok, res); eq(#S.meili[id].collections, 251)
+end)
+
 t("collection.lua raises when Meilisearch refuses the write", function()
-  local ok, err = hook("collection.lua", { fail_writes = 1 }, "create", COLL, { name = "Zelda", games = { GAME } })
+  local ok, err = hook("collection.lua", { fail_writes = 1 }, "create", COLL, { name = "Zelda" })
   eq(ok, false); assert(tostring(err):find("Meilisearch answered 500", 1, true), err)
 end)
 
 -- reindexSearchGames ---------------------------------------------------------
 
-local function call(caller, body, active)
+local function call(caller, body, active, catalogue)
   local created
   env = { ADMIN_DIDS = "did:plc:admin", REINDEX_DIDS = "did:plc:bot" }
   caller_did, input = caller, body
   jobs = { create = function(ty, inp) created = { type = ty, input = inp }; return "job-1" end }
   db = { raw = function(sql)
-    assert(sql:find("job_type = 'search.reindex'", 1, true) and sql:find("status IN ('pending', 'running')", 1, true), sql)
+    assert(sql:find("status IN ('pending', 'running')", 1, true), sql)
+    if sql:find("job_type = 'catalogue.reindex'", 1, true) then return catalogue or {} end
+    assert(sql:find("job_type = 'search.reindex'", 1, true), sql)
     return active or {}
   end }
   handle = nil
@@ -106,6 +135,21 @@ end)
 t("a running reindex is reported instead of starting another", function()
   local ok, res, created = call("did:plc:admin", {}, { { id = "job-0", status = "running" } })
   assert(ok, res); eq(res.alreadyQueued, true); eq(res.jobId, "job-0"); eq(created, nil)
+end)
+
+t("a pending or running catalogue reindex blocks a search reindex", function()
+  local ok, err, created = call("did:plc:admin", {}, nil, { { id = "job-9", status = "running" } })
+  eq(ok, false); assert(tostring(err):find("catalogue reindex (job-9) is running", 1, true), err); eq(created, nil)
+end)
+
+t("after resumes a full scan", function()
+  local ok, res, created = call("did:plc:admin", { after = GAME, dryRun = true })
+  assert(ok, res); eq(created.input.after, GAME)
+end)
+
+t("after must be a game URI and cannot be combined with uris", function()
+  eq((call("did:plc:admin", { after = COLL })), false)
+  eq((call("did:plc:admin", { after = GAME, uris = { GAME } })), false)
 end)
 
 print(("%d passed, %d failed"):format(pass, fail))
