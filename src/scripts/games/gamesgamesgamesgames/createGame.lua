@@ -1,6 +1,8 @@
 -- Accented Latin letters, grouped by the plain letter each one decomposes to
 -- (its Unicode NFD form without the combining marks). Slugs fold them the
--- way the sync's old slugify did: "Löwenzahn" becomes "lowenzahn".
+-- way the sync's old slugify did: "Löwenzahn" becomes "lowenzahn". The last
+-- lines are letters with no decomposition, spelled out: "Straße" becomes
+-- "strasse", "Łódź" becomes "lodz".
 local ACCENT_FOLD = {}
 for letter, accented in ([[
 a ÀÁÂÃÄÅàáâãäåĀāĂăĄąǍǎǞǟǠǡǺǻȀȁȂȃȦȧḀḁẠạẢảẤấẦầẨẩẪẫẬậẮắẰằẲẳẴẵẶặ
@@ -28,7 +30,14 @@ w ŴŵẀẁẂẃẄẅẆẇẈẉẘ
 x ẊẋẌẍ
 y ÝýÿŶŷŸȲȳẎẏẙỲỳỴỵỶỷỸỹ
 z ŹźŻżŽžẐẑẒẓẔẕ
-]]):gmatch("(%a) (%S+)") do
+ae Ææ
+d Đđ
+l Łł
+o Øø
+oe Œœ
+ss ß
+th Þþ
+]]):gmatch("(%a+) (%S+)") do
   for ch in accented:gmatch("[\xC2-\xF4][\x80-\xBF]*") do
     ACCENT_FOLD[ch] = letter
   end
