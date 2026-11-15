@@ -1,0 +1,60 @@
+{
+	"$type": "com.atproto.lexicon.schema",
+	"lexicon": 1,
+	"id": "games.gamesgamesgamesgames.reindexCatalogueGames",
+	"defs": {
+		"main": {
+			"type": "procedure",
+			"description": "Queue a job that brings the index rows of these catalogue games back in line with the catalogue PDS. The catalogue repo itself is not changed. Admins only. One reindex runs at a time.",
+			"input": {
+				"encoding": "application/json",
+				"schema": {
+					"type": "object",
+					"required": ["uris"],
+					"properties": {
+						"uris": {
+							"type": "array",
+							"minLength": 1,
+							"maxLength": 5000,
+							"items": { "type": "string", "format": "at-uri" },
+							"description": "Catalogue game URIs. The job works through them 200 at a time."
+						},
+						"dryRun": {
+							"type": "boolean",
+							"default": false,
+							"description": "Compare only, and report how many would be reindexed."
+						},
+						"perSecond": {
+							"type": "integer",
+							"minimum": 1,
+							"maximum": 5,
+							"default": 2,
+							"description": "How many records to process per second, to go easy on the catalogue PDS."
+						}
+					}
+				}
+			},
+			"output": {
+				"encoding": "application/json",
+				"schema": {
+					"type": "object",
+					"required": ["jobId", "count"],
+					"properties": {
+						"jobId": { "type": "string", "maxLength": 128 },
+						"count": { "type": "integer", "description": "How many URIs were queued; 0 when alreadyQueued is true." },
+						"alreadyQueued": {
+							"type": "boolean",
+							"description": "True when a reindex was already pending or running; jobId is that job, and nothing new was queued."
+						},
+						"status": {
+							"type": "string",
+							"maxLength": 32,
+							"knownValues": ["pending", "running"],
+							"description": "The existing job's status, when alreadyQueued is true."
+						}
+					}
+				}
+			}
+		}
+	}
+}
