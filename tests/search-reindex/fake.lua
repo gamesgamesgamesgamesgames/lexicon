@@ -100,6 +100,8 @@ function M.install(opts)
         return rows
       end
       if sql:find("FROM publisher_counts", 1, true) then
+        if opts.publisher_counts_missing then error('db.raw query failed: relation "publisher_counts" does not exist') end
+        if opts.db_down then error("db.raw query failed: connection refused") end
         for i = 2, #b do
           if ((opts.publisher_counts or {})[b[i]] or 0) >= b[1] then return { { ok = 1 } } end
         end

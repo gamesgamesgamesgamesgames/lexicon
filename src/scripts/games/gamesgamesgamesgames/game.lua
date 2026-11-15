@@ -118,7 +118,9 @@ local APP_TYPE_RANK = {
 
 -- Rating-to-description mapping for embedder template.
 -- Source of truth: docs/superpowers/specs/2026-03-22-semantic-search-design.md
--- Duplicate exists in: meilisearch-backfill/meilisearch-backfill.ts
+-- meilisearch-backfill.ts carries an older copy. That script is superseded
+-- by the search.reindex job and should not be rerun, so its copy is not kept
+-- in step.
 local RATING_DESCRIPTIONS = {
   ["esrb:RP"] = "ESRB rating pending (not yet rated, North America)",
   ["esrb:EC"] = "Rated ESRB EC for Early Childhood (ages 3+, North America)",
@@ -264,15 +266,27 @@ local function upsert_external_ids(target_uri, record)
   end
 end
 
--- Official and popularity signals ----------------------------------------
+-- Official, origin and popularity signals ---------------------------------
 --
--- officialScore (0 to 4) ranks real releases above fan games, mods and
--- unlicensed games that share their names. 0 means "not official": the game is
--- a mod or fork, its keywords call it unofficial or a fan game, or Wikidata
--- classes it as a mod, fan game or unlicensed game. Anything else starts at 1
--- and gains a point for each of:
+-- These signals apply to catalogue games only: documents for games from any
+-- other repo get officialScore 0, popularityBucket 0 and no origin.
+--
+-- origin says where a game comes from:
+--   fan         fan games, ROM hacks, fan translations, demakes, fan remakes,
+--               mods (IGDB type mod), Wikidata mod / fan game classes
+--   unofficial  unofficial ports, bootlegs, unlicensed games, clones,
+--               forks (IGDB type fork), Wikidata "unlicensed video game"
+--   homebrew    homebrew releases
+--   official    none of the above, and at least one positive signal: an
+--               established publisher, an age rating, or a Wikidata item
+-- A game with no signal either way has no origin. applicationType stays
+-- IGDB's own type; origin sits beside it.
+--
+-- officialScore (0 to 4) ranks real releases above fan works that share
+-- their names. It is 0 when origin is fan, unofficial or homebrew. Otherwise
+-- it starts at 1 and gains a point for each of:
 --   * a publisher credit from an organization that publishes at least
---     MIN_PUBLISHED_GAMES games in the catalogue (fan teams publish one or two);
+--     MIN_PUBLISHED_GAMES catalogue games (fan teams publish one or two);
 --   * an age rating (other than ESRB's "rating pending");
 --   * a Wikidata item with at least one sitelink or a publisher.
 --
@@ -283,21 +297,63 @@ end
 
 local CREDIT_NSID = "games.gamesgamesgamesgames.org.credit"
 local MIN_PUBLISHED_GAMES = 10
-local NOT_OFFICIAL_TYPES = { mod = true, fork = true }
-local FAN_KEYWORDS = {
-  "unofficial", "fangame", "fan game", "fan-game", "fan made", "fan-made",
-  "romhack", "rom hack",
+
+local TYPE_ORIGIN = { mod = "fan", fork = "unofficial" }
+
+local WIKIDATA_ORIGIN = {
+  Q865493 = "fan",          -- video game mod
+  Q61456428 = "fan",        -- total conversion mod
+  Q1395577 = "fan",         -- fan game
+  Q123012190 = "unofficial", -- unlicensed video game
 }
 
-local function has_fan_keyword(keywords)
-  if type(keywords) ~= "table" then return false end
+-- Keywords as IGDB spells them, lowercased. Exact matches, plus the suffix
+-- forms IGDB uses for franchise-specific tags ("pokemon fangame",
+-- "sonic rom hack", "tetris clone") and the "fan translation - <language>"
+-- family. Deliberately absent: "parody" (parodies are often real releases)
+-- and "fandisc" (an official product type).
+local KEYWORD_ORIGIN = {
+  ["fangame"] = "fan", ["fan game"] = "fan", ["fan-game"] = "fan",
+  ["fanmade"] = "fan", ["fan made"] = "fan", ["fan-made"] = "fan",
+  ["fan remake"] = "fan", ["fan translation"] = "fan",
+  ["romhack"] = "fan", ["rom hack"] = "fan",
+  ["demake"] = "fan", ["unofficial demake"] = "fan", ["unofficial remake"] = "fan",
+  ["unofficial"] = "unofficial", ["unofficial port"] = "unofficial",
+  ["bootleg"] = "unofficial", ["unlicensed"] = "unofficial", ["unlicensed game"] = "unofficial",
+  ["clone"] = "unofficial",
+  ["homebrew"] = "homebrew",
+}
+local KEYWORD_SUFFIX_ORIGIN = {
+  { " fangame", "fan" }, { " fan game", "fan" }, { " rom hack", "fan" },
+  { " clone", "unofficial" }, { " homebrew", "homebrew" },
+}
+local KEYWORD_PREFIX_ORIGIN = {
+  { "fan translation", "fan" },
+}
+
+-- When signals disagree, the strongest claim wins.
+local ORIGIN_RANK = { fan = 3, unofficial = 2, homebrew = 1 }
+
+local function stronger(a, b)
+  if not a then return b end
+  if not b then return a end
+  return ORIGIN_RANK[b] > ORIGIN_RANK[a] and b or a
+end
+
+local function keyword_origin(keywords)
+  if type(keywords) ~= "table" then return nil end
+  local found
   for _, k in ipairs(keywords) do
     local lower = type(k) == "string" and k:lower() or ""
-    for _, fan in ipairs(FAN_KEYWORDS) do
-      if lower == fan then return true end
+    found = stronger(found, KEYWORD_ORIGIN[lower])
+    for _, pair in ipairs(KEYWORD_SUFFIX_ORIGIN) do
+      if #lower > #pair[1] and lower:sub(-#pair[1]) == pair[1] then found = stronger(found, pair[2]) end
+    end
+    for _, pair in ipairs(KEYWORD_PREFIX_ORIGIN) do
+      if lower:sub(1, #pair[1]) == pair[1] then found = stronger(found, pair[2]) end
     end
   end
-  return false
+  return found
 end
 
 local function has_age_rating(record)
@@ -310,8 +366,27 @@ local function has_age_rating(record)
   return false
 end
 
--- True when a publisher credited on this game publishes at least
--- MIN_PUBLISHED_GAMES games, per the publisher_counts table.
+-- db.raw for a table a separate DDL step creates. Until the table exists the
+-- lookup reports nothing, so this builder can ship before it; any other
+-- database error is raised as usual.
+local function optional_table_raw(tbl, sql, binds)
+  local ok, rows = pcall(db.raw, sql, binds)
+  if not ok then
+    local msg = tostring(rows)
+    if msg:find(tbl, 1, true) and msg:find("does not exist", 1, true) then
+      return {}
+    end
+    error(rows, 0)
+  end
+  return rows or {}
+end
+
+local function did_of_uri(u)
+  return type(u) == "string" and u:match("^at://([^/]+)/") or nil
+end
+
+-- True when a catalogue publisher credit on this game names an organization
+-- that publishes at least MIN_PUBLISHED_GAMES games, per publisher_counts.
 local function has_major_publisher(target_uri)
   local orgs, cursor = {}, nil
   for _ = 1, 5 do
@@ -320,7 +395,7 @@ local function has_major_publisher(target_uri)
     for _, credit in ipairs(page.records) do
       local org = type(credit.org) == "table" and credit.org.uri
       local game = type(credit.game) == "table" and credit.game.uri
-      if org and game == target_uri and type(credit.roles) == "table" then
+      if org and game == target_uri and did_of_uri(credit.uri) == env.PENTARACT_DID and type(credit.roles) == "table" then
         for _, role in ipairs(credit.roles) do
           if role == "publisher" then table.insert(orgs, org); break end
         end
@@ -332,29 +407,20 @@ local function has_major_publisher(target_uri)
   if #orgs == 0 then return false end
   local marks, binds = {}, { MIN_PUBLISHED_GAMES }
   for i, org in ipairs(orgs) do marks[i] = "$" .. (i + 1); binds[i + 1] = org end
-  local rows = db.raw(
+  local rows = optional_table_raw("publisher_counts",
     "SELECT 1 AS ok FROM publisher_counts WHERE games >= $1 AND org_uri IN (" .. table.concat(marks, ", ") .. ") LIMIT 1",
-    binds
-  )
-  return rows ~= nil and #rows > 0
+    binds)
+  return #rows > 0
 end
 
--- The game's wikidata_games row, or nil. Until the wikidata.sync tables exist
--- the lookup reports nothing, so this builder can ship before them; any other
--- database error is raised as usual.
+-- The game's wikidata_games row, or nil.
 local function wikidata_row(record)
   local igdb = type(record.externalIds) == "table" and record.externalIds.igdb
   if not igdb or igdb == "" then return nil end
-  local ok, rows = pcall(db.raw,
+  local rows = optional_table_raw("wikidata_games",
     "SELECT sitelinks, has_publisher, veto_class FROM wikidata_games WHERE igdb_id = $1 LIMIT 1",
     { tostring(igdb) })
-  if not ok then
-    if tostring(rows):find("wikidata_games", 1, true) and tostring(rows):find("does not exist", 1, true) then
-      return nil
-    end
-    error(rows, 0)
-  end
-  return rows and rows[1] or nil
+  return rows[1]
 end
 
 local function popularity_bucket(sitelinks)
@@ -363,19 +429,23 @@ local function popularity_bucket(sitelinks)
   return math.min(10, math.floor(math.log(1 + 5 * n, 2)))
 end
 
--- Returns officialScore, popularityBucket.
-local function official_signals(target_uri, record)
+-- Returns officialScore, popularityBucket, origin (nil when unknown).
+local function official_signals(target_uri, target_did, record)
+  if not env.PENTARACT_DID or target_did ~= env.PENTARACT_DID then
+    return 0, 0, nil
+  end
   local wd = wikidata_row(record)
   local popularity = popularity_bucket(wd and wd.sitelinks)
-  if NOT_OFFICIAL_TYPES[record.applicationType] or has_fan_keyword(record.keywords)
-    or (wd and wd.veto_class and wd.veto_class ~= "") then
-    return 0, popularity
+  local origin = stronger(stronger(TYPE_ORIGIN[record.applicationType], keyword_origin(record.keywords)),
+    wd and WIKIDATA_ORIGIN[wd.veto_class or ""] or nil)
+  if origin then
+    return 0, popularity, origin
   end
   local score = 1
   if has_major_publisher(target_uri) then score = score + 1 end
   if has_age_rating(record) then score = score + 1 end
   if wd and ((tonumber(wd.sitelinks) or 0) > 0 or (tonumber(wd.has_publisher) or 0) > 0) then score = score + 1 end
-  return score, popularity
+  return score, popularity, score > 1 and "official" or nil
 end
 
 -- Build the index document for one game, without writing anything.
@@ -428,7 +498,7 @@ local function build_game_doc(target_uri, target_did, record)
     ageRatings = {}
   }
 
-  doc.officialScore, doc.popularityBucket = official_signals(target_uri, record)
+  doc.officialScore, doc.popularityBucket, doc.origin = official_signals(target_uri, target_did, record)
 
   if type(record.externalIds) == "table" then
     for _, pair in ipairs(STORE_ID_FIELDS) do

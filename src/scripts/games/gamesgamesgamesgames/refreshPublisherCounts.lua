@@ -1,7 +1,8 @@
 -- Queues a search.publisher-counts job, which recounts the games each
 -- publisher is credited on. The search builder's officialScore reads those
 -- counts. Meant to run weekly, before a search.reindex. Admins only, plus any
--- account an admin lists in REINDEX_DIDS (unset by default).
+-- account an admin lists in MAINTENANCE_DIDS (the scheduled maintenance
+-- account; unset by default).
 
 local function did_set(raw)
   local dids = {}
@@ -12,7 +13,7 @@ local function did_set(raw)
 end
 
 function handle()
-  if not did_set(env.ADMIN_DIDS)[caller_did] and not did_set(env.REINDEX_DIDS)[caller_did] then
+  if not did_set(env.ADMIN_DIDS)[caller_did] and not did_set(env.MAINTENANCE_DIDS)[caller_did] then
     error("unauthorized: only admins can refresh publisher counts")
   end
 

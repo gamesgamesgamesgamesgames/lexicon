@@ -1,7 +1,8 @@
 -- Queues a search.reindex job, which finds games whose Meilisearch document
 -- is missing, gutted or stale and writes the document game.lua would write.
--- Admins only, plus any account an admin lists in REINDEX_DIDS (unset by
--- default). Run it with dryRun first: that reads and compares only.
+-- Admins only, plus the scheduled maintenance account in MAINTENANCE_DIDS
+-- and, while it is still set, REINDEX_DIDS (both unset by default).
+-- Run it with dryRun first: that reads and compares only.
 
 local MAX_URIS = 5000
 local GAME_PATTERN = "^at://[^/]+/games%.gamesgamesgamesgames%.game/[%w%._:~%-]+$"
@@ -15,7 +16,10 @@ local function did_set(raw)
 end
 
 function handle()
-  if not did_set(env.ADMIN_DIDS)[caller_did] and not did_set(env.REINDEX_DIDS)[caller_did] then
+  -- MAINTENANCE_DIDS is the scheduled maintenance account. REINDEX_DIDS is
+  -- still accepted while it is set, so a rollout does not break callers.
+  if not did_set(env.ADMIN_DIDS)[caller_did] and not did_set(env.MAINTENANCE_DIDS)[caller_did]
+    and not did_set(env.REINDEX_DIDS)[caller_did] then
     error("unauthorized: only admins can queue a search reindex")
   end
 

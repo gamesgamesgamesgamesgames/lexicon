@@ -12,6 +12,7 @@ local function run_job(dry)
   log = function() end
   db = { raw = function(sql, b) sent = { sql = sql, binds = b }; return { { publishers = 7, established = 3, changed = 2, removed = 1 } } end }
   job = { input = { dryRun = dry }, progress = function() end }
+  env = { PENTARACT_DID = "did:web:cat" }
   handle = nil
   dofile("src/jobs/search.publisher-counts.lua")
   return handle(), sent
@@ -21,7 +22,8 @@ t("a dry run only reads", function()
   local res, sent = run_job(true)
   eq(res.dryRun, true); eq(res.established, 3); eq(res.removed, 1)
   eq(sent.sql:find("INSERT", 1, true), nil); eq(sent.sql:find("DELETE", 1, true), nil)
-  eq(sent.binds[1], "games.gamesgamesgamesgames.org.credit")
+  eq(sent.binds[1], "games.gamesgamesgamesgames.org.credit"); eq(sent.binds[2], "did:web:cat")
+  assert(sent.sql:find("AND did = $2", 1, true), "counts catalogue credits only")
 end)
 
 t("a real run writes only changed counts and removes former publishers", function()
@@ -34,7 +36,7 @@ end)
 
 local function call(caller, body, active)
   local created
-  env = { ADMIN_DIDS = "did:plc:admin", REINDEX_DIDS = "did:plc:bot" }
+  env = { ADMIN_DIDS = "did:plc:admin", MAINTENANCE_DIDS = "did:plc:bot", REINDEX_DIDS = "did:plc:reindexer" }
   caller_did, input = caller, body
   jobs = { create = function(ty, inp) created = { type = ty, input = inp }; return "job-1" end }
   db = { raw = function(sql)
@@ -52,8 +54,9 @@ t("an admin queues a refresh", function()
   assert(ok, res); eq(created.type, "search.publisher-counts"); eq(created.input.dryRun, true)
 end)
 
-t("a REINDEX_DIDS account may queue one; anyone else may not", function()
+t("the MAINTENANCE_DIDS account may queue one; REINDEX_DIDS and anyone else may not", function()
   assert((call("did:plc:bot", {})))
+  eq((call("did:plc:reindexer", {})), false)
   local ok, err = call("did:plc:human", {})
   eq(ok, false); assert(tostring(err):find("unauthorized", 1, true), err)
 end)
@@ -61,6 +64,17 @@ end)
 t("a running refresh is reported instead of starting another", function()
   local ok, res, created = call("did:plc:admin", {}, { { id = "job-0", status = "running" } })
   assert(ok, res); eq(res.alreadyQueued, true); eq(created, nil)
+end)
+
+t("the job needs PENTARACT_DID", function()
+  json = { encode = function() return "{}" end }; log = function() end
+  db = { raw = function() error("must not query") end }
+  job = { input = {}, progress = function() end }
+  env = {}
+  handle = nil
+  dofile("src/jobs/search.publisher-counts.lua")
+  local ok, err = pcall(handle)
+  eq(ok, false); assert(tostring(err):find("PENTARACT_DID", 1, true), err)
 end)
 
 print(("%d passed, %d failed"):format(pass, fail))
