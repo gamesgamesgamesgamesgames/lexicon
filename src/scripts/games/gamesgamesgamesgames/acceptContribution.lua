@@ -721,14 +721,11 @@ local function record_owner_decision(contribution, status, reason)
   return decision._uri
 end
 
--- Remove the public overlay for a contribution, if one is live.
---
--- contributionPatch.lua reindexes the subject when the delete reaches the
--- firehose; the index write here means the public read is already correct
--- before that arrives, which matters most for a decline.
-local function withdraw_patch(contribution_uri, subject)
+-- The live overlay patch for a contribution, or nil. Same `did` filter as the
+-- overlay itself: only a patch in the Pentaract repo is public.
+local function live_patch(contribution_uri)
   local rows = db.raw(
-    "SELECT uri FROM happyview_records WHERE collection = '" .. OVERLAY_PATCH_COLLECTION .. "' " ..
+    "SELECT uri, record FROM happyview_records WHERE collection = '" .. OVERLAY_PATCH_COLLECTION .. "' " ..
     "AND did = $1 AND record::jsonb->'contribution'->>'uri' = $2 LIMIT 1",
     { env.PENTARACT_DID, contribution_uri }
   )
@@ -737,7 +734,23 @@ local function withdraw_patch(contribution_uri, subject)
     return nil
   end
 
-  local patch_uri = rows[1].uri
+  local patch = json.decode(rows[1].record) or {}
+  return { uri = rows[1].uri, changes = patch.changes }
+end
+
+-- Remove the public overlay for a contribution, if one is live.
+--
+-- contributionPatch.lua reindexes the subject when the delete reaches the
+-- firehose; the index write here means the public read is already correct
+-- before that arrives, which matters most for a decline.
+local function withdraw_patch(contribution_uri, subject)
+  local patch = live_patch(contribution_uri)
+
+  if not patch then
+    return nil
+  end
+
+  local patch_uri = patch.uri
 
   local ok, err = pcall(function()
     pentaract_repo():delete_record({
@@ -859,10 +872,43 @@ local function assign_slug(name, target_uri)
   db.raw("INSERT INTO slugs (slug, uri) VALUES ($1, $2) ON CONFLICT (slug) DO NOTHING", { slug, target_uri })
 end
 
+-- Older clients send the patch rather than the contribution. Only a patch in
+-- the Pentaract repo is resolved: any account can publish one naming any
+-- contribution.
+local function contribution_uri_from_input()
+  if type(input.contribution) == "string" and input.contribution ~= "" then
+    return input.contribution
+  end
+
+  if type(input.contributionPatch) == "string" and input.contributionPatch ~= "" then
+    local rows = db.raw(
+      "SELECT record FROM happyview_records WHERE uri = $1 AND did = $2 " ..
+      "AND collection = 'games.gamesgamesgamesgames.contributionPatch' LIMIT 1",
+      { input.contributionPatch, env.PENTARACT_DID }
+    )
+    if not rows or #rows == 0 then
+      error("contributionPatch not found: " .. input.contributionPatch)
+    end
+    local patch = json.decode(rows[1].record) or {}
+    local ref = patch.contribution or {}
+    if type(ref.uri) ~= "string" or ref.uri == "" then
+      error("contributionPatch names no contribution: " .. input.contributionPatch)
+    end
+    return ref.uri
+  end
+
+  return nil
+end
+
 function handle()
-  local contribution = load_contribution(input.contribution)
+  local contribution = load_contribution(contribution_uri_from_input())
   local subject_uri = contribution.record.subject
-  local changes = contribution.record.changes or {}
+
+  -- Where a moderator-approved patch is live, commit the patch's changes: that
+  -- is what the public and the owner have been seeing. The contribution record
+  -- lives in the contributor's repo and can be edited after the approval.
+  local patch = live_patch(contribution.uri)
+  local changes = (patch and patch.changes) or contribution.record.changes or {}
   local is_new_game = (subject_uri == nil or subject_uri == "")
   local entity_uri
 
@@ -934,7 +980,14 @@ function handle()
     entity:save()
     entity_uri = entity._uri
 
-    record_owner_decision(contribution, "accepted", nil)
+    -- The merge above is the acceptance; the decision record only takes the
+    -- contribution out of the queues. A session granted before
+    -- contributionOwnerDecision joined the permission set cannot write it, and
+    -- failing here would leave the change merged with the patch still live.
+    local decided, decide_err = pcall(record_owner_decision, contribution, "accepted", nil)
+    if not decided then
+      log("warning: accepted " .. contribution.uri .. " but could not record the owner decision: " .. tostring(decide_err))
+    end
   end
 
   -- Update contributionVerification: set acceptedBy to "both"

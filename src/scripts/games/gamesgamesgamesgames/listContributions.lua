@@ -47,6 +47,13 @@ function handle()
           "AND NOT EXISTS (" ..
             "SELECT 1 FROM happyview_records r WHERE r.collection = 'games.gamesgamesgamesgames.contributionReview' " ..
             "AND r.record::jsonb->'contribution'->>'uri' = c.uri" ..
+          ") " ..
+          -- A decision by the subject's owner, in the owner's own repo, also
+          -- takes a contribution out of the queue.
+          "AND NOT EXISTS (" ..
+            "SELECT 1 FROM happyview_records d WHERE d.collection = 'games.gamesgamesgamesgames.contributionOwnerDecision' " ..
+            "AND d.record::jsonb->'contribution'->>'uri' = c.uri " ..
+            "AND d.did = split_part(c.record::jsonb->>'subject', '/', 3)" ..
           ")"
   elseif status_filter == "approved" or status_filter == "denied" or status_filter == "needsRevision" then
     sql = "SELECT c.uri, c.cid, c.record, " .. ts .. " as indexed_at FROM happyview_records c " ..

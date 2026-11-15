@@ -54,13 +54,18 @@ local function run_handler(options)
     },
     json = { decode = function(value) return value end, encode = function(value) return value end },
     now = function() return "2026-10-01T00:00:00Z" end,
-    log = function() end,
+    log = function(message) state.logs = state.logs or {}; table.insert(state.logs, message) end,
     toarray = function(value) return value end,
     http = { post = function(_, request) table.insert(state.posts, request.body) end, delete = function() end },
     Record = {
       new = function(collection, data)
         local saved = { collection = collection, data = data, _uri = "at://" .. OWNER .. "/" .. collection .. "/new" }
-        saved.save = function() table.insert(state.saved, saved) end
+        saved.save = function()
+          if options.decision_save_fails and collection == "games.gamesgamesgamesgames.contributionOwnerDecision" then
+            error("ScopeMissing: repo:games.gamesgamesgamesgames.contributionOwnerDecision")
+          end
+          table.insert(state.saved, saved)
+        end
         return saved
       end,
       load = function(target) return entity end,
@@ -225,6 +230,40 @@ t.test("an admin can accept on the Pentaract repo's behalf without an owner deci
     if put.collection == "games.gamesgamesgamesgames.game" then wrote_game = true end
   end
   t.truthy(wrote_game, "the Pentaract game was written")
+end)
+
+t.test("a live patch's changes are what gets committed", function()
+  -- The contributor can edit their contribution after the approval. The owner
+  -- and the public have been seeing the patch, so the patch is what merges.
+  local _, _, entity = run_handler({
+    changes = { name = "Edited after approval" },
+    patch_rows = { { uri = PATCH_URI, record = { changes = { name = "Approved" } } } },
+  })
+  t.eq(entity.name, "Approved", "patch changes, not the edited contribution")
+end)
+
+t.test("an older client's contributionPatch input still resolves", function()
+  local _, state, entity = run_handler({
+    input = { contributionPatch = PATCH_URI },
+    patch_rows = { { uri = PATCH_URI, record = { contribution = { uri = CONTRIBUTION_URI }, changes = { name = "Approved" } } } },
+  })
+  t.eq(entity.name, "Approved", "merged")
+  t.eq(#state.deleted_records, 1, "patch withdrawn")
+end)
+
+t.test("a failed decision write does not undo the acceptance", function()
+  local result, state, entity = run_handler({
+    decision_save_fails = true,
+    patch_rows = { { uri = PATCH_URI, record = { changes = { name = "Approved" } } } },
+  })
+  t.eq(entity.name, "Approved", "merged")
+  t.eq(result.uri, GAME_URI, "returns the entity")
+  t.eq(#state.deleted_records, 1, "patch still withdrawn")
+  t.truthy(state.logs and state.logs[1] and state.logs[1]:find("could not record", 1, true), "logged")
+end)
+
+t.test("no contribution and no patch is refused", function()
+  t.raises(function() run_handler({ input = {} }) end, "contribution URI is required")
 end)
 
 t.report()

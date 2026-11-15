@@ -22,7 +22,7 @@
 					"subject": {
 						"type": "string",
 						"format": "at-uri",
-						"description": "The entity these changes are overlaid on. Absent for newGame contributions. Rewritten by claim migration when the entity moves repos."
+						"description": "The entity these changes are overlaid on. Absent for newGame contributions."
 					},
 					"changes": {
 						"type": "unknown",

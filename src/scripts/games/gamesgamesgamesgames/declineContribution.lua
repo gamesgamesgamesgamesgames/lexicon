@@ -706,14 +706,11 @@ local function record_owner_decision(contribution, status, reason)
   return decision._uri
 end
 
--- Remove the public overlay for a contribution, if one is live.
---
--- contributionPatch.lua reindexes the subject when the delete reaches the
--- firehose; the index write here means the public read is already correct
--- before that arrives, which matters most for a decline.
-local function withdraw_patch(contribution_uri, subject)
+-- The live overlay patch for a contribution, or nil. Same `did` filter as the
+-- overlay itself: only a patch in the Pentaract repo is public.
+local function live_patch(contribution_uri)
   local rows = db.raw(
-    "SELECT uri FROM happyview_records WHERE collection = '" .. OVERLAY_PATCH_COLLECTION .. "' " ..
+    "SELECT uri, record FROM happyview_records WHERE collection = '" .. OVERLAY_PATCH_COLLECTION .. "' " ..
     "AND did = $1 AND record::jsonb->'contribution'->>'uri' = $2 LIMIT 1",
     { env.PENTARACT_DID, contribution_uri }
   )
@@ -722,7 +719,23 @@ local function withdraw_patch(contribution_uri, subject)
     return nil
   end
 
-  local patch_uri = rows[1].uri
+  local patch = json.decode(rows[1].record) or {}
+  return { uri = rows[1].uri, changes = patch.changes }
+end
+
+-- Remove the public overlay for a contribution, if one is live.
+--
+-- contributionPatch.lua reindexes the subject when the delete reaches the
+-- firehose; the index write here means the public read is already correct
+-- before that arrives, which matters most for a decline.
+local function withdraw_patch(contribution_uri, subject)
+  local patch = live_patch(contribution_uri)
+
+  if not patch then
+    return nil
+  end
+
+  local patch_uri = patch.uri
 
   local ok, err = pcall(function()
     pentaract_repo():delete_record({

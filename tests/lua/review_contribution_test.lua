@@ -19,10 +19,14 @@ local function run_handler(options)
   local sandbox = {
     caller_did = options.caller_did or ADMIN,
     input = { contribution = { uri = contribution_uri, cid = "bafy1" }, status = options.status or "approved" },
-    env = { PENTARACT_DID = PENTARACT, ADMIN_DIDS = ADMIN, SYSTEM_DIDS = options.system_dids or SCRAPER },
+    env = { PENTARACT_DID = PENTARACT, ADMIN_DIDS = ADMIN },
     db = {
       raw = function(sql, bind)
         if sql:find("contributionReview", 1, true) then return {} end
+        if sql:find("contributionOwnerDecision", 1, true) then
+          state.decision_bind = bind
+          return options.owner_decision and { { uri = options.owner_decision } } or {}
+        end
         if sql:find("FROM slugs", 1, true) then return {} end
         if sql:find("INSERT INTO slugs", 1, true) then return {} end
         if sql:find("WHERE uri = $1 LIMIT 1", 1, true) then
@@ -58,30 +62,28 @@ local function run_handler(options)
 
   local chunk = assert(loadfile(HANDLER, "t", sandbox))
   chunk()
-  sandbox.handle()
+  local ok, err = pcall(sandbox.handle)
 
   local created_by_collection = {}
   for _, request in ipairs(state.created) do
     created_by_collection[request.collection] = (created_by_collection[request.collection] or 0) + 1
   end
-  return { created = created_by_collection, puts = state.put_records }
+  return { ok = ok, err = err, created = created_by_collection, puts = state.put_records, decision_bind = state.decision_bind }
 end
 
 local PATCH = "games.gamesgamesgamesgames.contributionPatch"
 local GAME = "games.gamesgamesgamesgames.game"
 
-t.test("a scraper contribution to a Pentaract game still applies immediately", function()
-  local result = run_handler({ contributor = SCRAPER, subject = PENTARACT_GAME })
-  t.eq(#result.puts > 0, true, "the game was written")
-  t.eq(result.created[PATCH], nil, "no patch, because there is nothing left to overlay")
-end)
-
-t.test("a user contribution to a Pentaract game becomes a patch", function()
-  -- It overlays until the game is claimed; the claimant then decides. Trust in
-  -- the scraper does not extend to strangers.
-  local result = run_handler({ contributor = "did:plc:someone", subject = PENTARACT_GAME })
-  t.eq(#result.puts, 0, "the Pentaract game was not written")
-  t.eq(result.created[PATCH], 1, "a patch was created")
+t.test("an approved contribution to a Pentaract game applies immediately, from anyone", function()
+  -- The catalogue has no owner to accept a patch. Applying now also keeps the
+  -- auto-accept rule that newer catalogue data lands over older approvals: a
+  -- patch would overlay the game forever and outrank every later IGDB update.
+  for _, contributor in ipairs({ SCRAPER, "did:plc:someone" }) do
+    local result = run_handler({ contributor = contributor, subject = PENTARACT_GAME })
+    t.eq(result.ok, true, contributor .. ": handled")
+    t.eq(#result.puts > 0, true, contributor .. ": the game was written")
+    t.eq(result.created[PATCH], nil, contributor .. ": no patch")
+  end
 end)
 
 t.test("a contribution to an owned game becomes a patch for either submitter", function()
@@ -111,10 +113,26 @@ t.test("a denial creates neither a patch nor a write", function()
   t.eq(result.created[PATCH], nil, "no patch")
 end)
 
-t.test("an unset SYSTEM_DIDS treats everyone as a user", function()
-  -- Fail closed: an unconfigured instance must not apply a stranger's edits.
-  local result = run_handler({ contributor = SCRAPER, subject = PENTARACT_GAME, system_dids = "" })
-  t.eq(result.created[PATCH], 1, "patch, not an immediate write")
+t.test("an approval is refused once the owner has decided", function()
+  -- Without this a declined change would go public through the patch, and the
+  -- owner could not decline it again.
+  local result = run_handler({
+    contributor = "did:plc:someone", subject = OWNED_GAME,
+    owner_decision = "at://did:plc:owner/games.gamesgamesgamesgames.contributionOwnerDecision/1",
+  })
+  t.eq(result.ok, false, "refused")
+  t.truthy(tostring(result.err):find("already decided", 1, true), "says why")
+  t.eq(result.created[PATCH], nil, "no patch")
+  t.eq(result.decision_bind[1], "did:plc:owner", "only the owner's own repo counts")
+end)
+
+t.test("a denial is still recorded after the owner has decided", function()
+  local result = run_handler({
+    contributor = "did:plc:someone", subject = OWNED_GAME, status = "denied",
+    owner_decision = "at://did:plc:owner/games.gamesgamesgamesgames.contributionOwnerDecision/1",
+  })
+  t.eq(result.ok, true, "recorded")
+  t.eq(result.created[PATCH], nil, "no patch")
 end)
 
 t.report()

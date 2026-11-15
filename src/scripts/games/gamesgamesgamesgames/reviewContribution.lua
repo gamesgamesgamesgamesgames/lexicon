@@ -9,19 +9,6 @@ end
 
 local ADMIN_DIDS = parse_admin_dids()
 
--- System identities (the IGDB scraper) are the only submitters whose edits to
--- an ownerless game apply without anyone accepting them.
-local function parse_system_dids()
-  local dids = {}
-  local raw = env.SYSTEM_DIDS or ""
-  for did in raw:gmatch("[^,]+") do
-    dids[did:match("^%s*(.-)%s*$")] = true
-  end
-  return dids
-end
-
-local SYSTEM_DIDS = parse_system_dids()
-
 -- Every record this script writes lands in the Pentaract repo, not the
 -- caller's, so it needs a linked-repo grant over that account. HappyView can
 -- only write to a repo it holds a session for.
@@ -345,18 +332,29 @@ function handle()
 
   local contributor_did = contribution_uri:match("^at://([^/]+)/")
 
-  -- A new game belongs in the Pentaract repo until a studio claims it, and it
-  -- has no subject to overlay onto, so approving one applies the changes now.
-  --
-  -- A game already in the Pentaract repo has no owner to accept a patch either,
-  -- but that is only a reason to apply the change immediately when the
-  -- submitter is trusted. A user's edit to an ownerless game overlays instead,
-  -- and persists until the game is claimed — the claimant decides.
-  local applies_now = input.status == "approved"
-    and (
-      is_new_game
-      or (subject:match("^at://([^/]+)/") == pentaract.did and SYSTEM_DIDS[contributor_did] == true)
+  -- An owner who has already accepted or declined has had the final say. An
+  -- approval now would publish a patch the owner can no longer decide: a
+  -- declined change would go public, or an accepted one would be overlaid
+  -- twice. A denial or revision request changes nothing public, so it may
+  -- still be recorded.
+  if input.status == "approved" and not is_new_game then
+    local owner_did = subject:match("^at://([^/]+)/")
+    local decided = db.raw(
+      "SELECT uri FROM happyview_records WHERE collection = 'games.gamesgamesgamesgames.contributionOwnerDecision' " ..
+      "AND did = $1 AND record::jsonb->'contribution'->>'uri' = $2 LIMIT 1",
+      { owner_did, contribution_uri }
     )
+    if decided and #decided > 0 then
+      error("the owner has already decided this contribution: " .. decided[1].uri)
+    end
+  end
+
+  -- A game in the Pentaract repo has no owner to accept a patch, and a new
+  -- game belongs in the Pentaract repo until a studio claims it, so approving
+  -- either applies the changes now. Games with a real owner get a patch, which
+  -- is overlaid on reads until that owner accepts or declines it.
+  local applies_now = input.status == "approved"
+    and (is_new_game or subject:match("^at://([^/]+)/") == pentaract.did)
 
   -- The game is written before the review so a failed write (a concurrent
   -- edit tripping swap_cid, say) leaves the contribution reviewable again.
