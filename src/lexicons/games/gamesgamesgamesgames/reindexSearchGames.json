@@ -1,0 +1,56 @@
+{
+	"$type": "com.atproto.lexicon.schema",
+	"lexicon": 1,
+	"id": "games.gamesgamesgamesgames.reindexSearchGames",
+	"defs": {
+		"main": {
+			"type": "procedure",
+			"description": "Queue a job that finds games whose search document is missing, gutted or stale, and rewrites those documents from the index. Admins only. One search reindex runs at a time. Run with dryRun first.",
+			"input": {
+				"encoding": "application/json",
+				"schema": {
+					"type": "object",
+					"properties": {
+						"uris": {
+							"type": "array",
+							"minLength": 1,
+							"maxLength": 5000,
+							"items": { "type": "string", "format": "at-uri" },
+							"description": "Only check these game URIs. Without it, the job checks every game."
+						},
+						"dryRun": {
+							"type": "boolean",
+							"default": false,
+							"description": "Compare only, and report what would be rewritten."
+						},
+						"maxGames": {
+							"type": "integer",
+							"minimum": 1,
+							"description": "Stop after checking this many games, for a trial run."
+						}
+					}
+				}
+			},
+			"output": {
+				"encoding": "application/json",
+				"schema": {
+					"type": "object",
+					"required": ["jobId"],
+					"properties": {
+						"jobId": { "type": "string", "maxLength": 128 },
+						"alreadyQueued": {
+							"type": "boolean",
+							"description": "True when a search reindex was already pending or running; jobId is that job, and nothing new was queued."
+						},
+						"status": {
+							"type": "string",
+							"maxLength": 32,
+							"knownValues": ["pending", "running"],
+							"description": "The existing job's status, when alreadyQueued is true."
+						}
+					}
+				}
+			}
+		}
+	}
+}
