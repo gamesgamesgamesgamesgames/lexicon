@@ -154,6 +154,7 @@ jobs:
       - name: Run Lua tests
         run: |
           set -e
+          lua5.4 tests/slug-backfill/job_test.lua src/jobs/slugs.backfill.lua src/scripts/games/gamesgamesgamesgames/backfillGameSlugs.lua
           lua5.4 tests/reindex/job_test.lua src/jobs/catalogue.reindex.lua
           lua5.4 tests/reindex/procedure_test.lua src/scripts/games/gamesgamesgamesgames/reindexCatalogueGames.lua
           lua5.4 tests/auto-accept/job_test.lua src/jobs/contribution.auto-accept.lua
