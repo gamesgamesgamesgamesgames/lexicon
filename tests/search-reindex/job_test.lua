@@ -87,7 +87,7 @@ t("collections compare as a set, and empty equals absent", function()
   assert(ok, res); eq(res.totals.counts.current, 1)
 end)
 
-t("fields only Meilisearch has are left alone", function()
+t("fields only Meilisearch has do not make a document stale", function()
   local ok, res = run({ records = { [uri("a")] = game("A") }, input = { dryRun = true } },
     function(S, build) local d = build(uri("a")); d.country = "JP"; S.meili[d.id] = d end)
   assert(ok, res); eq(res.totals.counts.current, 1)
@@ -130,6 +130,7 @@ t("a failed push is counted, and three in a row stop the job", function()
   local ok, err, S = run({ records = records, input = { delay = 0 }, fail_writes = 99 })
   eq(ok, false); assert(tostring(err):find("3 failed batches", 1, true), err)
   eq(S.progress.totals.counts.failed, 300); eq(S.progress.totals.counts.pushed, 0); eq(#S.chained, 0)
+  eq(S.progress.totals.samples.failed[1], uri("g001")); eq(#S.progress.totals.samples.failed, 25)
 end)
 
 t("one failed push is counted and the job carries on", function()
@@ -142,6 +143,25 @@ end)
 t("a stop request ends the job without chaining", function()
   local ok, res, S = run({ records = three(), input = { dryRun = true }, stop = true })
   assert(ok, res); eq(res.stopped, true); eq(res.processed, 0); eq(#S.chained, 0)
+end)
+
+t("a stale document is replaced in full, dropping fields only Meilisearch had", function()
+  local ok, res, S = run({ records = { [uri("a")] = game("New") }, input = {} },
+    function(S, build) local d = build(uri("a")); d.name = "Old"; d.country = "JP"; S.meili[d.id] = d end)
+  assert(ok, res); eq(res.totals.counts.stale, 1)
+  local d = S.meili[F.doc_id(uri("a"))]; eq(d.name, "New"); eq(d.country, nil)
+end)
+
+t("a resumed scan starts after the given URI", function()
+  local ok, res = run({ records = three(), input = { dryRun = true, after = uri("b") } }, seed)
+  assert(ok, res); eq(res.processed, 2); eq(res.totals.counts.gutted, 1); eq(res.totals.counts.stale, 1)
+end)
+
+t("totals from an older job without failed samples still work", function()
+  local old = { counts = { current = 0, missing = 0, gutted = 0, stale = 0, pushed = 0, failed = 0, invalid = 0, notInIndex = 0 },
+    staleFields = {}, samples = { missing = {}, gutted = {}, stale = {} } }
+  local ok, res = run({ records = three(), input = { delay = 0, totals = old }, fail_writes = 1 }, seed)
+  assert(ok, res); eq(res.totals.samples.failed[1] ~= nil, true)
 end)
 
 print(("%d passed, %d failed"):format(pass, fail))

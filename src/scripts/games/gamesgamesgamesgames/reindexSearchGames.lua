@@ -34,9 +34,29 @@ function handle()
     end
   end
 
+  local after = input.after
+  if after ~= nil then
+    if uris ~= nil then
+      error("after resumes a full scan; it cannot be combined with uris")
+    end
+    if type(after) ~= "string" or not after:match(GAME_PATTERN) then
+      error("after must be a game URI, such as the after of a stopped run")
+    end
+  end
+
   local max_games = input.maxGames
   if max_games ~= nil and (type(max_games) ~= "number" or max_games % 1 ~= 0 or max_games < 1) then
     error("maxGames must be a whole number of at least 1")
+  end
+
+  -- search.reindex builds documents from the index rows, so a catalogue
+  -- reindex that is still correcting those rows has to finish first.
+  local catalogue = db.raw(
+    "SELECT id, status FROM happyview_jobs WHERE job_type = 'catalogue.reindex' AND status IN ('pending', 'running') ORDER BY created_at LIMIT 1",
+    {}
+  )
+  if catalogue and #catalogue > 0 then
+    error("a catalogue reindex (" .. tostring(catalogue[1].id) .. ") is " .. tostring(catalogue[1].status) .. "; wait for it to finish, since search.reindex reads the rows it corrects")
   end
 
   -- One search reindex chain at a time: a second call while one is pending or
@@ -49,6 +69,6 @@ function handle()
     return { jobId = existing[1].id, alreadyQueued = true, status = existing[1].status }
   end
 
-  local job_input = { dryRun = input.dryRun == true, uris = uris, maxGames = max_games }
+  local job_input = { dryRun = input.dryRun == true, uris = uris, after = after, maxGames = max_games }
   return { jobId = jobs.create("search.reindex", job_input), alreadyQueued = false }
 end

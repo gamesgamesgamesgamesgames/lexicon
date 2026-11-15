@@ -5,7 +5,7 @@
 	"defs": {
 		"main": {
 			"type": "procedure",
-			"description": "Queue a job that finds games whose search document is missing, gutted or stale, and rewrites those documents from the index. Admins only. One search reindex runs at a time. Run with dryRun first.",
+			"description": "Queue a job that finds games whose search document is missing, gutted or stale, and rewrites those documents from the index. Admins only. One search reindex runs at a time, and none while a catalogue reindex is pending or running. Run with dryRun first.",
 			"input": {
 				"encoding": "application/json",
 				"schema": {
@@ -17,6 +17,11 @@
 							"maxLength": 5000,
 							"items": { "type": "string", "format": "at-uri" },
 							"description": "Only check these game URIs. Without it, the job checks every game."
+						},
+						"after": {
+							"type": "string",
+							"format": "at-uri",
+							"description": "Resume a full scan after this game URI, such as the after of a stopped run. Cannot be combined with uris."
 						},
 						"dryRun": {
 							"type": "boolean",
