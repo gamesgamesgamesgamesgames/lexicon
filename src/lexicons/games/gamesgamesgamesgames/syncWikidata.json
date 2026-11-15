@@ -1,0 +1,49 @@
+{
+	"$type": "com.atproto.lexicon.schema",
+	"lexicon": 1,
+	"id": "games.gamesgamesgamesgames.syncWikidata",
+	"defs": {
+		"main": {
+			"type": "procedure",
+			"description": "Queue a job that copies Wikidata's sitelink counts, publishers, mod and fan game classes, and English Wikipedia articles for our games into the index, keyed by IGDB game ID. Admins only. One sync runs at a time.",
+			"input": {
+				"encoding": "application/json",
+				"schema": {
+					"type": "object",
+					"properties": {
+						"dryRun": {
+							"type": "boolean",
+							"default": false,
+							"description": "Fetch and stage everything, and report what would change, without changing the table search reads."
+						},
+						"force": {
+							"type": "boolean",
+							"default": false,
+							"description": "Apply even when far fewer rows were staged than the table holds, which normally means Wikidata's answer was cut short."
+						}
+					}
+				}
+			},
+			"output": {
+				"encoding": "application/json",
+				"schema": {
+					"type": "object",
+					"required": ["jobId"],
+					"properties": {
+						"jobId": { "type": "string", "maxLength": 128 },
+						"alreadyQueued": {
+							"type": "boolean",
+							"description": "True when a sync was already pending or running; jobId is that job, and nothing new was queued."
+						},
+						"status": {
+							"type": "string",
+							"maxLength": 32,
+							"knownValues": ["pending", "running"],
+							"description": "The existing job's status, when alreadyQueued is true."
+						}
+					}
+				}
+			}
+		}
+	}
+}
