@@ -243,6 +243,32 @@ local function assign_slug(name, uri)
   return slug, true
 end
 
+-- The game as it is on the catalogue PDS right now, read through the linked
+-- repo. HappyView's index can lag the PDS (on 2026-11-15 about 0.5% of
+-- catalogue games had an older version indexed), and diffing against or
+-- swapping on a stale version fails, or worse, reasons about old data. Nil
+-- only when the PDS says the record doesn't exist; any other failure errors,
+-- so the job fails cleanly and the contribution stays pending. There is no
+-- fallback to the index.
+local function read_game(pentaract, uri)
+  local ok, res = pcall(function()
+    return pentaract:call("com.atproto.repo.getRecord", {
+      params = { repo = did_of(uri), collection = collection_of(uri), rkey = rkey_of(uri) },
+    })
+  end)
+  if not ok then
+    local msg = tostring(res)
+    if msg:find("RecordNotFound", 1, true) or msg:find("Could not locate record", 1, true) then
+      return nil
+    end
+    error("could not read " .. uri .. " from the catalogue PDS: " .. msg)
+  end
+  if type(res) ~= "table" or type(res.value) ~= "table" or not res.cid then
+    error("the catalogue PDS returned no record for " .. uri)
+  end
+  return { uri = res.uri or uri, cid = res.cid, record = res.value }
+end
+
 local function load_record(uri)
   local rows = db.raw("SELECT uri, cid, record FROM happyview_records WHERE uri = $1 LIMIT 1", { uri })
   if not rows or #rows == 0 then
@@ -474,7 +500,7 @@ local function process(contribution_uri, opts)
     if not subject then
       create_rkey = new_game_rkey(changes, contribution_uri)
       local candidate = "at://" .. pentaract.did .. "/" .. GAME_COLLECTION .. "/" .. create_rkey
-      if load_record(candidate) then
+      if read_game(pentaract, candidate) then
         subject = candidate
         create_rkey = nil
       end
@@ -493,9 +519,11 @@ local function process(contribution_uri, opts)
     end
   end
 
+  -- The no-op and supersede checks below, the diff and the swap all work from
+  -- this PDS read, never from the index.
   local current, diff, fields
   if not create_rkey then
-    current = load_record(subject)
+    current = read_game(pentaract, subject)
     if not current then
       return { status = "skipped", reason = "subject game not found: " .. subject }
     end

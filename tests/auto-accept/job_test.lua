@@ -9,7 +9,7 @@ local function copy(t) if type(t) ~= "table" then return t end local o = {} for 
 
 local function setup(opts)
   opts = opts or {}
-  local S = { records = {}, slugs = {}, ext = {}, writes = {}, logs = {}, deferrals = {}, clock_h = 0, cid_n = 0, grant_status = opts.grant_status or "active", missing_blobs = opts.missing_blobs or {} }
+  local S = { records = {}, pds = {}, slugs = {}, ext = {}, writes = {}, logs = {}, deferrals = {}, clock_h = 0, cid_n = 0, grant_status = opts.grant_status or "active", missing_blobs = opts.missing_blobs or {} }
   local function put(uri, rec) S.cid_n = S.cid_n + 1; S.records[uri] = { cid = "cid" .. S.cid_n, record = copy(rec), collection = uri:match("^at://[^/]+/([^/]+)/"), did = uri:match("^at://([^/]+)/") } end
   S.put = put
   env = { PENTARACT_DID = P, AUTO_ACCEPT_DIDS = SYS .. ", did:plc:other", AUTO_ACCEPT_WRITES = opts.writes_env, AUTO_ACCEPT_SWEEP_SINCE = opts.since,
@@ -32,15 +32,29 @@ local function setup(opts)
     check_blobs(o.record)
     local rkey = o.rkey or ("tid" .. (#S.writes + 1))
     local uri = "at://" .. P .. "/" .. o.collection .. "/" .. rkey
-    if S.records[uri] then error("create_record: record already exists") end
+    if S.records[uri] or S.pds[uri] then error("create_record: record already exists") end
     put(uri, o.record); table.insert(S.writes, { op = "create", uri = uri, record = copy(o.record) })
     if o.collection == "games.gamesgamesgamesgames.game" and o.record.externalIds and o.record.externalIds.igdb then S.ext[tostring(o.record.externalIds.igdb)] = uri end
     return { uri = uri, cid = S.records[uri].cid }
   end
+  -- The catalogue PDS: S.pds overrides the index (S.records) to model a stale index.
+  function repo:call(nsid, o)
+    if opts.fail_pds_read then error("com.atproto.repo.getRecord failed: xrpc response error: 502 Bad Gateway") end
+    assert(nsid == "com.atproto.repo.getRecord", "unexpected call " .. tostring(nsid))
+    local uri = "at://" .. o.params.repo .. "/" .. o.params.collection .. "/" .. o.params.rkey
+    local st = S.pds[uri] or S.records[uri]
+    if not st then
+      error('com.atproto.repo.getRecord failed: xrpc response error: 400 {"error":"RecordNotFound","message":"Could not locate record: ' .. uri .. '"}')
+    end
+    S.pds_reads = (S.pds_reads or 0) + 1
+    return { uri = uri, cid = st.cid, value = copy(st.record) }
+  end
   function repo:put_record(o)
     local uri = "at://" .. P .. "/" .. o.collection .. "/" .. o.rkey
+    local on_pds = S.pds[uri] or S.records[uri]
+    if o.swap_cid and on_pds and on_pds.cid ~= o.swap_cid then error("put_record: InvalidSwap: Record was at " .. on_pds.cid) end
+    S.pds[uri] = nil
     if opts.fail_put_uri == uri then error("put_record: InvalidSwap: Record was at bafy-other") end
-    if o.swap_cid and S.records[uri] and S.records[uri].cid ~= o.swap_cid then error("put_record: InvalidSwap") end
     check_blobs(o.record)
     put(uri, o.record); table.insert(S.writes, { op = "put", uri = uri, record = copy(o.record) })
     return { uri = uri, cid = S.records[uri].cid }
@@ -831,6 +845,100 @@ t("an invalid AUTO_ACCEPT_SWEEP_SINCE errors clearly", function()
   local S = base({ since = "last tuesday" })
   job.input = { sweep = true }; local ok, err = run(S)
   eq(ok, false); assert(tostring(err):find("AUTO_ACCEPT_SWEEP_SINCE must be a datetime"), err)
+end)
+
+-- ===== the game is read from the catalogue PDS, not the index =====
+local function stale(S, pds_record, pds_cid)
+  S.pds[GAME] = { cid = pds_cid or "pdscid1", record = pds_record }
+end
+
+t("a change that already matches the PDS is a no-op even when the index is stale", function()
+  local S = base()
+  stale(S, { name = "Portal", applicationType = "game", summary = "on the PDS" })
+  local u, c = contrib(S, "pr1", SYS, { contributionType = "correction", subject = GAME, changes = { summary = "on the PDS" } })
+  job.input = { uri = u, cid = c }; local ok, res = run(S); assert(ok, res)
+  eq(res.status, "noop"); eq(count(S, "gamesgamesgamesgames.game/"), 0)
+end)
+
+t("the put swaps on the PDS CID and keeps the PDS fields, not the stale index's", function()
+  local S = base()
+  stale(S, { name = "Portal", applicationType = "game", genres = { "pds-genre" } }, "pdscid7")
+  local seen
+  local repo = linked_repos.get(P); local orig = repo.put_record
+  repo.put_record = function(self, o) seen = o; return orig(self, o) end
+  local u, c = contrib(S, "pr2", SYS, { contributionType = "correction", subject = GAME, changes = { summary = "new" } })
+  job.input = { uri = u, cid = c }; local ok, res = run(S); assert(ok, res)
+  eq(res.status, "applied"); eq(seen.swap_cid, "pdscid7")
+  eq(seen.record.genres[1], "pds-genre", "PDS value kept"); eq(seen.record.summary, "new")
+  eq(seen.record.media, nil, "no stale index fields")
+end)
+
+t("a failed PDS read fails the job cleanly: no writes, still pending, no index fallback", function()
+  local S = base({ fail_pds_read = true })
+  local u, c = contrib(S, "pr3", SYS, { contributionType = "correction", subject = GAME, changes = { summary = "x" } })
+  job.input = { uri = u, cid = c }; local ok, err = run(S)
+  eq(ok, false); assert(tostring(err):find("could not read"), err)
+  eq(#S.writes, 0); eq(count(S, "contributionReview"), 0)
+end)
+
+t("a sweep counts a failed PDS read as a failure and keeps going", function()
+  local S = base({ fail_pds_read = true })
+  contrib(S, "pr4", SYS, { contributionType = "correction", subject = GAME, changes = { summary = "x" } })
+  job.input = { sweep = true, limit = 10 }; local ok, res = run(S); assert(ok, res)
+  eq(res.counts.failed, 1); eq(#S.writes, 0)
+end)
+
+t("a game the PDS says is gone is skipped, even if the index still has it", function()
+  local S = base()
+  local repo = linked_repos.get(P)
+  local u, c = contrib(S, "pr5", SYS, { contributionType = "correction", subject = GAME, changes = { summary = "x" } })
+  job.input = { uri = u, cid = c }
+  handle = nil; dofile(JOB)
+  repo.call = function() error('com.atproto.repo.getRecord failed: xrpc response error: 400 {"error":"RecordNotFound","message":"Could not locate record"}') end
+  linked_repos.get = function() return repo end
+  local ok, res = pcall(handle); assert(ok, res)
+  eq(res.status, "skipped"); eq(#S.writes, 0)
+end)
+
+t("no-op before supersede uses the PDS value: approved, not denied", function()
+  local S = base()
+  stale(S, { name = "Portal", applicationType = "game", summary = "A" })
+  local u, c = contrib(S, "pr6", SYS, { contributionType = "correction", subject = GAME, createdAt = "2026-06-14T00:00:00Z", changes = { summary = "A" } })
+  contrib(S, "pr7", SYS, { contributionType = "correction", subject = GAME, createdAt = "2026-11-14T00:00:00Z", changes = { summary = "B" } })
+  job.input = { uri = u, cid = c }; local ok, res = run(S); assert(ok, res)
+  eq(res.status, "noop")
+  local review; for _, w in ipairs(S.writes) do if w.uri:find("contributionReview") then review = w.record end end
+  eq(review.status, "approved")
+end)
+
+t("a newGame whose igdb- record exists on the PDS but not in the index becomes an update", function()
+  local S = base()
+  local cand = "at://" .. P .. "/games.gamesgamesgamesgames.game/igdb-321"
+  S.pds[cand] = { cid = "pdsnew", record = { name = "Made Earlier", applicationType = "game" } }
+  local u, c = contrib(S, "pr9", SYS, { contributionType = "newGame", changes = { name = "Made Earlier", applicationType = "game", summary = "s", externalIds = { igdb = "321" } } })
+  job.input = { uri = u, cid = c }; local ok, res = run(S); assert(ok, res)
+  eq(res.status, "applied"); eq(res.created, nil)
+  eq(count(S, "gamesgamesgamesgames.game/igdb-321"), 1)
+  eq(S.writes[1].op, "put")
+end)
+
+t("an empty answer from the PDS fails the job instead of passing for a record", function()
+  local S = base()
+  local repo = linked_repos.get(P)
+  local u, c = contrib(S, "pr10", SYS, { contributionType = "correction", subject = GAME, changes = { summary = "x" } })
+  job.input = { uri = u, cid = c }
+  handle = nil; dofile(JOB)
+  repo.call = function() return {} end
+  linked_repos.get = function() return repo end
+  local ok, err = pcall(handle)
+  eq(ok, false); assert(tostring(err):find("returned no record"), err); eq(#S.writes, 0)
+end)
+
+t("the job reads the PDS for every correction (no index reads for the game)", function()
+  local S = base()
+  local u, c = contrib(S, "pr8", SYS, { contributionType = "correction", subject = GAME, changes = { summary = "x" } })
+  job.input = { uri = u, cid = c }; assert(run(S))
+  eq(S.pds_reads, 1)
 end)
 
 -- ===== igdb-review final pass =====
