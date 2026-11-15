@@ -164,5 +164,29 @@ t("totals from an older job without failed samples still work", function()
   assert(ok, res); eq(res.totals.samples.failed[1] ~= nil, true)
 end)
 
+t("a game with a live patch is compared and pushed with the patch overlaid", function()
+  local P = "did:web:cat"
+  local patches = {
+    { uri = "at://did:web:cat/games.gamesgamesgamesgames.contributionPatch/1", did = P,
+      record = { subject = uri("a"), createdAt = "2026-01-01T00:00:00Z", changes = { name = "Patched" } } },
+    -- Any other repo's patch is ignored, as on every read path.
+    { uri = "at://did:plc:x/games.gamesgamesgamesgames.contributionPatch/1", did = "did:plc:x",
+      record = { subject = uri("a"), createdAt = "2026-01-02T00:00:00Z", changes = { name = "Forged" } } },
+  }
+  local records = { [uri("a")] = game("Stored") }
+  local ok, res, S = run({ records = records, input = {}, pentaract_did = P, patches = patches })
+  assert(ok, res)
+  eq(res.totals.counts.pushed, 1)
+  eq(S.meili[F.doc_id(uri("a"))].name, "Patched", "overlay pushed")
+  eq(S.patch_queries, 1, "one patch query per batch")
+
+  -- Meilisearch now holds the overlaid document, so a second run must find it
+  -- current rather than revert it to the stored name.
+  local ok2, res2, S2 = run({ records = records, input = {}, pentaract_did = P, patches = patches, meili = S.meili })
+  assert(ok2, res2)
+  eq(res2.totals.counts.current, 1); eq(res2.totals.counts.stale, 0); eq(S2.posts, 0)
+  eq(S2.meili[F.doc_id(uri("a"))].name, "Patched")
+end)
+
 print(("%d passed, %d failed"):format(pass, fail))
 if fail > 0 then os.exit(1) end

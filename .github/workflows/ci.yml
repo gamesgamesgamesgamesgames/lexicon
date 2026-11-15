@@ -162,6 +162,7 @@ jobs:
           lua5.4 tests/search-reindex/job_test.lua src/jobs/search.reindex.lua
           lua5.4 tests/search-reindex/hooks_test.lua
           lua5.4 tests/slugs/slug_test.lua src/scripts/games/gamesgamesgamesgames
+          bun run test:lua
 
   # breaking:
   #   name: Check Breaking Changes

@@ -13,7 +13,8 @@
 		"typecheck": "bun run --filter='*' typecheck",
 		"test": "bun run --filter='*' test",
 		"generate:shared": "bun scripts/generate-shared.ts",
-		"check:shared": "bun scripts/generate-shared.ts --check"
+		"check:shared": "bun scripts/generate-shared.ts --check",
+		"test:lua": "bash scripts/test-lua.sh"
 	},
 	"devDependencies": {
 		"typescript": "^5.6.0"

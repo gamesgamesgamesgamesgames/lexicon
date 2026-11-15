@@ -65,6 +65,9 @@ local function install_db(S, extra)
       return {}
     elseif sql:find("INSERT INTO external_ids", 1, true) then
       return {}
+    elseif sql:find("games.gamesgamesgamesgames.contributionPatch", 1, true) then
+      -- game.lua overlays live patches before indexing; none in these tests.
+      return {}
     end
     error("unexpected sql " .. sql)
   end }

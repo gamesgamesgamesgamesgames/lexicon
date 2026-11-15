@@ -91,6 +91,13 @@ function handle()
       "AND NOT EXISTS (" ..
         "SELECT 1 FROM happyview_records r WHERE r.collection = 'games.gamesgamesgamesgames.contributionReview' " ..
         "AND r.record::jsonb->'contribution'->>'uri' = c.uri" ..
+      ") " ..
+      -- Same as listContributions' pending queue: the subject's owner deciding
+      -- it also ends a contribution's pending state.
+      "AND NOT EXISTS (" ..
+        "SELECT 1 FROM happyview_records d WHERE d.collection = 'games.gamesgamesgamesgames.contributionOwnerDecision' " ..
+        "AND d.record::jsonb->'contribution'->>'uri' = c.uri " ..
+        "AND d.did = split_part(c.record::jsonb->>'subject', '/', 3)" ..
       ")",
       { caller_did }
     )
