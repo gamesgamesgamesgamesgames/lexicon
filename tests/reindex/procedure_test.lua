@@ -9,12 +9,18 @@ local pass, fail = 0, 0
 local function t(name, fn) local ok, err = pcall(fn); if ok then pass = pass + 1; print("ok   " .. name) else fail = fail + 1; print("FAIL " .. name .. ": " .. tostring(err)) end end
 local function eq(a, b, m) if a ~= b then error((m or "") .. " expected " .. tostring(b) .. " got " .. tostring(a), 2) end end
 
+local active = {}
+
 local function call(caller, body, reindex_dids)
   local created
   env = { ADMIN_DIDS = ADMIN .. ", did:plc:admin2", PENTARACT_DID = P, REINDEX_DIDS = reindex_dids }
   caller_did = caller
   input = body
   jobs = { create = function(ty, inp) created = { type = ty, input = inp }; return "job-1" end }
+  db = { raw = function(sql)
+    assert(sql:find("job_type = 'catalogue.reindex'", 1, true) and sql:find("status IN ('pending', 'running')", 1, true), "unexpected sql " .. sql)
+    return active
+  end }
   handle = nil
   dofile(SCRIPT)
   local ok, res = pcall(handle)
@@ -44,8 +50,18 @@ t("an account listed in REINDEX_DIDS may queue it", function()
   eq(ok2, false)
 end)
 
+t("a second call while a reindex is pending or running queues nothing", function()
+  active = { { id = "job-old", status = "running" } }
+  local ok, res, created = call(ADMIN, { uris = { G .. "a" } })
+  active = {}
+  assert(ok, res); eq(res.jobId, "job-old"); eq(res.alreadyQueued, true); eq(res.status, "running"); eq(created, nil)
+  local ok2, res2 = call(ADMIN, { uris = { G .. "a" } })
+  assert(ok2, res2); eq(res2.alreadyQueued, false)
+end)
+
 t("rejects URIs that are not catalogue games", function()
-  for _, bad in ipairs({ "at://did:plc:else/games.gamesgamesgamesgames.game/a", "at://" .. P .. "/games.gamesgamesgamesgames.contribution/a", G, 42 }) do
+  for _, bad in ipairs({ "at://did:plc:else/games.gamesgamesgamesgames.game/a", "at://" .. P .. "/games.gamesgamesgamesgames.contribution/a", G, 42,
+      G .. "a/b", G .. "bad rkey", G .. "a?x" }) do
     local ok, err, created = call(ADMIN, { uris = { G .. "ok", bad } })
     eq(ok, false, tostring(bad)); assert(tostring(err):find("uris%[2%]"), err); eq(created, nil)
   end

@@ -13,9 +13,10 @@ local function uri(r) return "at://" .. P .. "/" .. G .. "/" .. r end
 
 -- S.pds: what the catalogue PDS holds. S.index: HappyView's row (cid only).
 local function run(opts)
-  local S = { pds = opts.pds or {}, index = opts.index or {}, puts = {}, warns = {}, chained = {}, waits = 0, reads = 0 }
+  local S = { pds = opts.pds or {}, index = opts.index or {}, puts = {}, warns = {}, chained = {}, waits = 0, reads = 0, ext = {} }
   env = { PENTARACT_DID = P }
   json = { encode = function() return "<json>" end }
+  toarray = function(x) return x end
   log = function() end
   jobs = { create = function(ty, inp) table.insert(S.chained, { type = ty, input = inp }); return "job-" .. #S.chained end }
   local stop_after = opts.stop_after
@@ -53,6 +54,11 @@ local function run(opts)
     return repo
   end }
   db = { raw = function(sql, b)
+    if sql:find("INSERT INTO external_ids", 1, true) then
+      assert(sql:find("ON CONFLICT (service, external_id) DO UPDATE SET uri = $3", 1, true), "must upsert like game.lua")
+      S.ext[b[1] .. ":" .. tostring(b[2])] = b[3]
+      return {}
+    end
     assert(sql:find("SELECT cid FROM happyview_records WHERE uri = $1", 1, true), "unexpected sql " .. sql)
     return S.index[b[1]] and { { cid = S.index[b[1]] } } or {}
   end }
@@ -95,10 +101,34 @@ t("running it twice writes nothing the second time", function()
   assert(ok2, res2); eq(res2.counts.already_current, 1); eq(#S2.puts, 0)
 end)
 
-t("a put that makes a real commit is counted and logged", function()
-  local ok, res, S = run({ input = { uris = { uri("a") } }, pds = { [uri("a")] = game("n") }, index = { [uri("a")] = "o" }, recommit = { [uri("a")] = "n2" } })
-  assert(ok, res); eq(res.counts.committed, 1); eq(res.counts.reindexed, 0)
-  assert(S.warns[1]:find("made a real commit", 1, true) and S.warns[1]:find("n -> n2", 1, true), S.warns[1])
+t("a put that makes a real commit stops the job: nothing after it, no chain", function()
+  local uris, pds, index = {}, {}, {}
+  for i = 1, 250 do local u = uri("r" .. i); uris[i] = u; pds[u] = game("n" .. i); index[u] = "o" end
+  local ok, err, S = run({ input = { uris = uris }, pds = pds, index = index, recommit = { [uri("r2")] = "changed" } })
+  eq(ok, false); assert(tostring(err):find("made a real commit", 1, true), err)
+  eq(#S.puts, 2, "puts"); eq(#S.chained, 0, "chained")
+  assert(S.warns[1]:find(uri("r2"), 1, true) and S.warns[1]:find("n2 -> changed", 1, true), S.warns[1])
+  eq(S.progress.counts.committed, 1); eq(S.progress.reindexed[1], uri("r1"))
+end)
+
+t("a reindexed game gets its external ids upserted, as game.lua would", function()
+  local g = game("n"); g.value.externalIds = { igdb = 524, steam = "44320", gog = "" }
+  local ok, res, S = run({ input = { uris = { uri("a") } }, pds = { [uri("a")] = g }, index = { [uri("a")] = "o" } })
+  assert(ok, res); eq(S.ext["igdb:524"], uri("a")); eq(S.ext["steam:44320"], uri("a")); eq(S.ext["gog:"], nil)
+end)
+
+t("external ids are left alone for rows that were current, in a dry run, and when the mirror failed", function()
+  local g = function(c) local x = game(c); x.value.externalIds = { igdb = 1 }; return x end
+  local _, _, S1 = run({ input = { uris = { uri("a") } }, pds = { [uri("a")] = g("c") }, index = { [uri("a")] = "c" } })
+  local _, _, S2 = run({ input = { uris = { uri("a") }, dryRun = true }, pds = { [uri("a")] = g("n") }, index = { [uri("a")] = "o" } })
+  local _, _, S3 = run({ input = { uris = { uri("a") } }, pds = { [uri("a")] = g("n") }, index = { [uri("a")] = "o" }, mirror_fails = { [uri("a")] = true } })
+  eq(next(S1.ext), nil); eq(next(S2.ext), nil); eq(next(S3.ext), nil)
+end)
+
+t("the result lists the reindexed URIs, and only those", function()
+  local ok, res = run({ input = { uris = { uri("a"), uri("b"), uri("c") } },
+    pds = { [uri("a")] = game("n"), [uri("b")] = game("same"), [uri("c")] = game("n") }, index = { [uri("a")] = "o", [uri("b")] = "same", [uri("c")] = "o" } })
+  assert(ok, res); eq(#res.reindexed, 2); eq(res.reindexed[1], uri("a")); eq(res.reindexed[2], uri("c"))
 end)
 
 t("an index the mirror did not update is reported, not counted as done", function()
@@ -125,8 +155,9 @@ t("a dead grant fails the job before anything is read", function()
 end)
 
 t("a URI outside the catalogue's games is skipped", function()
-  local ok, res, S = run({ input = { uris = { "at://did:plc:else/" .. G .. "/x", "at://" .. P .. "/games.gamesgamesgamesgames.contribution/x" } } })
-  assert(ok, res); eq(res.counts.invalid, 2); eq(S.reads, 0); eq(#S.puts, 0)
+  local ok, res, S = run({ input = { uris = { "at://did:plc:else/" .. G .. "/x", "at://" .. P .. "/games.gamesgamesgamesgames.contribution/x",
+    uri("bad rkey"), uri("a/b"), uri("a?x=1") } } })
+  assert(ok, res); eq(res.counts.invalid, 5); eq(S.reads, 0); eq(#S.puts, 0)
 end)
 
 t("works 200 at a time and chains the rest with the same settings", function()

@@ -8,11 +8,13 @@
 -- record and CID it returns into the index. The catalogue repo is not changed.
 --
 -- If the put does produce a new CID (the record did not round-trip to the same
--- bytes), the PDS made a real commit with the same content. That is harmless,
--- but it is logged and counted as `committed`.
+-- bytes), the PDS made a real commit with the same content. The job stops
+-- there, without chaining, so at most one record is ever rewritten that way;
+-- the URI and both CIDs are logged for investigation.
 --
--- This updates the index only. record.index hooks (game.lua's search push) do
--- not run, because no firehose event is produced.
+-- No firehose event is produced, so record.index hooks do not run. The job
+-- does game.lua's external_ids upsert itself, but not its search push: the
+-- result lists the reindexed URIs so a search backfill can target them.
 --
 -- Input:
 --   uris      catalogue game URIs, at most 5000. Each job takes the first
@@ -22,6 +24,12 @@
 
 local GAME_COLLECTION = "games.gamesgamesgamesgames.game"
 local CHUNK = 200
+
+-- The services game.lua writes to external_ids, in the same order.
+local EXTERNAL_ID_SERVICES = {
+  "igdb", "steam", "gog", "epicGames", "humbleBundle", "playStation",
+  "xbox", "nintendoEshop", "appleAppStore", "googlePlay", "twitch",
+}
 
 local function did_of(uri)
   return uri and uri:match("^at://([^/]+)/")
@@ -84,6 +92,24 @@ local function index_cid(uri)
   return rows and rows[1] and rows[1].cid or nil
 end
 
+-- What game.lua's record.index hook does for external_ids, which the hook
+-- would have done had the update arrived over the firehose.
+local function upsert_external_ids(uri, record)
+  local ids = record.externalIds
+  if type(ids) ~= "table" then
+    return
+  end
+  for _, service in ipairs(EXTERNAL_ID_SERVICES) do
+    local value = ids[service]
+    if value and value ~= "" then
+      db.raw(
+        "INSERT INTO external_ids (service, external_id, uri) VALUES ($1, $2, $3) ON CONFLICT (service, external_id) DO UPDATE SET uri = $3",
+        { service, value, uri }
+      )
+    end
+  end
+end
+
 local function reindex_one(pentaract, uri, dry_run)
   local game = read_game(pentaract, uri)
   if not game then
@@ -105,13 +131,13 @@ local function reindex_one(pentaract, uri, dry_run)
   })
   local after_put = res and res.cid
   if after_put ~= game.cid then
-    job.warn("identical put of " .. uri .. " made a real commit: " .. tostring(game.cid) .. " -> " .. tostring(after_put))
-    return "committed"
+    return "committed", tostring(game.cid) .. " -> " .. tostring(after_put)
   end
   if index_cid(uri) ~= game.cid then
     job.warn("index for " .. uri .. " still at " .. tostring(index_cid(uri)) .. " after the put; the PDS has " .. game.cid)
     return "index_not_updated"
   end
+  upsert_external_ids(uri, game.record)
   return "reindexed"
 end
 
@@ -119,7 +145,8 @@ local function valid_uri(uri)
   return type(uri) == "string"
     and did_of(uri) == env.PENTARACT_DID
     and collection_of(uri) == GAME_COLLECTION
-    and (rkey_of(uri) or "") ~= ""
+    and uri == "at://" .. env.PENTARACT_DID .. "/" .. GAME_COLLECTION .. "/" .. (rkey_of(uri) or "")
+    and (rkey_of(uri) or ""):match("^[%w%._:~%-]+$") ~= nil
 end
 
 function handle()
@@ -139,6 +166,7 @@ function handle()
     missing_on_pds = 0, index_not_updated = 0, invalid = 0, failed = 0,
   }
   local processed, stopped = 0, false
+  local reindexed_uris = {}
   local n = math.min(#uris, CHUNK)
 
   for i = 1, n do
@@ -152,9 +180,18 @@ function handle()
       counts.invalid = counts.invalid + 1
       job.warn("skipping " .. tostring(uri) .. ": not a catalogue game URI")
     else
-      local ok, res = pcall(reindex_one, pentaract, uri, dry_run)
-      if ok then
+      local ok, res, detail = pcall(reindex_one, pentaract, uri, dry_run)
+      if ok and res == "committed" then
+        counts.committed = counts.committed + 1
+        local msg = "identical put of " .. uri .. " made a real commit: " .. detail .. "; stopping the reindex"
+        job.warn(msg)
+        job.progress({ processed = processed, counts = counts, reindexed = toarray(reindexed_uris) })
+        error(msg)
+      elseif ok then
         counts[res] = counts[res] + 1
+        if res == "reindexed" then
+          table.insert(reindexed_uris, uri)
+        end
       elseif is_grant_error(res) then
         error(res)
       else
@@ -179,7 +216,10 @@ function handle()
     next_job = jobs.create("catalogue.reindex", { uris = rest, dryRun = dry_run, delay = delay })
   end
 
-  local out = { processed = processed, remaining = #uris - processed, counts = counts, stopped = stopped, next = next_job }
+  local out = {
+    processed = processed, remaining = #uris - processed, counts = counts, stopped = stopped, next = next_job,
+    reindexed = toarray(reindexed_uris),
+  }
   job.progress(out)
   log("catalogue.reindex: " .. json.encode(counts) .. " remaining=" .. tostring(#uris - processed) .. (next_job and (" next=" .. next_job) or ""))
   return out
