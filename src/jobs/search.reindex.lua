@@ -273,7 +273,7 @@ local function build_game_doc(target_uri, target_did, record)
 
   -- Look up slug from the slugs table
   local slug = nil
-  local slug_rows = db.raw("SELECT slug FROM slugs WHERE uri = $1 LIMIT 1", { target_uri })
+  local slug_rows = db.raw("SELECT slug FROM slugs WHERE uri = $1 ORDER BY length(slug), slug LIMIT 1", { target_uri })
   if slug_rows and #slug_rows > 0 then
     slug = slug_rows[1].slug
   end

@@ -49,13 +49,49 @@ local function apply_changes(record, changes)
   return record
 end
 
+-- Accented Latin letters, grouped by the plain letter each one decomposes to
+-- (its Unicode NFD form without the combining marks). Slugs fold them the
+-- way the sync's old slugify did: "Löwenzahn" becomes "lowenzahn".
+local ACCENT_FOLD = {}
+for letter, accented in ([[
+a ÀÁÂÃÄÅàáâãäåĀāĂăĄąǍǎǞǟǠǡǺǻȀȁȂȃȦȧḀḁẠạẢảẤấẦầẨẩẪẫẬậẮắẰằẲẳẴẵẶặ
+b ḂḃḄḅḆḇ
+c ÇçĆćĈĉĊċČčḈḉ
+d ĎďḊḋḌḍḎḏḐḑḒḓ
+e ÈÉÊËèéêëĒēĔĕĖėĘęĚěȄȅȆȇȨȩḔḕḖḗḘḙḚḛḜḝẸẹẺẻẼẽẾếỀềỂểỄễỆệ
+f Ḟḟ
+g ĜĝĞğĠġĢģǦǧǴǵḠḡ
+h ĤĥȞȟḢḣḤḥḦḧḨḩḪḫẖ
+i ÌÍÎÏìíîïĨĩĪīĬĭĮįİǏǐȈȉȊȋḬḭḮḯỈỉỊị
+j Ĵĵǰ
+k ĶķǨǩḰḱḲḳḴḵ
+l ĹĺĻļĽľḶḷḸḹḺḻḼḽ
+m ḾḿṀṁṂṃ
+n ÑñŃńŅņŇňǸǹṄṅṆṇṈṉṊṋ
+o ÒÓÔÕÖòóôõöŌōŎŏŐőƠơǑǒǪǫǬǭȌȍȎȏȪȫȬȭȮȯȰȱṌṍṎṏṐṑṒṓỌọỎỏỐốỒồỔổỖỗỘộỚớỜờỞởỠỡỢợ
+p ṔṕṖṗ
+r ŔŕŖŗŘřȐȑȒȓṘṙṚṛṜṝṞṟ
+s ŚśŜŝŞşŠšȘșṠṡṢṣṤṥṦṧṨṩ
+t ŢţŤťȚțṪṫṬṭṮṯṰṱẗ
+u ÙÚÛÜùúûüŨũŪūŬŭŮůŰűŲųƯưǓǔǕǖǗǘǙǚǛǜȔȕȖȗṲṳṴṵṶṷṸṹṺṻỤụỦủỨứỪừỬửỮữỰự
+v ṼṽṾṿ
+w ŴŵẀẁẂẃẄẅẆẇẈẉẘ
+x ẊẋẌẍ
+y ÝýÿŶŷŸȲȳẎẏẙỲỳỴỵỶỷỸỹ
+z ŹźŻżŽžẐẑẒẓẔẕ
+]]):gmatch("(%a) (%S+)") do
+  for ch in accented:gmatch("[\xC2-\xF4][\x80-\xBF]*") do
+    ACCENT_FOLD[ch] = letter
+  end
+end
+
 -- Same rules as createGame's generate_slug.
 local function generate_slug(str)
   if not str or str == "" then
     return nil
   end
 
-  local slug = str:lower()
+  local slug = (str:gsub("[\xC2-\xF4][\x80-\xBF]*", ACCENT_FOLD)):lower()
   slug = slug:gsub("[^%w%s%-]", "")
   slug = slug:gsub("%s+", "-")
   slug = slug:gsub("%-+", "-")
@@ -82,6 +118,11 @@ local function assign_slug(name, uri)
     local rows = db.raw("SELECT uri FROM slugs WHERE slug = $1 LIMIT 1", { slug })
     if not rows or #rows == 0 then
       break
+    end
+    -- game.lua's index hook assigns the same slug by the same rule, and may
+    -- have got there first.
+    if rows[1].uri == uri then
+      return
     end
     n = n + 1
     slug = base .. "-" .. n
