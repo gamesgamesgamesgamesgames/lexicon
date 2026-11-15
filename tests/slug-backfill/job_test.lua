@@ -262,7 +262,7 @@ end)
 
 local function call(caller, body, queue)
   local created
-  env = { ADMIN_DIDS = "did:plc:admin" }
+  env = { ADMIN_DIDS = "did:plc:admin", MAINTENANCE_DIDS = "did:plc:other, did:plc:maint" }
   caller_did = caller
   input = body or {}
   jobs = { create = function(ty, inp) created = { type = ty, input = inp }; return "job-1" end }
@@ -278,6 +278,22 @@ end
 
 t("only admins can queue a backfill", function()
   local ok, err = call("did:plc:someone", {})
+  assert(not ok); assert(tostring(err):find("unauthorized", 1, true))
+end)
+
+t("the maintenance account can queue a backfill", function()
+  local ok, res, created = call("did:plc:maint", { dryRun = false })
+  assert(ok, res); eq(created.type, "slugs.backfill"); eq(created.input.dryRun, false)
+end)
+
+t("a backfill with MAINTENANCE_DIDS unset is admins only", function()
+  env = { ADMIN_DIDS = "did:plc:admin" }
+  caller_did, input = "did:plc:maint", {}
+  jobs = { create = function() error("must not queue") end }
+  db = { raw = function() return {} end }
+  handle = nil
+  dofile(PROC)
+  local ok, err = pcall(handle)
   assert(not ok); assert(tostring(err):find("unauthorized", 1, true))
 end)
 

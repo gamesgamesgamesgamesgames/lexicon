@@ -5,7 +5,7 @@
 	"defs": {
 		"main": {
 			"type": "procedure",
-			"description": "Queue a job that gives games with no slug one, and puts the slug on their search document. Existing slugs are never changed. A dry run unless dryRun is false. Admins only. One backfill runs at a time.",
+			"description": "Queue a job that gives games with no slug one, and puts the slug on their search document. Existing slugs are never changed. A dry run unless dryRun is false. Admins and the maintenance account only. One backfill runs at a time.",
 			"input": {
 				"encoding": "application/json",
 				"schema": {
