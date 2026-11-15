@@ -24,9 +24,19 @@ local function to_doc_id(s)
   return table.concat(out)
 end
 
+-- Raise on anything but a 2xx, so HappyView retries the hook and
+-- dead-letters it once the retries run out, instead of losing the write.
+local function check_meili(resp, what)
+  local status = resp and resp.status or 0
+  if status < 200 or status >= 300 then
+    local body = resp and resp.body or ""
+    error(what .. " failed: Meilisearch answered " .. tostring(status) .. " " .. string.sub(body, 1, 300))
+  end
+end
+
 function handle()
   if action == "delete" then
-    http.delete(INDEX_URL .. "/" .. to_doc_id(uri), { headers = HEADERS })
+    check_meili(http.delete(INDEX_URL .. "/" .. to_doc_id(uri), { headers = HEADERS }), "deleting " .. uri)
     return true
   end
 
@@ -48,17 +58,19 @@ function handle()
     slug = slug
   }
 
-  http.post(INDEX_URL, {
+  check_meili(http.post(INDEX_URL, {
     headers = HEADERS,
     body = json.encode(toarray({ doc }))
-  })
+  }), "indexing " .. uri)
 
   -- Update game documents in Meilisearch with this collection membership
   if record.games then
     local game_updates = {}
     for _, game_uri in ipairs(record.games) do
       -- For each game, we need to add this collection to its collections array.
-      -- We do a partial update — Meilisearch merges fields on PUT.
+      -- This has to be a partial update, which is PUT: Meilisearch merges the
+      -- fields into the existing document. POST would replace the whole game
+      -- document with just { id, collections }.
       -- First, find all collections that reference this game.
       local collections_for_game = { uri }
 
@@ -83,10 +95,10 @@ function handle()
     end
 
     if #game_updates > 0 then
-      http.post(INDEX_URL, {
+      check_meili(http.put(INDEX_URL, {
         headers = HEADERS,
         body = json.encode(toarray(game_updates))
-      })
+      }), "updating the collections of " .. #game_updates .. " game(s)")
     end
   end
 
