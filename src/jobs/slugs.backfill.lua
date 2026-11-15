@@ -64,7 +64,7 @@ local function generate_slug(str)
 end
 
 local function own_slug(uri)
-  local rows = db.raw("SELECT slug FROM slugs WHERE uri = $1 LIMIT 1", { uri })
+  local rows = db.raw("SELECT slug FROM slugs WHERE uri = $1 ORDER BY length(slug), slug LIMIT 1", { uri })
   return rows and rows[1] and rows[1].slug or nil
 end
 

@@ -18,8 +18,8 @@ local function run(opts)
   }
   for _, r in ipairs(opts.slugs or {}) do S.by_slug[r[1]] = r[2] end
   local function own(u)
-    local best
-    for s, owner in pairs(S.by_slug) do if owner == u and (not best or s < best) then best = s end end
+    local best -- shortest, then alphabetical, as the job orders it
+    for s, owner in pairs(S.by_slug) do if owner == u and (not best or #s < #best or (#s == #best and s < best)) then best = s end end
     return best
   end
 
@@ -87,6 +87,7 @@ local function run(opts)
       local name = S.games[b[1]]
       return name and { { name = name } } or {}
     elseif sql:find("SELECT slug FROM slugs WHERE uri = $1", 1, true) then
+      assert(sql:find("ORDER BY length(slug), slug LIMIT 1", 1, true), "a lookup by uri must be deterministic")
       local s = own(b[1])
       return s and { { slug = s } } or {}
     elseif sql:find("SELECT uri FROM slugs WHERE slug = $1", 1, true) then
