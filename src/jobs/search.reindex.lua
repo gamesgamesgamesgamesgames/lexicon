@@ -260,6 +260,120 @@ local function upsert_external_ids(target_uri, record)
   end
 end
 
+-- Official and popularity signals ----------------------------------------
+--
+-- officialScore (0 to 4) ranks real releases above fan games, mods and
+-- unlicensed games that share their names. 0 means "not official": the game is
+-- a mod or fork, its keywords call it unofficial or a fan game, or Wikidata
+-- classes it as a mod, fan game or unlicensed game. Anything else starts at 1
+-- and gains a point for each of:
+--   * a publisher credit from an organization that publishes at least
+--     MIN_PUBLISHED_GAMES games in the catalogue (fan teams publish one or two);
+--   * an age rating (other than ESRB's "rating pending");
+--   * a Wikidata item with at least one sitelink or a publisher.
+--
+-- popularityBucket (0 to 10) is floor(log2(1 + 5 * sitelinks)), from Wikidata
+-- sitelinks for now; IGDB rating counts join it later. It is bucketed so the
+-- ranking rules after it (application type, then release date) still decide
+-- between games of similar popularity.
+
+local CREDIT_NSID = "games.gamesgamesgamesgames.org.credit"
+local MIN_PUBLISHED_GAMES = 10
+local NOT_OFFICIAL_TYPES = { mod = true, fork = true }
+local FAN_KEYWORDS = {
+  "unofficial", "fangame", "fan game", "fan-game", "fan made", "fan-made",
+  "romhack", "rom hack",
+}
+
+local function has_fan_keyword(keywords)
+  if type(keywords) ~= "table" then return false end
+  for _, k in ipairs(keywords) do
+    local lower = type(k) == "string" and k:lower() or ""
+    for _, fan in ipairs(FAN_KEYWORDS) do
+      if lower == fan then return true end
+    end
+  end
+  return false
+end
+
+local function has_age_rating(record)
+  if type(record.ageRatings) ~= "table" then return false end
+  for _, ar in ipairs(record.ageRatings) do
+    if ar.organization and ar.rating and not (ar.organization == "esrb" and ar.rating == "RP") then
+      return true
+    end
+  end
+  return false
+end
+
+-- True when a publisher credited on this game publishes at least
+-- MIN_PUBLISHED_GAMES games, per the publisher_counts table.
+local function has_major_publisher(target_uri)
+  local orgs, cursor = {}, nil
+  for _ = 1, 5 do
+    local page = db.backlinks({ collection = CREDIT_NSID, uri = target_uri, limit = 100, cursor = cursor })
+    if not page or not page.records then break end
+    for _, credit in ipairs(page.records) do
+      local org = type(credit.org) == "table" and credit.org.uri
+      local game = type(credit.game) == "table" and credit.game.uri
+      if org and game == target_uri and type(credit.roles) == "table" then
+        for _, role in ipairs(credit.roles) do
+          if role == "publisher" then table.insert(orgs, org); break end
+        end
+      end
+    end
+    cursor = page.cursor
+    if not cursor or #page.records < 100 then break end
+  end
+  if #orgs == 0 then return false end
+  local marks, binds = {}, { MIN_PUBLISHED_GAMES }
+  for i, org in ipairs(orgs) do marks[i] = "$" .. (i + 1); binds[i + 1] = org end
+  local rows = db.raw(
+    "SELECT 1 AS ok FROM publisher_counts WHERE games >= $1 AND org_uri IN (" .. table.concat(marks, ", ") .. ") LIMIT 1",
+    binds
+  )
+  return rows ~= nil and #rows > 0
+end
+
+-- The game's wikidata_games row, or nil. Until the wikidata.sync tables exist
+-- the lookup reports nothing, so this builder can ship before them; any other
+-- database error is raised as usual.
+local function wikidata_row(record)
+  local igdb = type(record.externalIds) == "table" and record.externalIds.igdb
+  if not igdb or igdb == "" then return nil end
+  local ok, rows = pcall(db.raw,
+    "SELECT sitelinks, has_publisher, veto_class FROM wikidata_games WHERE igdb_id = $1 LIMIT 1",
+    { tostring(igdb) })
+  if not ok then
+    if tostring(rows):find("wikidata_games", 1, true) and tostring(rows):find("does not exist", 1, true) then
+      return nil
+    end
+    error(rows, 0)
+  end
+  return rows and rows[1] or nil
+end
+
+local function popularity_bucket(sitelinks)
+  local n = tonumber(sitelinks) or 0
+  if n <= 0 then return 0 end
+  return math.min(10, math.floor(math.log(1 + 5 * n, 2)))
+end
+
+-- Returns officialScore, popularityBucket.
+local function official_signals(target_uri, record)
+  local wd = wikidata_row(record)
+  local popularity = popularity_bucket(wd and wd.sitelinks)
+  if NOT_OFFICIAL_TYPES[record.applicationType] or has_fan_keyword(record.keywords)
+    or (wd and wd.veto_class and wd.veto_class ~= "") then
+    return 0, popularity
+  end
+  local score = 1
+  if has_major_publisher(target_uri) then score = score + 1 end
+  if has_age_rating(record) then score = score + 1 end
+  if wd and ((tonumber(wd.sitelinks) or 0) > 0 or (tonumber(wd.has_publisher) or 0) > 0) then score = score + 1 end
+  return score, popularity
+end
+
 -- Build the index document for one game, without writing anything.
 --
 -- `record` is the game record to index. The builder never looks the record up
@@ -309,6 +423,8 @@ local function build_game_doc(target_uri, target_did, record)
     collections = toarray(game_collections(target_uri)),
     ageRatings = {}
   }
+
+  doc.officialScore, doc.popularityBucket = official_signals(target_uri, record)
 
   if type(record.externalIds) == "table" then
     for _, pair in ipairs(STORE_ID_FIELDS) do
