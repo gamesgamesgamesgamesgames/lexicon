@@ -11,7 +11,9 @@
 		"generate:reference": "bun run --filter='@lexicon/docs' generate:reference",
 		"lint": "bun run --filter='*' lint",
 		"typecheck": "bun run --filter='*' typecheck",
-		"test": "bun run --filter='*' test"
+		"test": "bun run --filter='*' test",
+		"generate:shared": "bun scripts/generate-shared.ts",
+		"check:shared": "bun scripts/generate-shared.ts --check"
 	},
 	"devDependencies": {
 		"typescript": "^5.6.0"

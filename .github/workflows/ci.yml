@@ -24,6 +24,10 @@ on:
       - 'src/lexicons/**'
       - 'src/scripts/**'
       - 'src/jobs/**'
+      - 'src/shared/**'
+      - 'scripts/**'
+      - 'tests/**'
+      - 'package.json'
       - 'packages/docs/**'
       - 'packages/design-system/**'
       - 'tsconfig.base.json'
@@ -34,6 +38,10 @@ on:
       - 'src/lexicons/**'
       - 'src/scripts/**'
       - 'src/jobs/**'
+      - 'src/shared/**'
+      - 'scripts/**'
+      - 'tests/**'
+      - 'package.json'
       - 'packages/docs/**'
       - 'packages/design-system/**'
       - 'tsconfig.base.json'
@@ -60,6 +68,7 @@ jobs:
       cartridge_files: ${{ steps.filter.outputs.cartridge_files }}
       happyview: ${{ steps.filter.outputs.happyview }}
       happyview_files: ${{ steps.filter.outputs.happyview_files }}
+      generated: ${{ steps.filter.outputs.generated }}
       docs: ${{ steps.filter.outputs.docs }}
     steps:
       - name: Checkout
@@ -79,6 +88,14 @@ jobs:
               - 'src/lexicons/**'
               - 'src/scripts/**'
               - 'src/jobs/**'
+            generated:
+              - 'src/lexicons/**'
+              - 'src/scripts/**'
+              - 'src/jobs/**'
+              - 'src/shared/**'
+              - 'scripts/**'
+              - 'tests/**'
+              - 'package.json'
             docs:
               - 'src/lexicons/**'
               - 'packages/docs/**'
@@ -107,6 +124,42 @@ jobs:
         with:
           lexicon-path: ./src/lexicons
           failure-threshold: error
+
+  generated:
+    name: Check Generated Blocks
+    needs: changes
+    if: >-
+      always()
+      && (
+        needs.changes.outputs.generated == 'true'
+        || (github.event_name == 'workflow_dispatch' && inputs.happyview)
+      )
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+
+      # Handlers carry inlined copies of src/shared/*.lua because HappyView's
+      # Lua cannot require across scripts. This is the lockfile check for them.
+      - name: Check generated blocks are current
+        run: bun run check:shared
+
+      - name: Set up Lua
+        run: sudo apt-get update && sudo apt-get install -y lua5.4
+
+      # The standalone suites each take the script under test as an argument.
+      - name: Run Lua tests
+        run: |
+          set -e
+          lua5.4 tests/reindex/job_test.lua src/jobs/catalogue.reindex.lua
+          lua5.4 tests/reindex/procedure_test.lua src/scripts/games/gamesgamesgamesgames/reindexCatalogueGames.lua
+          lua5.4 tests/auto-accept/job_test.lua src/jobs/contribution.auto-accept.lua
+          lua5.4 tests/auto-accept/procedure_test.lua src/scripts/games/gamesgamesgamesgames/autoAcceptContributions.lua
+          lua5.4 tests/search-reindex/job_test.lua src/jobs/search.reindex.lua
+          lua5.4 tests/search-reindex/hooks_test.lua
 
   # breaking:
   #   name: Check Breaking Changes
@@ -168,12 +221,13 @@ jobs:
   # ---------------------------------------------------------------------------
   deploy:
     name: Deploy to HappyView
-    needs: [changes, lint]
+    needs: [changes, lint, generated]
     if: >-
       always()
       && github.ref == 'refs/heads/main'
       && (needs.changes.outputs.happyview == 'true' || (github.event_name == 'workflow_dispatch' && inputs.happyview))
       && needs.lint.result == 'success'
+      && needs.generated.result == 'success'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

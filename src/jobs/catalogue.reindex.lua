@@ -103,7 +103,7 @@ local function upsert_external_ids(uri, record)
     local value = ids[service]
     if value and value ~= "" then
       db.raw(
-        "INSERT INTO external_ids (service, external_id, uri) VALUES ($1, $2, $3) ON CONFLICT (service, external_id) DO UPDATE SET uri = $3",
+        "INSERT INTO external_ids (service, external_id, uri) VALUES ($1, $2, $3) ON CONFLICT (service, external_id) DO UPDATE SET uri = $3 WHERE external_ids.uri IS DISTINCT FROM EXCLUDED.uri",
         { service, value, uri }
       )
     end
