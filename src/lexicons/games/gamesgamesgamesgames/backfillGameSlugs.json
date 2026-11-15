@@ -1,0 +1,57 @@
+{
+	"$type": "com.atproto.lexicon.schema",
+	"lexicon": 1,
+	"id": "games.gamesgamesgamesgames.backfillGameSlugs",
+	"defs": {
+		"main": {
+			"type": "procedure",
+			"description": "Queue a job that gives games with no slug one, and puts the slug on their search document. Existing slugs are never changed. A dry run unless dryRun is false. Admins only. One backfill runs at a time.",
+			"input": {
+				"encoding": "application/json",
+				"schema": {
+					"type": "object",
+					"properties": {
+						"uris": {
+							"type": "array",
+							"minLength": 1,
+							"maxLength": 5000,
+							"items": { "type": "string", "format": "at-uri" },
+							"description": "Only these game URIs. A game that already has a slug gets it copied to its search document if that is missing it. Without uris, the job walks every game that has no slug."
+						},
+						"dryRun": {
+							"type": "boolean",
+							"default": true,
+							"description": "Choose slugs and compare search documents, but write nothing. Pass false to write."
+						},
+						"maxGames": {
+							"type": "integer",
+							"minimum": 1,
+							"description": "Stop after this many games, for a trial run."
+						}
+					}
+				}
+			},
+			"output": {
+				"encoding": "application/json",
+				"schema": {
+					"type": "object",
+					"required": ["jobId", "dryRun"],
+					"properties": {
+						"jobId": { "type": "string", "maxLength": 128 },
+						"dryRun": { "type": "boolean" },
+						"alreadyQueued": {
+							"type": "boolean",
+							"description": "True when a backfill was already pending or running; jobId is that job, and nothing new was queued."
+						},
+						"status": {
+							"type": "string",
+							"maxLength": 32,
+							"knownValues": ["pending", "running"],
+							"description": "The existing job's status, when alreadyQueued is true."
+						}
+					}
+				}
+			}
+		}
+	}
+}
