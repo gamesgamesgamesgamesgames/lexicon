@@ -23,7 +23,7 @@ local function run(opts)
     return best
   end
 
-  env = opts.env or { MEILISEARCH_URL = "http://meili", MEILISEARCH_API_KEY = "k" }
+  env = opts.env or { MEILISEARCH_URL = "http://meili", MEILISEARCH_API_KEY = "k", PENTARACT_DID = "did:web:catalogue", VERIFIER_DID = "did:plc:verifier" }
   json = {
     -- Bodies stay tables so the fakes can read them; concatenating one (the
     -- log line) yields a placeholder.
@@ -72,7 +72,11 @@ local function run(opts)
     end,
   }
   db = { raw = function(sql, b)
-    if sql:find("FROM happyview_records r", 1, true) then
+    if sql:find("dev.cartridge.graph.verification", 1, true) then
+      assert(b[1] == "did:plc:verifier")
+      S.verify_checks = (S.verify_checks or 0) + 1
+      return b[2] == "did:plc:verified" and { { uri = "v" } } or {}
+    elseif sql:find("FROM happyview_records r", 1, true) then
       assert(sql:find("NOT EXISTS (SELECT 1 FROM slugs s WHERE s.uri = r.uri)", 1, true))
       local limit = tonumber(sql:match("LIMIT (%d+)"))
       local list = {}
@@ -229,6 +233,25 @@ end)
 t("a failed search fetch fails the job", function()
   local ok, err = run({ input = { dryRun = true }, games = { [uri("a")] = "Dirt 3" }, docs = {}, fetch_status = 500 })
   assert(not ok); assert(tostring(err):find("fetching search documents failed", 1, true))
+end)
+
+t("accented names fold to plain ASCII", function()
+  local ok, res = run({ input = { dryRun = true }, games = { [uri("a")] = "Löwenzahn 3" } })
+  assert(ok, res)
+  eq(res.totals.samples.assigned[1].slug, "lowenzahn-3")
+end)
+
+t("only catalogue and verified-developer games get a slug", function()
+  local dev = "at://did:plc:verified/" .. G .. "/g"
+  local other = "at://did:plc:someone/" .. G .. "/folk"
+  local ok, res, S = run({
+    input = { dryRun = false },
+    games = { [uri("a")] = "Dirt 3", [dev] = "Grand Space Odyssey", [other] = "FOLK", ["at://did:plc:someone/" .. G .. "/b"] = "Folk Two" },
+  })
+  assert(ok, res)
+  eq(S.by_slug["dirt-3"], uri("a")); eq(S.by_slug["grand-space-odyssey"], dev); eq(S.by_slug["folk"], nil)
+  eq(res.totals.counts.notEligible, 2); eq(res.totals.counts.assigned, 2)
+  eq(S.verify_checks, 2, "one verification lookup per repo per job:")
 end)
 
 -- Procedure

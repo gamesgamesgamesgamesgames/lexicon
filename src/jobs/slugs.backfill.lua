@@ -6,7 +6,8 @@
 -- developer's own repo) never got a slugs row: only procedures assign them.
 --
 -- For each game the job:
---   1. keeps the slug the game already has, or assigns one by createGame's
+--   1. keeps the slug the game already has, or, for a game in the catalogue
+--      repo or a verified developer's repo, assigns one by createGame's
 --      generate_slug rule. A slug another game holds gets a numeric suffix
 --      (-2, -3, ...); no existing slug is ever changed or repointed.
 --   2. reads the game's search document and, if its slug differs, sends just
@@ -44,13 +45,49 @@ local function meili()
   }
 end
 
+-- Accented Latin letters, grouped by the plain letter each one decomposes to
+-- (its Unicode NFD form without the combining marks). Slugs fold them the
+-- way the sync's old slugify did: "Löwenzahn" becomes "lowenzahn".
+local ACCENT_FOLD = {}
+for letter, accented in ([[
+a ÀÁÂÃÄÅàáâãäåĀāĂăĄąǍǎǞǟǠǡǺǻȀȁȂȃȦȧḀḁẠạẢảẤấẦầẨẩẪẫẬậẮắẰằẲẳẴẵẶặ
+b ḂḃḄḅḆḇ
+c ÇçĆćĈĉĊċČčḈḉ
+d ĎďḊḋḌḍḎḏḐḑḒḓ
+e ÈÉÊËèéêëĒēĔĕĖėĘęĚěȄȅȆȇȨȩḔḕḖḗḘḙḚḛḜḝẸẹẺẻẼẽẾếỀềỂểỄễỆệ
+f Ḟḟ
+g ĜĝĞğĠġĢģǦǧǴǵḠḡ
+h ĤĥȞȟḢḣḤḥḦḧḨḩḪḫẖ
+i ÌÍÎÏìíîïĨĩĪīĬĭĮįİǏǐȈȉȊȋḬḭḮḯỈỉỊị
+j Ĵĵǰ
+k ĶķǨǩḰḱḲḳḴḵ
+l ĹĺĻļĽľḶḷḸḹḺḻḼḽ
+m ḾḿṀṁṂṃ
+n ÑñŃńŅņŇňǸǹṄṅṆṇṈṉṊṋ
+o ÒÓÔÕÖòóôõöŌōŎŏŐőƠơǑǒǪǫǬǭȌȍȎȏȪȫȬȭȮȯȰȱṌṍṎṏṐṑṒṓỌọỎỏỐốỒồỔổỖỗỘộỚớỜờỞởỠỡỢợ
+p ṔṕṖṗ
+r ŔŕŖŗŘřȐȑȒȓṘṙṚṛṜṝṞṟ
+s ŚśŜŝŞşŠšȘșṠṡṢṣṤṥṦṧṨṩ
+t ŢţŤťȚțṪṫṬṭṮṯṰṱẗ
+u ÙÚÛÜùúûüŨũŪūŬŭŮůŰűŲųƯưǓǔǕǖǗǘǙǚǛǜȔȕȖȗṲṳṴṵṶṷṸṹṺṻỤụỦủỨứỪừỬửỮữỰự
+v ṼṽṾṿ
+w ŴŵẀẁẂẃẄẅẆẇẈẉẘ
+x ẊẋẌẍ
+y ÝýÿŶŷŸȲȳẎẏẙỲỳỴỵỶỷỸỹ
+z ŹźŻżŽžẐẑẒẓẔẕ
+]]):gmatch("(%a) (%S+)") do
+  for ch in accented:gmatch("[\xC2-\xF4][\x80-\xBF]*") do
+    ACCENT_FOLD[ch] = letter
+  end
+end
+
 -- Same rules as createGame's generate_slug.
 local function generate_slug(str)
   if not str or str == "" then
     return nil
   end
 
-  local slug = str:lower()
+  local slug = (str:gsub("[\xC2-\xF4][\x80-\xBF]*", ACCENT_FOLD)):lower()
   slug = slug:gsub("[^%w%s%-]", "")
   slug = slug:gsub("%s+", "-")
   slug = slug:gsub("%-+", "-")
@@ -105,6 +142,31 @@ local function choose_slug(uri, name, dry_run, planned)
   error("no free slug for " .. uri .. " after " .. base .. "-" .. MAX_SLUG_SUFFIX)
 end
 
+-- The same eligibility as game.lua's index hook: the catalogue repo, and the
+-- repos of developers verified by VERIFIER_DID. Other accounts' games are
+-- counted as notEligible and left without a slug. Cached per job.
+local function eligibility()
+  local cache = {}
+  return function(target_did)
+    if cache[target_did] ~= nil then
+      return cache[target_did]
+    end
+    local ok = false
+    local catalogue = env.PENTARACT_DID
+    if catalogue and catalogue ~= "" and target_did == catalogue then
+      ok = true
+    elseif env.VERIFIER_DID and env.VERIFIER_DID ~= "" and target_did then
+      local rows = db.raw(
+        "SELECT uri FROM happyview_records WHERE collection = 'dev.cartridge.graph.verification' AND did = $1 AND record::jsonb->>'subject' = $2 LIMIT 1",
+        { env.VERIFIER_DID, target_did }
+      )
+      ok = rows ~= nil and #rows > 0
+    end
+    cache[target_did] = ok
+    return ok
+  end
+end
+
 -- URIs go into a Meilisearch filter between double quotes.
 local function filter_safe(uri)
   return type(uri) == "string" and uri:match("^at://[%w%.:%%_~%-]+/[%w%._~%-]+/[%w%._:~%-]+$") ~= nil
@@ -117,7 +179,7 @@ end
 local function new_totals()
   return {
     counts = {
-      assigned = 0, wouldAssign = 0, hadSlug = 0, noName = 0, notAGame = 0, invalid = 0,
+      assigned = 0, wouldAssign = 0, hadSlug = 0, noName = 0, notEligible = 0, notAGame = 0, invalid = 0,
       pushed = 0, wouldPush = 0, searchCurrent = 0, notInSearch = 0, failed = 0,
     },
     processed = 0,
@@ -232,6 +294,7 @@ function handle()
   local rows = next_chunk(input, budget)
   local planned = {}
   local to_check = {}
+  local eligible = eligibility()
 
   for _, row in ipairs(rows) do
     totals.processed = totals.processed + 1
@@ -245,6 +308,8 @@ function handle()
       if existing then
         bump(totals, "hadSlug")
         table.insert(to_check, { uri = row.uri, slug = existing })
+      elseif not eligible(row.uri:match("^at://([^/]+)/")) then
+        bump(totals, "notEligible")
       else
         local ok, slug = pcall(choose_slug, row.uri, row.name, dry_run, planned)
         if not ok then
