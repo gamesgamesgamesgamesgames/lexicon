@@ -19,7 +19,7 @@ local function run(input, opts)
   log = function() end
   http = { post = function(url, o)
     table.insert(S.posts, { url = url, opts = o })
-    return { status = opts.status or 200, body = opts.csv or "" }
+    return { status = opts.status or 200, body = opts.csv or "", headers = opts.headers or {} }
   end }
   db = { raw = function(sql, b)
     table.insert(S.sql, sql); table.insert(S.binds, b)
@@ -68,10 +68,45 @@ t("two items claiming one IGDB ID: the better-linked wins, then the lower QID", 
   eq(#rows, 2); eq(rows[1][2], "Q20"); eq(rows[2][2], "Q99")
 end)
 
-t("rows without a numeric IGDB ID are skipped and reported", function()
-  local csv = "num,item,links\nabc," .. E .. "Q1,3\n12," .. E .. "Q2,3\n"
-  local ok, res, S = run({}, { csv = csv })
-  assert(ok, res); eq(#staged_rows(S), 1); eq(res.totals.sitelinksSkipped, 1); eq(#S.warns, 1)
+local function many(n, extra)
+  local lines = { "num,item,links" }
+  for i = 1, n do table.insert(lines, i .. "," .. E .. "Q" .. i .. ",3") end
+  for _, l in ipairs(extra or {}) do table.insert(lines, l) end
+  return table.concat(lines, "\n") .. "\n"
+end
+
+t("a few rows without a numeric IGDB ID are skipped and reported", function()
+  local ok, res, S = run({}, { csv = many(200, { "abc," .. E .. "Q9999,3" }) })
+  assert(ok, res); eq(#staged_rows(S), 200); eq(res.totals.sitelinksSkipped, 1); eq(#S.warns, 1)
+end)
+
+t("a step that skips more than 1% of its rows fails before staging", function()
+  local ok, err, S = run({}, { csv = many(50, { "abc," .. E .. "Q1,3", "x," .. E .. "Q2,3" }) })
+  eq(ok, false); assert(tostring(err):find("refusing to stage a suspect answer", 1, true), err)
+  eq(#staged_rows(S), 0); eq(#S.chained, 0)
+end)
+
+t("a step well under the last sync's count fails as truncated", function()
+  -- counts: the step's current-column count comes first
+  local ok, err, S = run({ step = "publisher" }, { counts = { 42214 }, csv = "num,item\n1," .. E .. "Q1\n" })
+  eq(ok, false); assert(tostring(err):find("refusing to stage a truncated answer", 1, true), err)
+  eq(#staged_rows(S), 0); eq(#S.chained, 0)
+end)
+
+t("the truncation guard covers the small veto column too", function()
+  local ok, err = run({ step = "veto" }, { counts = { 225 }, csv = "num,item,veto\n1," .. E .. "Q1," .. E .. "Q865493\n" })
+  eq(ok, false); assert(tostring(err):find("truncated", 1, true), err)
+end)
+
+t("force stages a short answer anyway", function()
+  local ok, res = run({ step = "publisher", force = true }, { counts = { 42214 }, csv = "num,item\n1," .. E .. "Q1\n" })
+  assert(ok, res)
+end)
+
+t("a 429 fails the step cleanly and reports Retry-After", function()
+  local ok, err, S = run({ step = "enwiki" }, { status = 429, headers = { ["retry-after"] = "120" }, csv = "" })
+  eq(ok, false); assert(tostring(err):find("rate-limited", 1, true) and tostring(err):find("retry after 120", 1, true), err)
+  eq(#S.chained, 0)
 end)
 
 t("the enwiki step keeps the article title, quoted CSV fields included", function()
@@ -90,8 +125,8 @@ t("the veto step stores the class", function()
 end)
 
 t("a non-200 answer fails the step and chains nothing", function()
-  local ok, err, S = run({ step = "publisher" }, { status = 429, csv = "slow down" })
-  eq(ok, false); assert(tostring(err):find("Wikidata answered 429", 1, true), err); eq(#S.chained, 0)
+  local ok, err, S = run({ step = "publisher" }, { status = 503, csv = "busy" })
+  eq(ok, false); assert(tostring(err):find("Wikidata answered 503", 1, true), err); eq(#S.chained, 0)
 end)
 
 t("an answer without the CSV header fails the step", function()

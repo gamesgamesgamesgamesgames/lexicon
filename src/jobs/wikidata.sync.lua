@@ -23,6 +23,13 @@
 -- the staged set is less than half the size of the current table, which is
 -- what a truncated or failed Wikidata answer would look like.
 --
+-- Each query step also refuses an answer that skips more than 1% of its rows,
+-- or that is under 80% of the last applied sync's count for its column.
+--
+-- Wikidata's slowest query here (enwiki) took about 13 s. HappyView's HTTP
+-- client gives up after 30 s with no data, so there is roughly 2x headroom;
+-- a timeout fails the step cleanly, like any other error.
+--
 -- Input:
 --   dryRun   fill the staging table and report what apply would change,
 --            without touching wikidata_games
@@ -31,9 +38,25 @@
 --   force    apply even when the staged set looks too small
 
 local ENDPOINT = "https://query.wikidata.org/sparql"
+-- Wikimedia's policy asks for a contact in the User-Agent; a URL is accepted.
 local USER_AGENT = "CartridgeSearch/1.0 (https://cartridge.dev; wikidata.sync job)"
 local BATCH = 100
 local MIN_STAGED_SHARE = 0.5
+-- A step fails rather than stage a suspect answer: when it skips more than
+-- MAX_SKIPPED_SHARE of its rows, or returns less than MIN_STEP_SHARE of what
+-- the last applied sync had for the same column (once that is at least
+-- MIN_GUARDED_ROWS, so the small veto column is guarded too).
+local MAX_SKIPPED_SHARE = 0.01
+local MIN_STEP_SHARE = 0.8
+local MIN_GUARDED_ROWS = 50
+
+-- What the last applied sync holds for each step's column.
+local CURRENT_COUNT = {
+  sitelinks = "SELECT COUNT(*) AS n FROM wikidata_games WHERE sitelinks > 0",
+  publisher = "SELECT COUNT(*) AS n FROM wikidata_games WHERE has_publisher = 1",
+  veto = "SELECT COUNT(*) AS n FROM wikidata_games WHERE veto_class IS NOT NULL",
+  enwiki = "SELECT COUNT(*) AS n FROM wikidata_games WHERE enwiki_title IS NOT NULL",
+}
 
 local STEPS = { "sitelinks", "publisher", "veto", "enwiki", "apply" }
 
@@ -103,6 +126,12 @@ local function sparql(step)
     body = "query=" .. urlencode(QUERIES[step]),
   })
   local status = resp and resp.status or 0
+  if status == 429 then
+    -- Rate limited. Fail the step cleanly; the chain stops and nothing is
+    -- applied. Retry-After says when Wikidata will take queries again.
+    local after = resp.headers and (resp.headers["retry-after"] or resp.headers["Retry-After"])
+    error("Wikidata rate-limited the " .. step .. " query (429); retry after " .. tostring(after or "an unspecified wait") .. "; nothing was applied")
+  end
   if status ~= 200 then
     error("Wikidata answered " .. tostring(status) .. " to the " .. step .. " query: " .. string.sub(resp and resp.body or "", 1, 300))
   end
@@ -260,6 +289,13 @@ function handle()
     end
     local rows = sparql(step)
     local list, skipped = entries(step, rows)
+    if #rows > 0 and skipped > #rows * MAX_SKIPPED_SHARE then
+      error(step .. ": skipped " .. skipped .. " of " .. #rows .. " rows, more than " .. (MAX_SKIPPED_SHARE * 100) .. "%; refusing to stage a suspect answer")
+    end
+    local previous = count(CURRENT_COUNT[step])
+    if not input.force and previous >= MIN_GUARDED_ROWS and #list < previous * MIN_STEP_SHARE then
+      error(step .. ": " .. #list .. " rows against " .. previous .. " in the last sync; refusing to stage a truncated answer (pass force to override)")
+    end
     stage(step, list)
     totals[step] = #list
     if skipped > 0 then
