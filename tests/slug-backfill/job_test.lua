@@ -236,9 +236,13 @@ t("a failed search fetch fails the job", function()
 end)
 
 t("accented names fold to plain ASCII", function()
-  local ok, res = run({ input = { dryRun = true }, games = { [uri("a")] = "Löwenzahn 3" } })
+  local ok, res = run({ input = { dryRun = true }, games = {
+    [uri("a")] = "Löwenzahn 3", [uri("b")] = "Straße", [uri("c")] = "ÆON Flux", [uri("d")] = "Łódź",
+  } })
   assert(ok, res)
-  eq(res.totals.samples.assigned[1].slug, "lowenzahn-3")
+  local got = {}
+  for _, s in ipairs(res.totals.samples.assigned) do got[s.uri] = s.slug end
+  eq(got[uri("a")], "lowenzahn-3"); eq(got[uri("b")], "strasse"); eq(got[uri("c")], "aeon-flux"); eq(got[uri("d")], "lodz")
 end)
 
 t("only catalogue and verified-developer games get a slug", function()
