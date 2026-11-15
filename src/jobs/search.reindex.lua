@@ -274,13 +274,20 @@ end
 -- origin says where a game comes from:
 --   fan         fan games, ROM hacks, fan translations, demakes, fan remakes,
 --               mods (IGDB type mod), Wikidata mod / fan game classes
---   unofficial  unofficial ports, bootlegs, unlicensed games, clones,
---               forks (IGDB type fork), Wikidata "unlicensed video game"
+--   unofficial  unofficial ports, bootlegs, unlicensed games, forks (IGDB
+--               type fork), Wikidata "unlicensed video game"
 --   homebrew    homebrew releases
 --   official    none of the above, and at least one positive signal: an
 --               established publisher, an age rating, or a Wikidata item
 -- A game with no signal either way has no origin. applicationType stays
 -- IGDB's own type; origin sits beside it.
+--
+-- The IGDB type (mod, fork) and Wikidata's class are taken as given. Keywords
+-- are weaker: IGDB uses some as genre or theme tags on commercial games
+-- (a "bootleg" Prohibition story, a homebrew-style retro game with a real
+-- publisher). So a keyword sets origin only when the game has no positive
+-- signal: no age rating other than "rating pending", and no established
+-- publisher.
 --
 -- officialScore (0 to 4) ranks real releases above fan works that share
 -- their names. It is 0 when origin is fan, unofficial or homebrew. Otherwise
@@ -309,9 +316,10 @@ local WIKIDATA_ORIGIN = {
 
 -- Keywords as IGDB spells them, lowercased. Exact matches, plus the suffix
 -- forms IGDB uses for franchise-specific tags ("pokemon fangame",
--- "sonic rom hack", "tetris clone") and the "fan translation - <language>"
--- family. Deliberately absent: "parody" (parodies are often real releases)
--- and "fandisc" (an official product type).
+-- "sonic rom hack") and the "fan translation - <language>" family.
+-- Deliberately absent: "parody" (parodies are often real releases),
+-- "fandisc" (an official product type), and "clone" / "<x> clone" (a genre
+-- tag on commercial games, such as "doom clone", and a sci-fi theme).
 local KEYWORD_ORIGIN = {
   ["fangame"] = "fan", ["fan game"] = "fan", ["fan-game"] = "fan",
   ["fanmade"] = "fan", ["fan made"] = "fan", ["fan-made"] = "fan",
@@ -320,12 +328,11 @@ local KEYWORD_ORIGIN = {
   ["demake"] = "fan", ["unofficial demake"] = "fan", ["unofficial remake"] = "fan",
   ["unofficial"] = "unofficial", ["unofficial port"] = "unofficial",
   ["bootleg"] = "unofficial", ["unlicensed"] = "unofficial", ["unlicensed game"] = "unofficial",
-  ["clone"] = "unofficial",
   ["homebrew"] = "homebrew",
 }
 local KEYWORD_SUFFIX_ORIGIN = {
   { " fangame", "fan" }, { " fan game", "fan" }, { " rom hack", "fan" },
-  { " clone", "unofficial" }, { " homebrew", "homebrew" },
+  { " homebrew", "homebrew" },
 }
 local KEYWORD_PREFIX_ORIGIN = {
   { "fan translation", "fan" },
@@ -436,14 +443,27 @@ local function official_signals(target_uri, target_did, record)
   end
   local wd = wikidata_row(record)
   local popularity = popularity_bucket(wd and wd.sitelinks)
-  local origin = stronger(stronger(TYPE_ORIGIN[record.applicationType], keyword_origin(record.keywords)),
-    wd and WIKIDATA_ORIGIN[wd.veto_class or ""] or nil)
-  if origin then
-    return 0, popularity, origin
+
+  -- The IGDB type and Wikidata's class are absolute.
+  local absolute = stronger(TYPE_ORIGIN[record.applicationType], wd and WIKIDATA_ORIGIN[wd.veto_class or ""] or nil)
+  if absolute then
+    return 0, popularity, absolute
   end
+
+  local publisher = has_major_publisher(target_uri)
+  local rated = has_age_rating(record)
+
+  -- Keywords count only for a game with no positive signal.
+  if not publisher and not rated then
+    local from_keywords = keyword_origin(record.keywords)
+    if from_keywords then
+      return 0, popularity, from_keywords
+    end
+  end
+
   local score = 1
-  if has_major_publisher(target_uri) then score = score + 1 end
-  if has_age_rating(record) then score = score + 1 end
+  if publisher then score = score + 1 end
+  if rated then score = score + 1 end
   if wd and ((tonumber(wd.sitelinks) or 0) > 0 or (tonumber(wd.has_publisher) or 0) > 0) then score = score + 1 end
   return score, popularity, score > 1 and "official" or nil
 end

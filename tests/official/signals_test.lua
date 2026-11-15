@@ -54,8 +54,8 @@ t("mods and forks score 0 whatever else they have", function()
   eq((build(game({ applicationType = "fork" }), FULL)), 0)
 end)
 
-t("a fan keyword scores 0, in any case", function()
-  eq((build(game({ keywords = { "Zelda", "Fan Game" } }), FULL)), 0)
+t("a fan keyword scores 0, in any case, on a game with no positive signal", function()
+  eq((build(game({ externalIds = {}, keywords = { "Zelda", "Fan Game" } }))), 0)
   eq((build(game({ keywords = { "romhack" } }))), 0)
 end)
 
@@ -96,20 +96,54 @@ t("origin is official when there is positive evidence, and unset with none", fun
 end)
 
 t("keywords set origin the way IGDB spells them", function()
-  local function origin(k) local _, _, o = build(game({ keywords = { k } }), FULL); return o end
+  local function origin(k) local _, _, o = build(game({ keywords = { k } }), { wikidata = FULL.wikidata }); return o end
   eq(origin("Pokemon fangame"), "fan"); eq(origin("rom hack"), "fan"); eq(origin("Sonic rom hack"), "fan")
   eq(origin("fan translation - english"), "fan"); eq(origin("demake"), "fan"); eq(origin("unofficial remake"), "fan")
   eq(origin("fanmade"), "fan")
   eq(origin("unofficial"), "unofficial"); eq(origin("unofficial port"), "unofficial"); eq(origin("bootleg"), "unofficial")
-  eq(origin("unlicensed game"), "unofficial"); eq(origin("tetris clone"), "unofficial")
+  eq(origin("unlicensed game"), "unofficial")
   eq(origin("homebrew"), "homebrew")
   eq(origin("parody"), "official"); eq(origin("fandisc"), "official")
+  eq(origin("clone"), "official"); eq(origin("doom clone"), "official")
 end)
 
 t("any non-official origin makes officialScore 0", function()
   for _, k in ipairs({ "homebrew", "bootleg", "fangame" }) do
-    eq((build(game({ keywords = { k } }), FULL)), 0, k)
+    eq((build(game({ keywords = { k } }), { wikidata = FULL.wikidata })), 0, k)
   end
+end)
+
+t("a Heretic-like game: a doom clone tag, a real publisher and a rating stays official", function()
+  local s, _, o = build(game({ keywords = { "doom clone", "dark fantasy" }, ageRatings = { { organization = "esrb", rating = "M" } } }), FULL)
+  eq(o, "official"); eq(s, 4)
+end)
+
+t("a Xeno Crisis-like game: homebrew-tagged but rated stays official", function()
+  local s, _, o = build(game({ externalIds = {}, keywords = { "homebrew", "twin-stick shooter" }, ageRatings = { { organization = "pegi", rating = "Twelve" } } }))
+  eq(o, "official"); eq(s, 2)
+end)
+
+t("a homebrew-tagged game from an established publisher stays official, with no rating", function()
+  local _, _, o = build(game({ externalIds = {}, keywords = { "homebrew" } }), { credits = FULL.credits, publisher_counts = FULL.publisher_counts })
+  eq(o, "official")
+end)
+
+t("a bootleg-themed game with an age rating stays official", function()
+  local _, _, o = build(game({ externalIds = {}, keywords = { "bootleg", "prohibition" }, ageRatings = { { organization = "esrb", rating = "T" } } }))
+  eq(o, "official")
+end)
+
+t("ESRB rating pending does not shield a keyword origin", function()
+  local _, _, o = build(game({ externalIds = {}, keywords = { "fangame" }, ageRatings = { { organization = "esrb", rating = "RP" } } }))
+  eq(o, "fan")
+end)
+
+t("the IGDB type and Wikidata's class win even over a rating and a publisher", function()
+  local rated = { { organization = "esrb", rating = "E" } }
+  local _, _, a = build(game({ applicationType = "mod", ageRatings = rated }), FULL); eq(a, "fan")
+  local _, _, b = build(game({ ageRatings = rated }), { credits = FULL.credits, publisher_counts = FULL.publisher_counts,
+    wikidata = { ["1029"] = { sitelinks = 5, has_publisher = 1, veto_class = "Q123012190" } } })
+  eq(b, "unofficial")
 end)
 
 t("the strongest claim wins: fan over unofficial over homebrew", function()
