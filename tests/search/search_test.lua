@@ -10,7 +10,7 @@ local function eq(a, b, m) if a ~= b then error((m or "") .. " expected " .. tos
 -- Runs one search. `hits` is what Meilisearch returns for the main query and
 -- `coll_hits` for the collection query. Returns the result and the main query
 -- body that was sent.
-local function run(p, hits, coll_hits)
+local function run(p, hits, coll_hits, status)
   local S = {}
   env = { MEILISEARCH_URL = "http://meili", MEILISEARCH_API_KEY = "k" }
   params = p
@@ -25,8 +25,9 @@ local function run(p, hits, coll_hits)
     else
       S.reply = { hits = hits or {} }
     end
-    return { status = 200, body = "<json>" }
+    return { status = status or 200, body = "<json>" }
   end }
+  log = function(m) S.logged = m end
   dofile(SCRIPT)
   local res = handle()
   local body = S.sent.queries and S.sent.queries[1] or S.sent
@@ -95,6 +96,14 @@ t("the collection boost keeps Meilisearch's order among boosted games", function
   local names = {}
   for _, r in ipairs(res.results or res.items or res) do table.insert(names, r.name) end
   eq(table.concat(names, ","), "original,remake,sequel,fan")
+end)
+
+t("a Meilisearch error fails the request instead of answering 200 with no results", function()
+  for _, types in ipairs({ "game", "profile" }) do -- multi-search, then single search
+    local ok, err = pcall(run, { q = "legend", types = types }, {}, nil, 503)
+    eq(ok, false, types)
+    assert(tostring(err):find("search is unavailable right now (Meilisearch answered 503)", 1, true), err)
+  end
 end)
 
 print(("%d passed, %d failed"):format(pass, fail))

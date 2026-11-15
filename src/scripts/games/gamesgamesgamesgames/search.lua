@@ -182,6 +182,18 @@ function map_hit(hit)
   return nil
 end
 
+-- A failed search has to fail the request. Returning an error object with a
+-- 200 made clients read it as "no results". HappyView answers a raised XRPC
+-- error with a 5xx, which clients can tell apart from an empty result. The
+-- message stays generic; Meilisearch's own error text goes to the log only.
+function check_search_response(resp)
+  local status = resp and resp.status or 0
+  if status ~= 200 then
+    log("search: Meilisearch answered " .. tostring(status) .. ": " .. string.sub(resp and resp.body or "", 1, 300))
+    error("search is unavailable right now (Meilisearch answered " .. tostring(status) .. ")")
+  end
+end
+
 function handle()
   local q = params.q
   local limit = tonumber(params.limit) or 20
@@ -357,11 +369,8 @@ function handle()
       body = json.encode({ queries = toarray({ body, coll_query }) })
     })
 
+    check_search_response(multi_resp)
     local multi_data = json.decode(multi_resp.body)
-
-    if multi_resp.status ~= 200 then
-      return { error = "MeilisearchError", message = multi_data.message or multi_resp.body }
-    end
 
     local results_list = multi_data.results or {}
 
@@ -381,11 +390,8 @@ function handle()
       headers = SEARCH_HEADERS,
       body = json.encode(body)
     })
+    check_search_response(resp)
     data = json.decode(resp.body)
-
-    if resp.status ~= 200 then
-      return { error = "MeilisearchError", message = data.message or resp.body }
-    end
 
     hits = data.hits or {}
     matched_collections = {}
