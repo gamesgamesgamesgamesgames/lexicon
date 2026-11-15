@@ -69,6 +69,17 @@ t("a games-free type filter sends no hybrid block", function()
   eq(body.hybrid, nil)
 end)
 
+t("an age hint lets ESRB EC and GRAC 19 through, but never ESRB RP", function()
+  local _, kids = run({ q = "games for kids" })
+  assert(kids.filter:find('ageRatings = "esrb:EC"', 1, true), kids.filter)
+  eq(kids.filter:find('esrb:RP', 1, true), nil)
+  eq(kids.filter:find('grac:Nineteen', 1, true), nil)
+  local _, adult = run({ q = "games for a 19 year old" })
+  assert(adult.filter:find('ageRatings = "grac:Nineteen"', 1, true), adult.filter)
+  assert(adult.filter:find('ageRatings = "gcrb:Nineteen"', 1, true), adult.filter)
+  eq(adult.filter:find('esrb:RP', 1, true), nil)
+end)
+
 local C = "at://c/coll/1"
 local function game(name, date, in_coll)
   return { type = "game", uri = "at://g/" .. name, name = name, firstReleaseDate = date, collections = in_coll and { C } or nil }

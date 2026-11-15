@@ -120,6 +120,8 @@ local APP_TYPE_RANK = {
 -- Source of truth: docs/superpowers/specs/2026-03-22-semantic-search-design.md
 -- Duplicate exists in: meilisearch-backfill/meilisearch-backfill.ts
 local RATING_DESCRIPTIONS = {
+  ["esrb:RP"] = "ESRB rating pending (not yet rated, North America)",
+  ["esrb:EC"] = "Rated ESRB EC for Early Childhood (ages 3+, North America)",
   ["esrb:E"] = "Rated ESRB E for Everyone (ages 0+, North America)",
   ["esrb:E10"] = "Rated ESRB E10+ for Everyone 10+ (ages 10+, North America)",
   ["esrb:T"] = "Rated ESRB T for Teen (ages 13+, North America)",
@@ -148,6 +150,8 @@ local RATING_DESCRIPTIONS = {
   ["gcrb:Fifteen"] = "Rated GRAC 15 (ages 15+, South Korea)",
   ["grac:Eighteen"] = "Rated GRAC 18 (ages 18+, South Korea)",
   ["gcrb:Eighteen"] = "Rated GRAC 18 (ages 18+, South Korea)",
+  ["grac:Nineteen"] = "Rated GRAC 19 (ages 19+, South Korea)",
+  ["gcrb:Nineteen"] = "Rated GRAC 19 (ages 19+, South Korea)",
   ["classInd:L"] = "Rated ClassInd L for General (ages 0+, Brazil)",
   ["classInd:10"] = "Rated ClassInd 10 (ages 10+, Brazil)",
   ["classInd:12"] = "Rated ClassInd 12 (ages 12+, Brazil)",
