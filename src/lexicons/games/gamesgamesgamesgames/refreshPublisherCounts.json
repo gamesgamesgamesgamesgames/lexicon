@@ -1,0 +1,44 @@
+{
+	"$type": "com.atproto.lexicon.schema",
+	"lexicon": 1,
+	"id": "games.gamesgamesgamesgames.refreshPublisherCounts",
+	"defs": {
+		"main": {
+			"type": "procedure",
+			"description": "Queue a job that recounts how many games each organization is credited as publishing. Search uses the counts to tell established publishers from fan teams. Admins only. One refresh runs at a time.",
+			"input": {
+				"encoding": "application/json",
+				"schema": {
+					"type": "object",
+					"properties": {
+						"dryRun": {
+							"type": "boolean",
+							"default": false,
+							"description": "Count only, and report what would change."
+						}
+					}
+				}
+			},
+			"output": {
+				"encoding": "application/json",
+				"schema": {
+					"type": "object",
+					"required": ["jobId"],
+					"properties": {
+						"jobId": { "type": "string", "maxLength": 128 },
+						"alreadyQueued": {
+							"type": "boolean",
+							"description": "True when a refresh was already pending or running; jobId is that job, and nothing new was queued."
+						},
+						"status": {
+							"type": "string",
+							"maxLength": 32,
+							"knownValues": ["pending", "running"],
+							"description": "The existing job's status, when alreadyQueued is true."
+						}
+					}
+				}
+			}
+		}
+	}
+}
