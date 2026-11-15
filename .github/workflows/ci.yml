@@ -26,6 +26,7 @@ on:
       - 'src/jobs/**'
       - 'src/shared/**'
       - 'scripts/**'
+      - 'tests/**'
       - 'package.json'
       - 'packages/docs/**'
       - 'packages/design-system/**'
@@ -39,6 +40,7 @@ on:
       - 'src/jobs/**'
       - 'src/shared/**'
       - 'scripts/**'
+      - 'tests/**'
       - 'package.json'
       - 'packages/docs/**'
       - 'packages/design-system/**'
@@ -92,6 +94,7 @@ jobs:
               - 'src/jobs/**'
               - 'src/shared/**'
               - 'scripts/**'
+              - 'tests/**'
               - 'package.json'
             docs:
               - 'src/lexicons/**'
@@ -143,6 +146,20 @@ jobs:
       # Lua cannot require across scripts. This is the lockfile check for them.
       - name: Check generated blocks are current
         run: bun run check:shared
+
+      - name: Set up Lua
+        run: sudo apt-get update && sudo apt-get install -y lua5.4
+
+      # The standalone suites each take the script under test as an argument.
+      - name: Run Lua tests
+        run: |
+          set -e
+          lua5.4 tests/reindex/job_test.lua src/jobs/catalogue.reindex.lua
+          lua5.4 tests/reindex/procedure_test.lua src/scripts/games/gamesgamesgamesgames/reindexCatalogueGames.lua
+          lua5.4 tests/auto-accept/job_test.lua src/jobs/contribution.auto-accept.lua
+          lua5.4 tests/auto-accept/procedure_test.lua src/scripts/games/gamesgamesgamesgames/autoAcceptContributions.lua
+          lua5.4 tests/search-reindex/job_test.lua src/jobs/search.reindex.lua
+          lua5.4 tests/search-reindex/hooks_test.lua
 
   # breaking:
   #   name: Check Breaking Changes
