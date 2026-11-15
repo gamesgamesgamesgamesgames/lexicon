@@ -27,6 +27,7 @@ local function copy(x)
   return o
 end
 M.copy = copy
+F_copy = copy
 
 -- opts:
 --   records      { [uri] = { did = ..., record = {...} } } (games in the index)
@@ -98,6 +99,19 @@ function M.install(opts)
         end
         return rows
       end
+      if sql:find("FROM publisher_counts", 1, true) then
+        if opts.publisher_counts_missing then error('db.raw query failed: relation "publisher_counts" does not exist') end
+        if opts.db_down then error("db.raw query failed: connection refused") end
+        for i = 2, #b do
+          if ((opts.publisher_counts or {})[b[i]] or 0) >= b[1] then return { { ok = 1 } } end
+        end
+        return {}
+      end
+      if sql:find("FROM wikidata_games", 1, true) then
+        if opts.wikidata_missing then error('db.raw query failed: relation "wikidata_games" does not exist') end
+        local w = (opts.wikidata or {})[b[1]]
+        return w and { w } or {}
+      end
       if sql:find("FROM slugs", 1, true) then
         local s = opts.slugs and opts.slugs[b[1]]
         return s and { { slug = s } } or {}
@@ -111,6 +125,9 @@ function M.install(opts)
     -- Pages like HappyView's: at most `limit` (capped at 100) per call, with
     -- a cursor while more remain.
     backlinks = function(o)
+      if o.collection == "games.gamesgamesgamesgames.org.credit" then
+        return { records = F_copy((opts.credits or {})[o.uri] or {}) }
+      end
       local list = (opts.backlinks or {})[o.uri] or {}
       local limit = math.min(o.limit or 20, 100)
       local start = tonumber(o.cursor or "0") or 0

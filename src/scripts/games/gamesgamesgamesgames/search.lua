@@ -10,26 +10,27 @@ local SEARCH_HEADERS = {
 -- ceiling are acceptable. Built from the ceiling table in the spec.
 -- Source of truth: docs/superpowers/specs/2026-03-22-semantic-search-design.md
 
--- Ordered list of ratings per org, from youngest to oldest.
+-- Ordered list of ratings per org, from youngest to oldest. ESRB's RP (rating
+-- pending) is deliberately absent: an unrated game must not pass an age filter.
 local RATING_ORDER = {
-  esrb = { "E", "E10", "T", "M", "AO" },
+  esrb = { "EC", "E", "E10", "T", "M", "AO" },
   pegi = { "Three", "Seven", "Twelve", "Sixteen", "Eighteen" },
   cero = { "A", "B", "C", "D", "Z" },
   usk = { "0", "6", "12", "16", "18" },
-  grac = { "All", "Twelve", "Fifteen", "Eighteen" },
-  gcrb = { "All", "Twelve", "Fifteen", "Eighteen" },
+  grac = { "All", "Twelve", "Fifteen", "Eighteen", "Nineteen" },
+  gcrb = { "All", "Twelve", "Fifteen", "Eighteen", "Nineteen" },
   classInd = { "L", "10", "12", "14", "16", "18" },
   acb = { "G", "PG", "M", "MA15", "R18", "X18" },
 }
 
 -- Age thresholds for each rating (the minimum age to access that rating)
 local RATING_MIN_AGE = {
-  esrb = { E = 0, E10 = 10, T = 13, M = 17, AO = 18 },
+  esrb = { EC = 3, E = 0, E10 = 10, T = 13, M = 17, AO = 18 },
   pegi = { Three = 3, Seven = 7, Twelve = 12, Sixteen = 16, Eighteen = 18 },
   cero = { A = 0, B = 12, C = 15, D = 17, Z = 18 },
   usk = { ["0"] = 0, ["6"] = 6, ["12"] = 12, ["16"] = 16, ["18"] = 18 },
-  grac = { All = 0, Twelve = 12, Fifteen = 15, Eighteen = 18 },
-  gcrb = { All = 0, Twelve = 12, Fifteen = 15, Eighteen = 18 },
+  grac = { All = 0, Twelve = 12, Fifteen = 15, Eighteen = 18, Nineteen = 19 },
+  gcrb = { All = 0, Twelve = 12, Fifteen = 15, Eighteen = 18, Nineteen = 19 },
   classInd = { L = 0, ["10"] = 10, ["12"] = 12, ["14"] = 14, ["16"] = 16, ["18"] = 18 },
   acb = { G = 0, PG = 0, M = 15, MA15 = 15, R18 = 18, X18 = 18 },
 }

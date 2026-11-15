@@ -91,7 +91,7 @@ end)
 
 local function call(caller, body, active, catalogue)
   local created
-  env = { ADMIN_DIDS = "did:plc:admin", REINDEX_DIDS = "did:plc:bot" }
+  env = { ADMIN_DIDS = "did:plc:admin", REINDEX_DIDS = "did:plc:bot", MAINTENANCE_DIDS = "did:plc:maint" }
   caller_did, input = caller, body
   jobs = { create = function(ty, inp) created = { type = ty, input = inp }; return "job-1" end }
   db = { raw = function(sql)
@@ -115,6 +115,11 @@ end)
 t("a REINDEX_DIDS account may queue a run for listed games", function()
   local ok, res, created = call("did:plc:bot", { uris = { GAME } })
   assert(ok, res); eq(created.input.dryRun, false); eq(#created.input.uris, 1)
+end)
+
+t("the MAINTENANCE_DIDS account may queue a run", function()
+  local ok, res = call("did:plc:maint", { dryRun = true })
+  assert(ok, res)
 end)
 
 t("anyone else is refused", function()
