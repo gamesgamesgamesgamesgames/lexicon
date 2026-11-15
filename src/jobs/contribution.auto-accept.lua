@@ -200,11 +200,56 @@ local function effective_changes(changes, current)
   return out, fields
 end
 
+-- Accented Latin letters, grouped by the plain letter each one decomposes to
+-- (its Unicode NFD form without the combining marks). Slugs fold them the
+-- way the sync's old slugify did: "Löwenzahn" becomes "lowenzahn". The last
+-- lines are letters with no decomposition, spelled out: "Straße" becomes
+-- "strasse", "Łódź" becomes "lodz".
+local ACCENT_FOLD = {}
+for letter, accented in ([[
+a ÀÁÂÃÄÅàáâãäåĀāĂăĄąǍǎǞǟǠǡǺǻȀȁȂȃȦȧḀḁẠạẢảẤấẦầẨẩẪẫẬậẮắẰằẲẳẴẵẶặ
+b ḂḃḄḅḆḇ
+c ÇçĆćĈĉĊċČčḈḉ
+d ĎďḊḋḌḍḎḏḐḑḒḓ
+e ÈÉÊËèéêëĒēĔĕĖėĘęĚěȄȅȆȇȨȩḔḕḖḗḘḙḚḛḜḝẸẹẺẻẼẽẾếỀềỂểỄễỆệ
+f Ḟḟ
+g ĜĝĞğĠġĢģǦǧǴǵḠḡ
+h ĤĥȞȟḢḣḤḥḦḧḨḩḪḫẖ
+i ÌÍÎÏìíîïĨĩĪīĬĭĮįİǏǐȈȉȊȋḬḭḮḯỈỉỊị
+j Ĵĵǰ
+k ĶķǨǩḰḱḲḳḴḵ
+l ĹĺĻļĽľḶḷḸḹḺḻḼḽ
+m ḾḿṀṁṂṃ
+n ÑñŃńŅņŇňǸǹṄṅṆṇṈṉṊṋ
+o ÒÓÔÕÖòóôõöŌōŎŏŐőƠơǑǒǪǫǬǭȌȍȎȏȪȫȬȭȮȯȰȱṌṍṎṏṐṑṒṓỌọỎỏỐốỒồỔổỖỗỘộỚớỜờỞởỠỡỢợ
+p ṔṕṖṗ
+r ŔŕŖŗŘřȐȑȒȓṘṙṚṛṜṝṞṟ
+s ŚśŜŝŞşŠšȘșṠṡṢṣṤṥṦṧṨṩ
+t ŢţŤťȚțṪṫṬṭṮṯṰṱẗ
+u ÙÚÛÜùúûüŨũŪūŬŭŮůŰűŲųƯưǓǔǕǖǗǘǙǚǛǜȔȕȖȗṲṳṴṵṶṷṸṹṺṻỤụỦủỨứỪừỬửỮữỰự
+v ṼṽṾṿ
+w ŴŵẀẁẂẃẄẅẆẇẈẉẘ
+x ẊẋẌẍ
+y ÝýÿŶŷŸȲȳẎẏẙỲỳỴỵỶỷỸỹ
+z ŹźŻżŽžẐẑẒẓẔẕ
+ae Ææ
+d Đđ
+l Łł
+o Øø
+oe Œœ
+ss ß
+th Þþ
+]]):gmatch("(%a+) (%S+)") do
+  for ch in accented:gmatch("[\xC2-\xF4][\x80-\xBF]*") do
+    ACCENT_FOLD[ch] = letter
+  end
+end
+
 local function generate_slug(str)
   if not str or str == "" then
     return nil
   end
-  local slug = str:lower()
+  local slug = (str:gsub("[\xC2-\xF4][\x80-\xBF]*", ACCENT_FOLD)):lower()
   slug = slug:gsub("[^%w%s%-]", "")
   slug = slug:gsub("%s+", "-")
   slug = slug:gsub("%-+", "-")
@@ -219,7 +264,7 @@ end
 -- rather than being repointed. Reruns reuse the slug already assigned to uri.
 -- Returns the slug and whether this call inserted it.
 local function assign_slug(name, uri)
-  local owned = db.raw("SELECT slug FROM slugs WHERE uri = $1 LIMIT 1", { uri })
+  local owned = db.raw("SELECT slug FROM slugs WHERE uri = $1 ORDER BY length(slug), slug LIMIT 1", { uri })
   if owned and #owned > 0 then
     return owned[1].slug, false
   end

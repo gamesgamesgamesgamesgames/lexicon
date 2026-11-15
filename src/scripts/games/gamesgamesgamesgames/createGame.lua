@@ -1,9 +1,54 @@
+-- Accented Latin letters, grouped by the plain letter each one decomposes to
+-- (its Unicode NFD form without the combining marks). Slugs fold them the
+-- way the sync's old slugify did: "Löwenzahn" becomes "lowenzahn". The last
+-- lines are letters with no decomposition, spelled out: "Straße" becomes
+-- "strasse", "Łódź" becomes "lodz".
+local ACCENT_FOLD = {}
+for letter, accented in ([[
+a ÀÁÂÃÄÅàáâãäåĀāĂăĄąǍǎǞǟǠǡǺǻȀȁȂȃȦȧḀḁẠạẢảẤấẦầẨẩẪẫẬậẮắẰằẲẳẴẵẶặ
+b ḂḃḄḅḆḇ
+c ÇçĆćĈĉĊċČčḈḉ
+d ĎďḊḋḌḍḎḏḐḑḒḓ
+e ÈÉÊËèéêëĒēĔĕĖėĘęĚěȄȅȆȇȨȩḔḕḖḗḘḙḚḛḜḝẸẹẺẻẼẽẾếỀềỂểỄễỆệ
+f Ḟḟ
+g ĜĝĞğĠġĢģǦǧǴǵḠḡ
+h ĤĥȞȟḢḣḤḥḦḧḨḩḪḫẖ
+i ÌÍÎÏìíîïĨĩĪīĬĭĮįİǏǐȈȉȊȋḬḭḮḯỈỉỊị
+j Ĵĵǰ
+k ĶķǨǩḰḱḲḳḴḵ
+l ĹĺĻļĽľḶḷḸḹḺḻḼḽ
+m ḾḿṀṁṂṃ
+n ÑñŃńŅņŇňǸǹṄṅṆṇṈṉṊṋ
+o ÒÓÔÕÖòóôõöŌōŎŏŐőƠơǑǒǪǫǬǭȌȍȎȏȪȫȬȭȮȯȰȱṌṍṎṏṐṑṒṓỌọỎỏỐốỒồỔổỖỗỘộỚớỜờỞởỠỡỢợ
+p ṔṕṖṗ
+r ŔŕŖŗŘřȐȑȒȓṘṙṚṛṜṝṞṟ
+s ŚśŜŝŞşŠšȘșṠṡṢṣṤṥṦṧṨṩ
+t ŢţŤťȚțṪṫṬṭṮṯṰṱẗ
+u ÙÚÛÜùúûüŨũŪūŬŭŮůŰűŲųƯưǓǔǕǖǗǘǙǚǛǜȔȕȖȗṲṳṴṵṶṷṸṹṺṻỤụỦủỨứỪừỬửỮữỰự
+v ṼṽṾṿ
+w ŴŵẀẁẂẃẄẅẆẇẈẉẘ
+x ẊẋẌẍ
+y ÝýÿŶŷŸȲȳẎẏẙỲỳỴỵỶỷỸỹ
+z ŹźŻżŽžẐẑẒẓẔẕ
+ae Ææ
+d Đđ
+l Łł
+o Øø
+oe Œœ
+ss ß
+th Þþ
+]]):gmatch("(%a+) (%S+)") do
+  for ch in accented:gmatch("[\xC2-\xF4][\x80-\xBF]*") do
+    ACCENT_FOLD[ch] = letter
+  end
+end
+
 function generate_slug(str)
   if not str or str == "" then
     return nil
   end
 
-  local slug = str:lower()
+  local slug = (str:gsub("[\xC2-\xF4][\x80-\xBF]*", ACCENT_FOLD)):lower()
   slug = slug:gsub("[^%w%s%-]", "")
   slug = slug:gsub("%s+", "-")
   slug = slug:gsub("%-+", "-")
@@ -14,6 +59,40 @@ function generate_slug(str)
   end
 
   return slug
+end
+
+local MAX_SLUG_SUFFIX = 1000
+
+local function slug_owner(slug)
+  local rows = db.raw("SELECT uri FROM slugs WHERE slug = $1 LIMIT 1", { slug })
+  return rows and rows[1] and rows[1].uri or nil
+end
+
+-- Same rule as game.lua's ensure_slug, so the two arrive at the same slug
+-- whichever runs first.
+local function assign_generated_slug(target_uri, name)
+  local own = db.raw("SELECT slug FROM slugs WHERE uri = $1 ORDER BY length(slug), slug LIMIT 1", { target_uri })
+  if own and #own > 0 then
+    return own[1].slug
+  end
+  local base = generate_slug(name)
+  if not base then
+    return nil
+  end
+  local slug, n = base, 1
+  while n <= MAX_SLUG_SUFFIX do
+    local owner = slug_owner(slug)
+    if not owner then
+      db.raw("INSERT INTO slugs (slug, uri) VALUES ($1, $2) ON CONFLICT (slug) DO NOTHING", { slug, target_uri })
+      owner = slug_owner(slug)
+    end
+    if owner == target_uri then
+      return slug
+    end
+    n = n + 1
+    slug = base .. "-" .. n
+  end
+  error("no free slug for " .. target_uri .. " after " .. base .. "-" .. MAX_SLUG_SUFFIX)
 end
 
 function resolve_twitch_id(igdb_id)
@@ -122,10 +201,25 @@ function handle()
     uri, cid = result.uri, result.cid
   end
 
-  local slug_value = input.slug or generate_slug(input.name)
-  if slug_value then
+  -- game.lua's index hook gives a game with no slug one from its name, and it
+  -- can run before this point. The game is brand new, so any slug it already
+  -- has came from the hook. An explicit slug replaces it. A generated slug
+  -- follows the hook's rule: a slug another game holds gets a numeric suffix
+  -- rather than being repointed, and a slug this game already holds is kept.
+  if input.slug then
+    local hook_slug = db.raw("SELECT slug FROM slugs WHERE uri = $1 ORDER BY length(slug), slug LIMIT 1", { uri })
     db.raw("INSERT INTO slugs (slug, uri) VALUES ($1, $2) ON CONFLICT (slug) DO UPDATE SET uri = $2",
-      {slug_value, uri})
+      {input.slug, uri})
+    if hook_slug and #hook_slug > 0 then
+      db.raw("DELETE FROM slugs WHERE uri = $1 AND slug <> $2", { uri, input.slug })
+    end
+  else
+    -- The game exists now, so a slug failure must not fail the call: a retry
+    -- would create the game a second time. The index hook assigns one later.
+    local slug_ok, slug_err = pcall(assign_generated_slug, uri, input.name)
+    if not slug_ok then
+      log("warning: failed to assign a slug to " .. uri .. ": " .. tostring(slug_err))
+    end
   end
 
   return { uri = uri, cid = cid }

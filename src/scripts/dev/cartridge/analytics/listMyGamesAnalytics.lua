@@ -116,7 +116,7 @@ end
 -- ---------------------------------------------------------------------------
 
 local function find_slug(uri)
-  local rows = db.raw("SELECT slug FROM slugs WHERE uri = $1 LIMIT 1", { uri })
+  local rows = db.raw("SELECT slug FROM slugs WHERE uri = $1 ORDER BY length(slug), slug LIMIT 1", { uri })
   if rows and #rows > 0 then return rows[1].slug end
   return nil
 end

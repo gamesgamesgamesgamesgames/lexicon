@@ -160,6 +160,7 @@ jobs:
           lua5.4 tests/auto-accept/procedure_test.lua src/scripts/games/gamesgamesgamesgames/autoAcceptContributions.lua
           lua5.4 tests/search-reindex/job_test.lua src/jobs/search.reindex.lua
           lua5.4 tests/search-reindex/hooks_test.lua
+          lua5.4 tests/slugs/slug_test.lua src/scripts/games/gamesgamesgamesgames
 
   # breaking:
   #   name: Check Breaking Changes

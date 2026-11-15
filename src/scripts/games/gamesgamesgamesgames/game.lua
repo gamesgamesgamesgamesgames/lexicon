@@ -273,7 +273,7 @@ local function build_game_doc(target_uri, target_did, record)
 
   -- Look up slug from the slugs table
   local slug = nil
-  local slug_rows = db.raw("SELECT slug FROM slugs WHERE uri = $1 LIMIT 1", { target_uri })
+  local slug_rows = db.raw("SELECT slug FROM slugs WHERE uri = $1 ORDER BY length(slug), slug LIMIT 1", { target_uri })
   if slug_rows and #slug_rows > 0 then
     slug = slug_rows[1].slug
   end
@@ -375,10 +375,153 @@ local function delete_game_index(target_uri)
 end
 -- <<< generated from src/shared/game_index.lua
 
+-- Slug assignment lives here, in the hook, and not in the shared document
+-- builder: search.reindex inlines the builder, and its dry run must not write
+-- slugs.
+-- Accented Latin letters, grouped by the plain letter each one decomposes to
+-- (its Unicode NFD form without the combining marks). Slugs fold them the
+-- way the sync's old slugify did: "Löwenzahn" becomes "lowenzahn". The last
+-- lines are letters with no decomposition, spelled out: "Straße" becomes
+-- "strasse", "Łódź" becomes "lodz".
+local ACCENT_FOLD = {}
+for letter, accented in ([[
+a ÀÁÂÃÄÅàáâãäåĀāĂăĄąǍǎǞǟǠǡǺǻȀȁȂȃȦȧḀḁẠạẢảẤấẦầẨẩẪẫẬậẮắẰằẲẳẴẵẶặ
+b ḂḃḄḅḆḇ
+c ÇçĆćĈĉĊċČčḈḉ
+d ĎďḊḋḌḍḎḏḐḑḒḓ
+e ÈÉÊËèéêëĒēĔĕĖėĘęĚěȄȅȆȇȨȩḔḕḖḗḘḙḚḛḜḝẸẹẺẻẼẽẾếỀềỂểỄễỆệ
+f Ḟḟ
+g ĜĝĞğĠġĢģǦǧǴǵḠḡ
+h ĤĥȞȟḢḣḤḥḦḧḨḩḪḫẖ
+i ÌÍÎÏìíîïĨĩĪīĬĭĮįİǏǐȈȉȊȋḬḭḮḯỈỉỊị
+j Ĵĵǰ
+k ĶķǨǩḰḱḲḳḴḵ
+l ĹĺĻļĽľḶḷḸḹḺḻḼḽ
+m ḾḿṀṁṂṃ
+n ÑñŃńŅņŇňǸǹṄṅṆṇṈṉṊṋ
+o ÒÓÔÕÖòóôõöŌōŎŏŐőƠơǑǒǪǫǬǭȌȍȎȏȪȫȬȭȮȯȰȱṌṍṎṏṐṑṒṓỌọỎỏỐốỒồỔổỖỗỘộỚớỜờỞởỠỡỢợ
+p ṔṕṖṗ
+r ŔŕŖŗŘřȐȑȒȓṘṙṚṛṜṝṞṟ
+s ŚśŜŝŞşŠšȘșṠṡṢṣṤṥṦṧṨṩ
+t ŢţŤťȚțṪṫṬṭṮṯṰṱẗ
+u ÙÚÛÜùúûüŨũŪūŬŭŮůŰűŲųƯưǓǔǕǖǗǘǙǚǛǜȔȕȖȗṲṳṴṵṶṷṸṹṺṻỤụỦủỨứỪừỬửỮữỰự
+v ṼṽṾṿ
+w ŴŵẀẁẂẃẄẅẆẇẈẉẘ
+x ẊẋẌẍ
+y ÝýÿŶŷŸȲȳẎẏẙỲỳỴỵỶỷỸỹ
+z ŹźŻżŽžẐẑẒẓẔẕ
+ae Ææ
+d Đđ
+l Łł
+o Øø
+oe Œœ
+ss ß
+th Þþ
+]]):gmatch("(%a+) (%S+)") do
+  for ch in accented:gmatch("[\xC2-\xF4][\x80-\xBF]*") do
+    ACCENT_FOLD[ch] = letter
+  end
+end
+
+-- Same rules as createGame's generate_slug.
+local function generate_slug(str)
+  if not str or str == "" then
+    return nil
+  end
+
+  local slug = (str:gsub("[\xC2-\xF4][\x80-\xBF]*", ACCENT_FOLD)):lower()
+  slug = slug:gsub("[^%w%s%-]", "")
+  slug = slug:gsub("%s+", "-")
+  slug = slug:gsub("%-+", "-")
+  slug = slug:gsub("^%-+", ""):gsub("%-+$", "")
+
+  if slug == "" then
+    return nil
+  end
+
+  return slug
+end
+
+local MAX_SLUG_SUFFIX = 1000
+
+local function slug_owner(slug)
+  local rows = db.raw("SELECT uri FROM slugs WHERE slug = $1 LIMIT 1", { slug })
+  return rows and rows[1] and rows[1].uri or nil
+end
+
+-- Slugs are assigned automatically only to games in the catalogue repo and in
+-- the repos of verified developers, which are the repos createGame writes to.
+-- "Verified" is createGame's test: a dev.cartridge.graph.verification record
+-- from VERIFIER_DID whose subject is the repo's DID. Any other account's game
+-- gets a slug only through a procedure, as before.
+local function may_assign_slug(target_did)
+  local catalogue = env.PENTARACT_DID
+  if catalogue and catalogue ~= "" and target_did == catalogue then
+    return true
+  end
+  local verifier = env.VERIFIER_DID
+  if not verifier or verifier == "" or not target_did then
+    return false
+  end
+  local rows = db.raw(
+    "SELECT uri FROM happyview_records WHERE collection = 'dev.cartridge.graph.verification' AND did = $1 AND record::jsonb->>'subject' = $2 LIMIT 1",
+    { verifier, target_did }
+  )
+  return rows ~= nil and #rows > 0
+end
+
+-- The game's slug, assigning one first if it has none and its repo may get
+-- one. Games written straight to a PDS (the IGDB sync, or a developer's own
+-- repo) never pass through createGame, so without this they would have no
+-- slug and no game page.
+--
+-- An existing slug is never changed. A new one follows reviewContribution's
+-- rule: a slug another game holds gets a numeric suffix rather than being
+-- repointed. A procedure may be assigning this game's slug at the same time;
+-- a candidate that already belongs to this game is taken as the answer, so
+-- both arrive at the same slug.
+local function ensure_slug(target_uri, target_did, name)
+  local rows = db.raw("SELECT slug FROM slugs WHERE uri = $1 ORDER BY length(slug), slug LIMIT 1", { target_uri })
+  if rows and #rows > 0 then
+    return rows[1].slug
+  end
+  if not may_assign_slug(target_did) then
+    return nil
+  end
+
+  local base = generate_slug(name)
+  if not base then
+    return nil
+  end
+
+  local slug, n = base, 1
+  while n <= MAX_SLUG_SUFFIX do
+    local owner = slug_owner(slug)
+    if not owner then
+      db.raw("INSERT INTO slugs (slug, uri) VALUES ($1, $2) ON CONFLICT (slug) DO NOTHING", { slug, target_uri })
+      owner = slug_owner(slug)
+    end
+    if owner == target_uri then
+      return slug
+    end
+    n = n + 1
+    slug = base .. "-" .. n
+  end
+  error("no free slug for " .. target_uri .. " after " .. base .. "-" .. MAX_SLUG_SUFFIX)
+end
+
 function handle()
   if action == "delete" then
     delete_game_index(uri)
     return true
+  end
+
+  -- Give the game a slug before the document is built, so the builder's own
+  -- slug lookup finds it. A slug failure must not cost the game its index
+  -- document.
+  local slug_ok, slug_err = pcall(ensure_slug, uri, did, record and record.name)
+  if not slug_ok then
+    log("warning: could not assign a slug to " .. uri .. ": " .. tostring(slug_err))
   end
 
   index_game(uri, did, record)
