@@ -1,5 +1,7 @@
 -- Queues a slugs.backfill job, which gives games with no slug one and puts it
--- on their search document. Admins only. A dry run unless dryRun is false.
+-- on their search document. Admins only, plus the scheduled maintenance
+-- account in MAINTENANCE_DIDS (unset by default). A dry run unless dryRun is
+-- false.
 -- Existing slugs are never changed.
 
 local MAX_URIS = 5000
@@ -14,8 +16,8 @@ local function did_set(raw)
 end
 
 function handle()
-  if not did_set(env.ADMIN_DIDS)[caller_did] then
-    error("unauthorized: only admins can queue a slug backfill")
+  if not did_set(env.ADMIN_DIDS)[caller_did] and not did_set(env.MAINTENANCE_DIDS)[caller_did] then
+    error("unauthorized: only admins and the maintenance account can queue a slug backfill")
   end
 
   local uris = input.uris
