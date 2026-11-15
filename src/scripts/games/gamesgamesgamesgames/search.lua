@@ -83,7 +83,13 @@ local function has_region_hint(q)
   return false
 end
 
--- Compute semantic ratio based on query characteristics
+-- Compute semantic ratio based on query characteristics.
+--
+-- A query of four words or fewer is almost always a title ("ocarina of time",
+-- "half-life 2"), so it gets keyword search only. A ratio of 0 also means
+-- Meilisearch doesn't embed the query, which saves an OpenAI call per search.
+-- Longer queries, and queries with an age or region hint, describe what the
+-- user wants rather than name it, so they keep the semantic weight.
 local function compute_semantic_ratio(q, has_age, has_region)
   local word_count = 0
   for _ in q:gmatch("%S+") do
@@ -91,8 +97,8 @@ local function compute_semantic_ratio(q, has_age, has_region)
   end
 
   if word_count >= 6 then return 0.7 end
-  if word_count >= 3 or has_age or has_region then return 0.5 end
-  return 0.3
+  if word_count >= 5 or has_age or has_region then return 0.5 end
+  return 0
 end
 
 function parse_types(types)
@@ -194,7 +200,7 @@ function handle()
   -- Semantic search: extract age/region hints and compute hybrid ratio
   local extracted_age = nil
   local region_hint = false
-  local semantic_ratio = 0.3
+  local semantic_ratio = 0
   if q and q ~= "" then
     extracted_age = extract_age(q)
     region_hint = has_region_hint(q)
@@ -386,8 +392,8 @@ function handle()
 
   -- Collection-aware re-ranking: if we found matching collections,
   -- check each game's `collections` array (already on the Meilisearch doc)
-  -- to see if it belongs to a matched collection. Boost those games by
-  -- sorting them by recency, then append the rest.
+  -- to see if it belongs to a matched collection. Move those games ahead of
+  -- the rest, keeping Meilisearch's relevance order within each group.
   if #hits > 1 and next(matched_collections) then
     local boosted = {}
     local others = {}
@@ -411,14 +417,7 @@ function handle()
     end
 
     if #boosted > 0 then
-      -- Sort boosted games by firstReleaseDate descending (newest first)
-      table.sort(boosted, function(a, b)
-        local a_date = a.firstReleaseDate or 0
-        local b_date = b.firstReleaseDate or 0
-        return a_date > b_date
-      end)
-
-      -- Reassemble: boosted by recency, then others
+      -- Reassemble: boosted, then others
       hits = {}
       for _, s in ipairs(boosted) do
         table.insert(hits, s)
