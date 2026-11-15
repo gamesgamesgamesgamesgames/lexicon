@@ -238,7 +238,9 @@ local function game_collections(target_uri)
   return uris
 end
 
--- Upsert the record's external IDs into the external_ids lookup table.
+-- Upsert the record's external IDs into the external_ids lookup table. A row
+-- that already points at this URI is left alone, so a full reindex does not
+-- rewrite (and bloat) every row in the table.
 local function upsert_external_ids(target_uri, record)
   local ids = record.externalIds
   if type(ids) ~= "table" then return end
@@ -246,7 +248,7 @@ local function upsert_external_ids(target_uri, record)
     local value = ids[service]
     if value and value ~= "" then
       db.raw(
-        "INSERT INTO external_ids (service, external_id, uri) VALUES ($1, $2, $3) ON CONFLICT (service, external_id) DO UPDATE SET uri = $3",
+        "INSERT INTO external_ids (service, external_id, uri) VALUES ($1, $2, $3) ON CONFLICT (service, external_id) DO UPDATE SET uri = $3 WHERE external_ids.uri IS DISTINCT FROM EXCLUDED.uri",
         { service, value, target_uri }
       )
     end
