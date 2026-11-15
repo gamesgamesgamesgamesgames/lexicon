@@ -176,7 +176,7 @@ end)
 
 local function call(caller, body, active)
   local created
-  env = { ADMIN_DIDS = "did:plc:admin", REINDEX_DIDS = "did:plc:bot" }
+  env = { ADMIN_DIDS = "did:plc:admin", MAINTENANCE_DIDS = "did:plc:bot", REINDEX_DIDS = "did:plc:reindexer" }
   caller_did, input = caller, body
   jobs = { create = function(ty, inp) created = { type = ty, input = inp }; return "job-1" end }
   db = { raw = function(sql)
@@ -194,8 +194,9 @@ t("an admin queues a sync", function()
   assert(ok, res); eq(created.type, "wikidata.sync"); eq(created.input.dryRun, true); eq(created.input.force, false)
 end)
 
-t("a REINDEX_DIDS account may queue one; anyone else may not", function()
+t("the MAINTENANCE_DIDS account may queue one; REINDEX_DIDS and anyone else may not", function()
   assert((call("did:plc:bot", {})))
+  eq((call("did:plc:reindexer", {})), false)
   local ok, err = call("did:plc:human", {})
   eq(ok, false); assert(tostring(err):find("unauthorized", 1, true), err)
 end)

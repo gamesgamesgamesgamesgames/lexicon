@@ -1,7 +1,7 @@
 -- Queues a wikidata.sync job, which copies what Wikidata knows about our
 -- games (sitelinks, publisher, mod and fan game classes, English Wikipedia
 -- article) into the wikidata_games table. Meant to run weekly. Admins only,
--- plus any account an admin lists in REINDEX_DIDS (unset by default).
+-- plus the scheduled maintenance account in MAINTENANCE_DIDS (unset by default).
 
 local function did_set(raw)
   local dids = {}
@@ -12,7 +12,7 @@ local function did_set(raw)
 end
 
 function handle()
-  if not did_set(env.ADMIN_DIDS)[caller_did] and not did_set(env.REINDEX_DIDS)[caller_did] then
+  if not did_set(env.ADMIN_DIDS)[caller_did] and not did_set(env.MAINTENANCE_DIDS)[caller_did] then
     error("unauthorized: only admins can queue a Wikidata sync")
   end
 
