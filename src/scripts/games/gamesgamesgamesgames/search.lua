@@ -392,8 +392,8 @@ function handle()
 
   -- Collection-aware re-ranking: if we found matching collections,
   -- check each game's `collections` array (already on the Meilisearch doc)
-  -- to see if it belongs to a matched collection. Boost those games by
-  -- sorting them by recency, then append the rest.
+  -- to see if it belongs to a matched collection. Move those games ahead of
+  -- the rest, keeping Meilisearch's relevance order within each group.
   if #hits > 1 and next(matched_collections) then
     local boosted = {}
     local others = {}
@@ -417,14 +417,7 @@ function handle()
     end
 
     if #boosted > 0 then
-      -- Sort boosted games by firstReleaseDate descending (newest first)
-      table.sort(boosted, function(a, b)
-        local a_date = a.firstReleaseDate or 0
-        local b_date = b.firstReleaseDate or 0
-        return a_date > b_date
-      end)
-
-      -- Reassemble: boosted by recency, then others
+      -- Reassemble: boosted, then others
       hits = {}
       for _, s in ipairs(boosted) do
         table.insert(hits, s)

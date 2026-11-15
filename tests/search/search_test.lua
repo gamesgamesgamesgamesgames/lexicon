@@ -69,5 +69,22 @@ t("a games-free type filter sends no hybrid block", function()
   eq(body.hybrid, nil)
 end)
 
+local C = "at://c/coll/1"
+local function game(name, date, in_coll)
+  return { type = "game", uri = "at://g/" .. name, name = name, firstReleaseDate = date, collections = in_coll and { C } or nil }
+end
+
+t("the collection boost keeps Meilisearch's order among boosted games", function()
+  local res = run({ q = "ocarina of time" }, {
+    game("fan", 20140101, false),
+    game("original", 19981121, true),
+    game("remake", 20110616, true),
+    game("sequel", 20230512, true),
+  }, { { uri = C } })
+  local names = {}
+  for _, r in ipairs(res.results or res.items or res) do table.insert(names, r.name) end
+  eq(table.concat(names, ","), "original,remake,sequel,fan")
+end)
+
 print(("%d passed, %d failed"):format(pass, fail))
 if fail > 0 then os.exit(1) end
