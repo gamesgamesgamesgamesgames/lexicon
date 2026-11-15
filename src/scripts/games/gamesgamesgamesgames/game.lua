@@ -1,3 +1,21 @@
+-- >>> generated from src/shared/game_index.lua — do not edit
+-- Canonical Meilisearch document builder for games.
+--
+-- THIS FILE IS A SOURCE, NOT A HANDLER. `bun run generate:shared` inlines it
+-- into every handler that marks a slot for it. Do not edit the copies.
+--
+-- Why generation: HappyView's Lua cannot `require` one deployed script from
+-- another, so the same block has to exist in each file that needs it, and a
+-- generator plus a CI check keeps the copies honest.
+--
+-- `game.lua` writes a game's index document whenever the record changes. The
+-- `search.reindex` job has to write the very same document for games whose
+-- Meilisearch copy went missing or stale, so the builder cannot live in one
+-- handler.
+--
+-- Declarations only: no `return`, no `function handle()`. Reads the handler
+-- globals `db`, `json`, `env`, `http` and `toarray`.
+
 local HEADERS = {
   ["Authorization"] = "Bearer " .. env.MEILISEARCH_API_KEY,
   ["content-type"] = "application/json"
@@ -181,12 +199,66 @@ local function derive_release_decade(release_year)
   return "in the " .. position .. " " .. tostring(decade_start) .. "s (" .. decade_short .. "s)"
 end
 
-function handle()
-  if action == "delete" then
-    http.delete(INDEX_URL .. "/" .. to_doc_id(uri), { headers = HEADERS })
-    return true
-  end
+local GAME_COLLECTION_NSID = "games.gamesgamesgamesgames.collection"
 
+-- Every external ID the record carries, as `<service>Id` document fields. All
+-- of them are filterable; igdbId also backs the IGDB lookups.
+local STORE_ID_FIELDS = {
+  { "igdb", "igdbId" },
+  { "steam", "steamId" },
+  { "gog", "gogId" },
+  { "epicGames", "epicGamesId" },
+  { "humbleBundle", "humbleBundleId" },
+  { "playStation", "playStationId" },
+  { "xbox", "xboxId" },
+  { "nintendoEshop", "nintendoEshopId" },
+  { "appleAppStore", "appleAppStoreId" },
+  { "googlePlay", "googlePlayId" },
+}
+
+-- The services written to the external_ids lookup table, in this order.
+local EXTERNAL_ID_SERVICES = {
+  "igdb", "steam", "gog", "epicGames", "humbleBundle", "playStation",
+  "xbox", "nintendoEshop", "appleAppStore", "googlePlay", "twitch",
+}
+
+-- Collections that list this game, from the backlinks index. The search
+-- collection boost reads this field, so a document without it drops out of
+-- the boost.
+local function game_collections(target_uri)
+  local uris, cursor = {}, nil
+  for _ = 1, 20 do
+    local page = db.backlinks({ collection = GAME_COLLECTION_NSID, uri = target_uri, limit = 100, cursor = cursor })
+    if not page or not page.records then break end
+    for _, coll in ipairs(page.records) do
+      table.insert(uris, coll.uri)
+    end
+    cursor = page.cursor
+    if not cursor or #page.records < 100 then break end
+  end
+  return uris
+end
+
+-- Upsert the record's external IDs into the external_ids lookup table.
+local function upsert_external_ids(target_uri, record)
+  local ids = record.externalIds
+  if type(ids) ~= "table" then return end
+  for _, service in ipairs(EXTERNAL_ID_SERVICES) do
+    local value = ids[service]
+    if value and value ~= "" then
+      db.raw(
+        "INSERT INTO external_ids (service, external_id, uri) VALUES ($1, $2, $3) ON CONFLICT (service, external_id) DO UPDATE SET uri = $3",
+        { service, value, target_uri }
+      )
+    end
+  end
+end
+
+-- Build the index document for one game, without writing anything.
+--
+-- `record` is the game record to index. The builder never looks the record up
+-- itself, so callers cannot disagree about which version is being indexed.
+local function build_game_doc(target_uri, target_did, record)
   -- Extract just the name strings from alternativeNames objects
   local alt_names = {}
   if record.alternativeNames then
@@ -199,7 +271,7 @@ function handle()
 
   -- Look up slug from the slugs table
   local slug = nil
-  local slug_rows = db.raw("SELECT slug FROM slugs WHERE uri = $1 LIMIT 1", {uri})
+  local slug_rows = db.raw("SELECT slug FROM slugs WHERE uri = $1 LIMIT 1", { target_uri })
   if slug_rows and #slug_rows > 0 then
     slug = slug_rows[1].slug
   end
@@ -207,10 +279,10 @@ function handle()
   local first_release_date, cancelled = get_release_info(record.releases)
 
   local doc = {
-    id = to_doc_id(uri),
+    id = to_doc_id(target_uri),
     type = "game",
-    did = did,
-    uri = uri,
+    did = target_did,
+    uri = target_uri,
     name = record.name,
     summary = record.summary,
     storyline = record.storyline,
@@ -228,31 +300,15 @@ function handle()
     firstReleaseDate = first_release_date,
     media = record.media,
     slug = slug,
+    collections = toarray(game_collections(target_uri)),
     ageRatings = {}
   }
 
-  -- Upsert external IDs into the external_ids lookup table
-  if record.externalIds then
-    local ids = record.externalIds
-    local services = {
-      { "igdb", ids.igdb },
-      { "steam", ids.steam },
-      { "gog", ids.gog },
-      { "epicGames", ids.epicGames },
-      { "humbleBundle", ids.humbleBundle },
-      { "playStation", ids.playStation },
-      { "xbox", ids.xbox },
-      { "nintendoEshop", ids.nintendoEshop },
-      { "appleAppStore", ids.appleAppStore },
-      { "googlePlay", ids.googlePlay },
-      { "twitch", ids.twitch },
-    }
-    for _, pair in ipairs(services) do
-      if pair[2] and pair[2] ~= "" then
-        db.raw(
-          "INSERT INTO external_ids (service, external_id, uri) VALUES ($1, $2, $3) ON CONFLICT (service, external_id) DO UPDATE SET uri = $3",
-          { pair[1], pair[2], uri }
-        )
+  if type(record.externalIds) == "table" then
+    for _, pair in ipairs(STORE_ID_FIELDS) do
+      local value = record.externalIds[pair[1]]
+      if value and value ~= "" then
+        doc[pair[2]] = value
       end
     end
   end
@@ -279,10 +335,51 @@ function handle()
     doc.releaseDecade = derive_release_decade(release_year)
   end
 
-  http.post(INDEX_URL, {
+  return doc
+end
+
+-- Meilisearch answers 202 when it has queued the write. Anything else means
+-- the document was not queued, so raise: HappyView retries a failed record
+-- hook and dead-letters it once the retries run out, where it can be replayed.
+local function check_meili(resp, what)
+  local status = resp and resp.status or 0
+  if status < 200 or status >= 300 then
+    local body = resp and resp.body or ""
+    error(what .. " failed: Meilisearch answered " .. tostring(status) .. " " .. string.sub(body, 1, 300))
+  end
+end
+
+-- Send already-built documents to Meilisearch as full replacements.
+local function push_game_docs(docs)
+  local resp = http.post(INDEX_URL, {
     headers = HEADERS,
-    body = json.encode(toarray({ doc }))
+    body = json.encode(toarray(docs))
   })
+  check_meili(resp, "indexing " .. #docs .. " game document(s)")
+end
+
+-- Build and upsert the index document for one game, and refresh its
+-- external_ids rows. Returns the document.
+local function index_game(target_uri, target_did, record)
+  upsert_external_ids(target_uri, record)
+  local doc = build_game_doc(target_uri, target_did, record)
+  push_game_docs({ doc })
+  return doc
+end
+
+local function delete_game_index(target_uri)
+  local resp = http.delete(INDEX_URL .. "/" .. to_doc_id(target_uri), { headers = HEADERS })
+  check_meili(resp, "deleting the index document for " .. target_uri)
+end
+-- <<< generated from src/shared/game_index.lua
+
+function handle()
+  if action == "delete" then
+    delete_game_index(uri)
+    return true
+  end
+
+  index_game(uri, did, record)
 
   return record
 end
