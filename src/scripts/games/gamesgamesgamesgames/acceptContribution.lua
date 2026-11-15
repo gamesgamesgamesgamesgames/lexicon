@@ -768,10 +768,20 @@ local function withdraw_patch(contribution_uri, subject)
     db.raw("DELETE FROM happyview_records WHERE uri = $1", { patch_uri })
   end)
 
+  -- The decision and any merge are already committed, so a failed reindex must
+  -- not fail the call: the owner would see an error for something that
+  -- happened, and a retry would be refused as already decided. The
+  -- contributionPatch hook reindexes again when the delete reaches the
+  -- firehose, and that one raises so HappyView retries it.
   if subject and subject ~= "" then
-    local game = db.get(subject)
-    if game then
-      index_game(subject, did_from_uri(subject), overlay_game(game, subject, patch_uri))
+    local reindexed, reindex_err = pcall(function()
+      local game = db.get(subject)
+      if game then
+        index_game(subject, did_from_uri(subject), overlay_game(game, subject, patch_uri))
+      end
+    end)
+    if not reindexed then
+      log("warning: withdrew " .. patch_uri .. " but could not reindex " .. subject .. ": " .. tostring(reindex_err))
     end
   end
 

@@ -74,9 +74,9 @@ end)
 t.test("index_game posts one document for the record it is given", function()
   local posts = {}
   local s = shared({
-    db = { raw = function() return {} end },
+    db = { raw = function() return {} end, backlinks = function() return { records = {} } end },
     json = { encode = function(value) return value end },
-    http = { post = function(url, options) table.insert(posts, { url = url, body = options.body }) end },
+    http = { post = function(url, options) table.insert(posts, { url = url, body = options.body }); return { status = 202 } end },
     toarray = function(value) return value end,
   })
 
@@ -93,7 +93,7 @@ end)
 t.test("delete_game_index removes the document", function()
   local deletes = {}
   local s = shared({
-    http = { delete = function(url) table.insert(deletes, url) end },
+    http = { delete = function(url) table.insert(deletes, url); return { status = 202 } end },
   })
 
   s.delete_game_index("at://did:plc:owner/games.gamesgamesgamesgames.game/1")

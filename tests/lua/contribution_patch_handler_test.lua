@@ -15,6 +15,7 @@ local function run_handler(options)
     record = options.record,
     env = { PENTARACT_DID = "did:web:pentaract", MEILISEARCH_API_KEY = "k", MEILISEARCH_URL = "http://meili" },
     db = {
+      backlinks = function() return { records = {} } end,
       get = function(target)
         if target == GAME_URI then return options.game end
         if target == (options.uri or PATCH_URI) then return options.indexed_patch end
@@ -29,7 +30,7 @@ local function run_handler(options)
       end,
     },
     json = { decode = function(value) return value end, encode = function(value) return value end },
-    http = { post = function(url, request) table.insert(posts, request.body) end, delete = function() end },
+    http = { post = function(url, request) table.insert(posts, request.body); return { status = 202 } end, delete = function() return { status = 202 } end },
     toarray = function(value) return value end,
     log = function() end,
   }

@@ -33,6 +33,7 @@ local function run_handler(options)
     input = options.input or { contribution = CONTRIBUTION_URI },
     env = { PENTARACT_DID = "did:web:pentaract", MEILISEARCH_API_KEY = "k", MEILISEARCH_URL = "http://meili" },
     db = {
+      backlinks = function() return { records = {} } end,
       raw = function(sql, bind)
         if sql:find("contributionReview", 1, true) then return options.review_rows or {} end
         if sql:find("contributionOwnerDecision", 1, true) then return options.decision_rows or {} end
@@ -54,7 +55,7 @@ local function run_handler(options)
     now = function() return "2026-10-01T00:00:00Z" end,
     log = function() end,
     toarray = function(value) return value end,
-    http = { post = function(_, request) table.insert(state.posts, request.body) end, delete = function() end },
+    http = { post = function(_, request) table.insert(state.posts, request.body); return { status = 202 } end, delete = function() return { status = 202 } end },
     Record = {
       new = function(collection, data)
         local saved = { collection = collection, data = data, _uri = "at://" .. OWNER .. "/" .. collection .. "/new" }

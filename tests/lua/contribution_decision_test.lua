@@ -18,7 +18,7 @@ local function shared(options)
   options = options or {}
   local state = {
     saved = {}, deleted_records = {}, deleted_rows = {}, indexed = {},
-    overlaid = {}, queries = {}, gets = {},
+    overlaid = {}, queries = {}, gets = {}, logs = {},
   }
 
   local function rows_for(sql)
@@ -53,7 +53,7 @@ local function shared(options)
     },
     json = { decode = function(value) return value end },
     now = function() return "2026-10-01T00:00:00Z" end,
-    log = function() end,
+    log = function(message) table.insert(state.logs, message) end,
     Record = {
       new = function(collection, data)
         local saved = { collection = collection, data = data, _uri = "at://" .. OWNER .. "/" .. collection .. "/new" }
@@ -69,6 +69,7 @@ local function shared(options)
       end,
     },
     index_game = function(target_uri, target_did, record)
+      if options.index_fails then error("indexing failed: Meilisearch answered 503") end
       table.insert(state.indexed, { uri = target_uri, did = target_did, record = record })
     end,
     overlay_game = function(record, uri, exclude_patch_uri)
@@ -299,6 +300,20 @@ t.test("a live patch is only looked for in the Pentaract repo", function()
   t.truthy(query.sql:find("did = $1", 1, true), "repo filtered")
   t.eq(query.bind[1], "did:web:pentaract", "to Pentaract")
   t.eq(query.bind[2], CONTRIBUTION_URI, "for this contribution")
+end)
+
+t.test("a failed reindex after the withdrawal is logged, not raised", function()
+  -- The decision and any merge are committed by now. Raising would report a
+  -- failure for something that happened, and the retry would be refused.
+  local s, state = shared({
+    patch_rows = { { uri = PATCH_URI } },
+    game = { name = "Stored" },
+    index_fails = true,
+  })
+
+  t.eq(s.withdraw_patch(CONTRIBUTION_URI, GAME_URI), PATCH_URI, "still withdrawn")
+  t.eq(#state.deleted_records, 1, "deleted from the repo")
+  t.truthy(state.logs[1] and state.logs[1]:find("could not reindex", 1, true), "logged")
 end)
 
 t.test("withdrawing when no patch exists is a no-op", function()

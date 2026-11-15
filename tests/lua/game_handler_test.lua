@@ -15,6 +15,7 @@ local function run_handler(options)
     record = options.record,
     env = { PENTARACT_DID = "did:web:pentaract", MEILISEARCH_API_KEY = "k", MEILISEARCH_URL = "http://meili" },
     db = {
+      backlinks = function() return { records = {} } end,
       raw = function(sql, bind)
         table.insert(raw_calls, { sql = sql, bind = bind })
         if sql:find("contributionPatch", 1, true) then
@@ -25,8 +26,8 @@ local function run_handler(options)
     },
     json = { decode = function(value) return value end, encode = function(value) return value end },
     http = {
-      post = function(url, request) table.insert(posts, request.body) end,
-      delete = function(url) table.insert(deletes, url) end,
+      post = function(url, request) table.insert(posts, request.body); return { status = 202 } end,
+      delete = function(url) table.insert(deletes, url); return { status = 202 } end,
     },
     toarray = function(value) return value end,
     log = function() end,

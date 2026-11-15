@@ -35,6 +35,8 @@ M.copy = copy
 --   slugs        { [uri] = slug }
 --   fail_writes  number of document writes to answer 500 to
 --   fail_reads   answer 500 to document fetches
+--   pentaract_did  env.PENTARACT_DID (unset: the overlay reads no patches)
+--   patches      { { uri, did, record = { subject, createdAt, changes } }, ... }
 function M.install(opts)
   local S = {
     meili = opts.meili or {}, records = opts.records or {}, ext = {}, posts = 0, puts = 0, writes = {},
@@ -49,7 +51,7 @@ function M.install(opts)
     end,
   }
   S.encode = json.encode
-  env = { MEILISEARCH_URL = "http://meili", MEILISEARCH_API_KEY = "k", ADMIN_DIDS = "did:plc:admin" }
+  env = { MEILISEARCH_URL = "http://meili", MEILISEARCH_API_KEY = "k", ADMIN_DIDS = "did:plc:admin", PENTARACT_DID = opts.pentaract_did }
   toarray = function(x) return x end
   log = function() end
 
@@ -65,6 +67,19 @@ function M.install(opts)
         S.job_queries = (S.job_queries or 0) + 1
         if sql:find("'catalogue.reindex'", 1, true) then return opts.catalogue_jobs or {} end
         return opts.search_jobs or {}
+      end
+      -- Live overlay patches: opts.patches is a list of { uri, did, record }.
+      if sql:find("games.gamesgamesgamesgames.contributionPatch", 1, true) then
+        S.patch_queries = (S.patch_queries or 0) + 1
+        local want = {}
+        for i = 2, #b do want[b[i]] = true end
+        local rows = {}
+        for _, p in ipairs(opts.patches or {}) do
+          if p.did == b[1] and want[p.record.subject] then
+            rows[#rows + 1] = { uri = p.uri, record = json.encode(p.record) }
+          end
+        end
+        return rows
       end
       if sql:find("FROM happyview_records", 1, true) then
         local rows = {}
